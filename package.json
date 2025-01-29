@@ -1,0 +1,38 @@
+{
+    "name": "simplyplural_pebble",
+    "author": "Nikki",
+    "version": "1.0.0",
+    "keywords": [
+        "pebble-app"
+    ],
+    "private": true,
+    "dependencies": {
+        "pebble-clay": "^1.0.4"
+    },
+    "pebble": {
+        "displayName": "SimplyPlural",
+        "uuid": "ce4767cb-43af-4b3b-b7ac-fcc4dfe84e9b",
+        "sdkVersion": "3",
+        "capabilities": [
+            "configurable"
+        ],
+        "enableMultiJS": true,
+        "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+        ],
+        "watchapp": {
+            "watchface": false
+        },
+        "messageKeys": [
+            "PluralApiKey",
+            "AccentColor",
+            "Members"
+        ],
+        "resources": {
+            "media": []
+        }
+    }
+}

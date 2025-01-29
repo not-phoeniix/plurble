@@ -1,0 +1,40 @@
+[
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "PluralKit"
+      },
+      {
+        "type": "text",
+        "defaultValue": "By Nikki"
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "Config"
+      },
+      {
+        "type": "input",
+        "messageKey": "PluralApiKey",
+        "label": "Simply Plural API Key"
+      },
+      {
+        "type": "color",
+        "messageKey": "AccentColor",
+        "label": "UI Accent Color",
+        "allowGray": "true",
+        "defaultValue": "0xFF0000"
+      }
+    ]
+  },
+  {
+    "type": "submit",
+    "defaultValue": "Save"
+  }
+]
