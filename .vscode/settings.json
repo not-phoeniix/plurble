@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "menus.h": "c"
+        "menus.h": "c",
+        "pebble.h": "c"
     }
 }

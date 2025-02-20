@@ -2,9 +2,6 @@
 #include "menus.h"
 #include "../tools/string_tools.h"
 
-#define MAX_MEMBERS 200
-#define MAX_NAME_LEN 50
-
 static int16_t window_index = -1;
 
 static uint16_t num_members = 0;
@@ -35,9 +32,17 @@ static void refresh_members() {
 
 void members_menu_push() {
     if (!menu_is_loaded(window_index)) {
-        refresh_members();
+        // refresh_members();
         window_index = add_menu(click_callback, unload_callback, members, num_members);
     }
 
     menu_window_push(window_index);
+}
+
+void members_set_members(char* p_members, char delim) {
+    if (members != NULL) {
+        string_array_free(members, num_members);
+    }
+
+    members = string_split(p_members, delim, &num_members);
 }

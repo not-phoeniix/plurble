@@ -1,6 +1,7 @@
 #include "messaging.h"
 #include <pebble.h>
 #include "../config/config.h"
+#include "../menus/members_menu.h"
 
 #define NUM_KEYS 3
 
@@ -27,7 +28,8 @@ static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
 
     Tuple* members = dict_find(iter, MESSAGE_KEY_Members);
     if (members != NULL) {
-        // parse data
+        printf("updating members menu data.... inputted data: %s", members->value->cstring);
+        members_set_members(members->value->cstring, '|');
     }
 
     // only save settings if any were updated
