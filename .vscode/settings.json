@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "menus.h": "c",
-        "pebble.h": "c"
+        "pebble.h": "c",
+        "members_menu.h": "c"
     }
 }

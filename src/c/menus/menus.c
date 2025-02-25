@@ -3,7 +3,6 @@
 #include <pebble.h>
 #include <stdlib.h>
 #include "../config/config.h"
-#include "../tools/string_tools.h"
 
 #define MAX_MENUS 10
 
@@ -17,14 +16,15 @@ typedef struct {
 } MenuData;
 
 static int16_t num_windows = 0;
-static MenuData menus[MAX_MENUS] = {{
-    .window = NULL,
-    .menu_layer = NULL,
-    .options = NULL,
-    .num_options = 0,
-    .click_callback = NULL,
-    .unload_callback = NULL
-}};
+static MenuData menus[MAX_MENUS] = {
+    {.window = NULL,
+     .menu_layer = NULL,
+     .options = NULL,
+     .num_options = 0,
+     .click_callback = NULL,
+     .unload_callback = NULL
+    }
+};
 
 static int16_t get_window_index(Window* window) {
     for (int i = 0; i < MAX_MENUS; i++) {
@@ -58,8 +58,12 @@ static void draw_row(
     int16_t window_index = get_window_index(window);
     char** options = menus[window_index].options;
 
-    // draw cel with text of options at given cell index
+    // draw cell with text of options at given cell index
     menu_cell_basic_draw(ctx, cell_layer, options[cell_index->row], NULL, NULL);
+}
+
+static int16_t get_cell_height(struct MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
+    return 44;
 }
 
 static void window_load(Window* window) {
@@ -83,14 +87,15 @@ static void window_load(Window* window) {
         (MenuLayerCallbacks) {
             .get_num_rows = get_num_rows,
             .select_click = select_callback,
+            .get_cell_height = get_cell_height,
             .draw_row = draw_row
         }
     );
 
+    menus[window_index].menu_layer = menu_layer;
+
     ClaySettings* settings = settings_get();
     menu_layer_set_highlight_colors(menu_layer, settings->accent_color, GColorWhite);
-
-    menus[window_index].menu_layer = menu_layer;
 
     layer_add_child(window_layer, menu_layer_get_layer(menu_layer));
 }
@@ -102,23 +107,14 @@ static void window_unload(Window* window) {
         return;
     }
 
-    // free memory/call unload steps
+    // call unload steps if they exist
     if (menus[index].unload_callback != NULL) {
         menus[index].unload_callback();
     }
-    menu_layer_destroy(menus[index].menu_layer);
-    window_destroy(window);
 
-    // reset struct data and decrease number of windows
-    menus[index] = (MenuData) {
-        .window = NULL,
-        .menu_layer = NULL,
-        .options = NULL,
-        .num_options = 0,
-        .click_callback = NULL,
-        .unload_callback = NULL
-    };
-    num_windows--;
+    // free memory of the layers in this menu
+    menu_layer_destroy(menus[index].menu_layer);
+    menus[index].menu_layer = NULL;
 }
 
 int16_t add_menu(
@@ -164,16 +160,21 @@ int16_t add_menu(
 }
 
 Window* get_menu(int16_t index) {
+    // return null if out of bounds
+    if (index < 0 || index >= MAX_MENUS) {
+        return NULL;
+    }
+
     return menus[index].window;
 }
 
 bool menu_is_loaded(int16_t index) {
     // window is not loaded if index out of bounds or array index is null
     if (index < 0 || index >= MAX_MENUS || menus[index].window == NULL) {
-        return 0;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
 void menu_window_push(int16_t index) {
@@ -199,6 +200,12 @@ void menu_set_highlight_colors(GColor background, GColor foreground) {
                 foreground
             );
         }
+    }
+}
+
+void menu_deinit() {
+    for (int i = 0; i < MAX_MENUS; i++) {
+        window_destroy(menus[i].window);
     }
 }
 

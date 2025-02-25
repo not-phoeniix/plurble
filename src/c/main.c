@@ -2,6 +2,7 @@
 #include "config/config.h"
 #include "messaging/messaging.h"
 #include "menus/main_menu.h"
+#include "menus/members_menu.h"
 
 static void update_glance(
     AppGlanceReloadSession* session,
@@ -37,6 +38,7 @@ static void init() {
     settings_load();
 
     main_menu_push();
+    // members_menu_push();
 }
 
 static void deinit() {

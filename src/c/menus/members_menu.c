@@ -1,13 +1,13 @@
 #include "members_menu.h"
-#include "menus.h"
 #include "../tools/string_tools.h"
+#include "../config/config.h"
 
-static int16_t window_index = -1;
-
-static uint16_t num_members = 0;
+static Window* window = NULL;
+static MenuLayer* menu_layer = NULL;
 static char** members = NULL;
+static uint16_t num_members = 0;
 
-static void click_callback(
+static void select(
     MenuLayer* menu_layer,
     MenuIndex* menu_index,
     void* context
@@ -16,27 +16,58 @@ static void click_callback(
     printf("wow! you clicked... [%s]!!", member);
 }
 
-static void unload_callback() {
-    if (members != NULL) {
-        string_array_free(members, num_members);
-    }
+static uint16_t get_num_rows(MenuLayer* layer, uint16_t selected_index, void* ctx) {
+    return num_members;
 }
 
-static void refresh_members() {
-    if (members != NULL) {
-        string_array_free(members, num_members);
-    }
+static int16_t get_cell_height(struct MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
+    return 44;
+}
 
-    members = string_split("Names|Go|In|Here|:]", '|', &num_members);
+static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
+    menu_cell_basic_draw(ctx, cell_layer, members[cell_index->row], NULL, NULL);
+}
+
+static void window_load() {
+    Layer* window_layer = window_get_root_layer(window);
+    GRect bounds = layer_get_bounds(window_layer);
+
+    menu_layer = menu_layer_create(bounds);
+    menu_layer_set_callbacks(
+        menu_layer,
+        NULL,
+        (MenuLayerCallbacks) {
+            .get_num_rows = get_num_rows,
+            .draw_row = draw_row,
+            .get_cell_height = get_cell_height,
+            .select_click = select
+        }
+    );
+
+    ClaySettings* settings = settings_get();
+    menu_layer_set_highlight_colors(menu_layer, settings->accent_color, GColorWhite);
+
+    menu_layer_set_click_config_onto_window(menu_layer, window);
+    layer_add_child(window_layer, menu_layer_get_layer(menu_layer));
+}
+
+static void window_unload() {
+    menu_layer_destroy(menu_layer);
 }
 
 void members_menu_push() {
-    if (!menu_is_loaded(window_index)) {
-        // refresh_members();
-        window_index = add_menu(click_callback, unload_callback, members, num_members);
+    if (window == NULL) {
+        window = window_create();
+        window_set_window_handlers(
+            window,
+            (WindowHandlers) {
+                .load = window_load,
+                .unload = window_unload
+            }
+        );
     }
 
-    menu_window_push(window_index);
+    window_stack_push(window, true);
 }
 
 void members_set_members(char* p_members, char delim) {

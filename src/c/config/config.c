@@ -11,8 +11,8 @@ static void set_defaults() {
 }
 
 static void apply() {
-    menu_set_highlight_colors(settings.accent_color, GColorWhite);
-    menu_mark_dirty();
+    // menu_set_highlight_colors(settings.accent_color, GColorWhite);
+    // menu_mark_dirty();
 }
 
 ClaySettings* settings_get() {
