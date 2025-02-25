@@ -1,4 +1,7 @@
 #include "config.h"
+#include "../messaging/messaging.h"
+#include "../menus/main_menu.h"
+#include "../menus/members_menu.h"
 
 #define SETTINGS_KEY 1
 
@@ -6,10 +9,12 @@ static ClaySettings settings;
 
 static void set_defaults() {
     settings.accent_color = GColorRed;
-    settings.plural_api_key = "";
 }
 
 static void apply() {
+    main_menu_update_colors();
+    members_menu_update_colors();
+
     // mark current window layer for redraw on settings application
     Window* top_window = window_stack_get_top_window();
     if (top_window != NULL) {

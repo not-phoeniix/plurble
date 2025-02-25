@@ -12,11 +12,9 @@ static void select(int index, void* context) {
     switch (index) {
         // "members" case
         case 0:
-            // members_menu_push();
+            members_menu_push();
             break;
     }
-
-    members_menu_push();
 }
 
 static void window_load() {
@@ -38,18 +36,14 @@ static void window_load() {
 
     simple_menu_layer = simple_menu_layer_create(bounds, window, sections, 1, NULL);
 
-    ClaySettings* settings = settings_get();
-    menu_layer_set_highlight_colors(
-        simple_menu_layer_get_menu_layer(simple_menu_layer),
-        settings->accent_color,
-        GColorWhite
-    );
+    main_menu_update_colors();
 
     layer_add_child(window_layer, simple_menu_layer_get_layer(simple_menu_layer));
 }
 
 static void window_unload() {
     simple_menu_layer_destroy(simple_menu_layer);
+    simple_menu_layer = NULL;
 }
 
 void main_menu_push() {
@@ -65,4 +59,25 @@ void main_menu_push() {
     }
 
     window_stack_push(window, true);
+}
+
+void main_menu_update_colors() {
+    ClaySettings* settings = settings_get();
+    if (settings != NULL && simple_menu_layer != NULL) {
+        menu_layer_set_highlight_colors(
+            simple_menu_layer_get_menu_layer(simple_menu_layer),
+            settings->accent_color,
+            GColorWhite
+        );
+    }
+}
+
+void main_menu_deinit() {
+    if (simple_menu_layer != NULL) {
+        simple_menu_layer_destroy(simple_menu_layer);
+    }
+
+    if (window != NULL) {
+        window_destroy(window);
+    }
 }

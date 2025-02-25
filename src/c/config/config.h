@@ -3,7 +3,6 @@
 #include <pebble.h>
 
 typedef struct {
-    char* plural_api_key;
     GColor accent_color;
 } ClaySettings;
 

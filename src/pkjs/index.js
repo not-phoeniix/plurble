@@ -5,24 +5,35 @@ const clay = new Clay(clayConfig);
 
 // plural api setup
 const pluralApi = require("./plural_api.js");
-// Pebble.addEventListener("ready", pluralApi.openSocket);
 
-// #region testing sending data to watch
-
-const testData = {
-    "Members": "test|this|one|dude|heyyy|hehe"
-};
-
-function onSuccess(data) {
-    console.log("successful data send! data:\n" + JSON.stringify(data));
-}
-
-function onFailure(data, error) {
-    console.log("ERROR in data sending!! error: " + error);
-}
-
+// once pebble js is ready, grab api cache and try to send members to watch
 Pebble.addEventListener("ready", function (e) {
-    Pebble.sendAppMessage(testData, onSuccess, onFailure);
+    var cachedApiToken = localStorage.getItem("cachedApiToken");
+    if (cachedApiToken) {
+        pluralApi.setApiToken(cachedApiToken);
+    } else {
+        console.log("api token not cached...");
+    }
+
+    pluralApi.sendMembersToWatch();
 });
 
-// #endregion
+// on settings window close, grab api key, cache it, then send members again
+Pebble.addEventListener("webviewclosed", function (e) {
+    if (!e.response) {
+        return;
+    }
+
+    // update api key cache
+    var settingsDict = clay.getSettings(e.response, false);
+    var dictApiKey = settingsDict.PluralApiKey.value;
+    if (dictApiKey) {
+        console.log("caching plural api key... key: " + dictApiKey);
+        localStorage.setItem("cachedApiToken", dictApiKey);
+        pluralApi.setApiToken(dictApiKey);
+    }
+
+    // update member list upon every webview change
+    pluralApi.sendMembersToWatch();
+});
+

@@ -42,6 +42,10 @@ static void init() {
 
 static void deinit() {
     // unsubscribe from services in here!
+
+    // destroy/deinit menus
+    members_menu_deinit();
+    main_menu_deinit();
 }
 
 int main() {

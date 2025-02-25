@@ -44,8 +44,7 @@ static void window_load() {
         }
     );
 
-    ClaySettings* settings = settings_get();
-    menu_layer_set_highlight_colors(menu_layer, settings->accent_color, GColorWhite);
+    members_menu_update_colors();
 
     menu_layer_set_click_config_onto_window(menu_layer, window);
     layer_add_child(window_layer, menu_layer_get_layer(menu_layer));
@@ -53,6 +52,7 @@ static void window_load() {
 
 static void window_unload() {
     menu_layer_destroy(menu_layer);
+    menu_layer = NULL;
 }
 
 void members_menu_push() {
@@ -76,4 +76,30 @@ void members_set_members(char* p_members, char delim) {
     }
 
     members = string_split(p_members, delim, &num_members);
+}
+
+void members_menu_update_colors() {
+    ClaySettings* settings = settings_get();
+    if (settings != NULL && menu_layer != NULL) {
+        menu_layer_set_highlight_colors(
+            menu_layer,
+            settings->accent_color,
+            GColorWhite
+        );
+    }
+}
+
+void members_menu_deinit() {
+    if (members != NULL) {
+        string_array_free(members, num_members);
+        members = NULL;
+    }
+
+    if (menu_layer != NULL) {
+        menu_layer_destroy(menu_layer);
+    }
+
+    if (window != NULL) {
+        window_destroy(window);
+    }
 }
