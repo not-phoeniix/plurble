@@ -12,9 +12,11 @@ static void select(int index, void* context) {
     switch (index) {
         // "members" case
         case 0:
-            members_menu_push();
+            // members_menu_push();
             break;
     }
+
+    members_menu_push();
 }
 
 static void window_load() {
@@ -23,7 +25,7 @@ static void window_load() {
 
     items[0] = (SimpleMenuItem) {
         .title = "Members",
-        .subtitle = "System Members :]",
+        .subtitle = "No one fronting :O",
         .icon = NULL,
         .callback = select
     };
@@ -31,7 +33,7 @@ static void window_load() {
     sections[0] = (SimpleMenuSection) {
         .items = items,
         .num_items = 1,
-        .title = "woahgj"
+        .title = NULL
     };
 
     simple_menu_layer = simple_menu_layer_create(bounds, window, sections, 1, NULL);

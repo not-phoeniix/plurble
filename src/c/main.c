@@ -38,7 +38,6 @@ static void init() {
     settings_load();
 
     main_menu_push();
-    // members_menu_push();
 }
 
 static void deinit() {

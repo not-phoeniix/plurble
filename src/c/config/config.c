@@ -1,5 +1,4 @@
 #include "config.h"
-#include "../menus/menus.h"
 
 #define SETTINGS_KEY 1
 
@@ -11,8 +10,12 @@ static void set_defaults() {
 }
 
 static void apply() {
-    // menu_set_highlight_colors(settings.accent_color, GColorWhite);
-    // menu_mark_dirty();
+    // mark current window layer for redraw on settings application
+    Window* top_window = window_stack_get_top_window();
+    if (top_window != NULL) {
+        Layer* window_layer = window_get_root_layer(top_window);
+        layer_mark_dirty(window_layer);
+    }
 }
 
 ClaySettings* settings_get() {
