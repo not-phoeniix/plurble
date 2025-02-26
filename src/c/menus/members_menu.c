@@ -3,31 +3,30 @@
 #include "../config/config.h"
 #include "member.h"
 
-#define MAX_MEMBERS 128
-
 static Window* window = NULL;
 static MenuLayer* menu_layer = NULL;
 static uint16_t num_members = 0;
 static ActionMenuLevel* member_menu_level = NULL;
 static Member** members = NULL;
+static ActionMenuConfig action_menu_config;
 
-static void select(
-    MenuLayer* menu_layer,
-    MenuIndex* menu_index,
-    void* context
-) {
+// ~~~ HELPER FUNCTIONS ~~~
+
+static void free_members_arr() {
+    for (int i = 0; i < num_members; i++) {
+        member_delete(members[i]);
+    }
+
+    free(members);
+}
+
+// ~~~ MENU LAYER SETUP ~~~
+
+static void select(MenuLayer* menu_layer, MenuIndex* menu_index, void* context) {
     Member* member = members[menu_index->row];
     printf("wow! you clicked... [%s]!!", member->name);
 
-    ActionMenuConfig config = {
-        .root_level = member_menu_level,
-        .align = ActionMenuAlignTop,
-        .colors = {
-            .background = settings_get()->accent_color,
-            .foreground = GColorBlack
-        }
-    };
-    action_menu_open(&config);
+    action_menu_open(&action_menu_config);
 }
 
 static uint16_t get_num_rows(MenuLayer* layer, uint16_t selected_index, void* ctx) {
@@ -52,11 +51,9 @@ static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_ind
     }
 }
 
-static void window_load() {
+static void menu_layer_setup() {
     Layer* window_layer = window_get_root_layer(window);
     GRect bounds = layer_get_bounds(window_layer);
-
-    // ~~~ set up menu layer ~~~
 
     menu_layer = menu_layer_create(bounds);
     menu_layer_set_callbacks(
@@ -72,14 +69,43 @@ static void window_load() {
 
     menu_layer_set_click_config_onto_window(menu_layer, window);
     layer_add_child(window_layer, menu_layer_get_layer(menu_layer));
+}
 
-    // ~~~ set up action menu level ~~~
+// ~~~ ACTION MENU SETUP ~~~
 
+static void action_set_to_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
+    printf("setting to front...");
+}
+
+static void action_add_to_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
+    printf("adding to front...");
+}
+
+static void action_remove_from_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
+    printf("removing from front...");
+}
+
+static void action_menu_setup() {
     member_menu_level = action_menu_level_create(5);
-    action_menu_level_add_action(member_menu_level, "wow", NULL, NULL);
-    action_menu_level_add_action(member_menu_level, "wow", NULL, NULL);
-    action_menu_level_add_action(member_menu_level, "wow", NULL, NULL);
 
+    action_menu_level_add_action(member_menu_level, "Set to front", action_set_to_front, NULL);
+    action_menu_level_add_action(member_menu_level, "Add to front", action_add_to_front, NULL);
+
+    action_menu_config = (ActionMenuConfig) {
+        .root_level = member_menu_level,
+        .align = ActionMenuAlignTop,
+        .colors = {
+            .background = settings_get()->accent_color,
+            .foreground = GColorBlack
+        }
+    };
+}
+
+// ~~~ WINDOW SETUP ~~~
+
+static void window_load() {
+    menu_layer_setup();
+    action_menu_setup();
     members_menu_update_colors();
 }
 
@@ -90,13 +116,7 @@ static void window_unload() {
     member_menu_level = NULL;
 }
 
-static void free_members_arr() {
-    for (int i = 0; i < num_members; i++) {
-        member_delete(members[i]);
-    }
-
-    free(members);
-}
+/// ~~~ HEADER FUNCTIONS ~~~
 
 void members_menu_push() {
     if (window == NULL) {
@@ -134,12 +154,16 @@ void members_set_members(char* p_members, char delim) {
 
 void members_menu_update_colors() {
     ClaySettings* settings = settings_get();
-    if (settings != NULL && menu_layer != NULL) {
-        menu_layer_set_highlight_colors(
-            menu_layer,
-            settings->accent_color,
-            GColorWhite
-        );
+    if (settings != NULL) {
+        if (menu_layer != NULL) {
+            menu_layer_set_highlight_colors(
+                menu_layer,
+                settings->accent_color,
+                GColorWhite
+            );
+        }
+
+        action_menu_config.colors.background = settings->accent_color;
     }
 }
 
