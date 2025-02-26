@@ -5,14 +5,19 @@
 
 static Window* window = NULL;
 static SimpleMenuLayer* simple_menu_layer = NULL;
-static SimpleMenuItem items[1];
+static SimpleMenuItem items[2];
 static SimpleMenuSection sections[1];
+static bool members_loaded = false;
 
 static void select(int index, void* context) {
     switch (index) {
         // "members" case
         case 0:
-            members_menu_push();
+            if (members_loaded) {
+                members_menu_push();
+            }
+            break;
+        case 1:
             break;
     }
 }
@@ -22,8 +27,15 @@ static void window_load() {
     GRect bounds = layer_get_bounds(window_layer);
 
     items[0] = (SimpleMenuItem) {
-        .title = "Members",
-        .subtitle = "No one fronting :O",
+        .title = "Member List",
+        .subtitle = "loading members...",
+        .icon = NULL,
+        .callback = select
+    };
+
+    items[1] = (SimpleMenuItem) {
+        .title = "Fronters",
+        .subtitle = "who's at front",
         .icon = NULL,
         .callback = select
     };
@@ -31,7 +43,7 @@ static void window_load() {
     sections[0] = (SimpleMenuSection) {
         .items = items,
         .num_items = 1,
-        .title = NULL
+        .title = "Member Management"
     };
 
     simple_menu_layer = simple_menu_layer_create(bounds, window, sections, 1, NULL);
@@ -80,4 +92,10 @@ void main_menu_deinit() {
     if (window != NULL) {
         window_destroy(window);
     }
+}
+
+void main_menu_mark_members_loaded() {
+    items[0].subtitle = "members loaded!";
+    layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    members_loaded = true;
 }

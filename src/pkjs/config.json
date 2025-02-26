@@ -23,7 +23,7 @@
         "type": "input",
         "messageKey": "PluralApiKey",
         "label": "Simply Plural API Key",
-        "description": "Get your API key from Settings > Account > Tokens :]"
+        "description": "Get your API key from Dashboard > Tokens :]"
       },
       {
         "type": "color",

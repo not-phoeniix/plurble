@@ -2,6 +2,7 @@
 #include "../tools/string_tools.h"
 #include "../config/config.h"
 #include "member.h"
+#include "main_menu.h"
 
 static Window* window = NULL;
 static MenuLayer* menu_layer = NULL;
@@ -29,26 +30,46 @@ static void select(MenuLayer* menu_layer, MenuIndex* menu_index, void* context) 
     action_menu_open(&action_menu_config);
 }
 
-static uint16_t get_num_rows(MenuLayer* layer, uint16_t selected_index, void* ctx) {
+static uint16_t get_num_rows(MenuLayer* layer, uint16_t section_index, void* ctx) {
     return num_members;
 }
 
-static int16_t get_cell_height(struct MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
-    if (settings_get()->compact_member_list) {
-        return 28;
-    } else {
-        return 44;
-    }
+static int16_t get_cell_height(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
+    bool compact = settings_get()->compact_member_list;
+    return compact ? 28 : 44;
+}
+
+static int16_t get_header_height(MenuLayer* menu_layer, uint16_t section_index, void* context) {
+    return MENU_CELL_BASIC_HEADER_HEIGHT;
+}
+
+static uint16_t get_num_sections(MenuLayer* menu_layer, void* context) {
+    return 1;
 }
 
 static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
     Member* member = members[cell_index->row];
+    bool compact = settings_get()->compact_member_list;
 
-    if (settings_get()->compact_member_list) {
-        menu_cell_basic_draw(ctx, cell_layer, member->name, NULL, NULL);
-    } else {
-        menu_cell_basic_draw(ctx, cell_layer, member->name, member->pronouns, NULL);
+    menu_cell_basic_draw(
+        ctx,
+        cell_layer,
+        member->name,
+        compact ? NULL : member->pronouns,
+        NULL
+    );
+}
+
+static void draw_header(GContext* ctx, const Layer* cell_layer, uint16_t section_index, void* context) {
+    switch (section_index) {
+        case 0:
+            menu_cell_basic_header_draw(ctx, cell_layer, "Members");
+            break;
     }
+}
+
+static void selection_will_change(MenuLayer* layer, MenuIndex* new_index, MenuIndex old_index, void* context) {
+    // can prevent selection changes here!
 }
 
 static void menu_layer_setup() {
@@ -62,8 +83,12 @@ static void menu_layer_setup() {
         (MenuLayerCallbacks) {
             .get_num_rows = get_num_rows,
             .draw_row = draw_row,
+            .get_num_sections = get_num_sections,
+            .draw_header = draw_header,
             .get_cell_height = get_cell_height,
-            .select_click = select
+            .get_header_height = get_header_height,
+            .select_click = select,
+            .selection_will_change = selection_will_change
         }
     );
 
@@ -150,6 +175,9 @@ void members_set_members(char* p_members, char delim) {
 
     // free previous array split
     string_array_free(member_split, num_members);
+
+    // mark members as loaded to the main menu
+    main_menu_mark_members_loaded();
 }
 
 void members_menu_update_colors() {
