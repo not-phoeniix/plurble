@@ -20,6 +20,13 @@ static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
         setting_changed = true;
     }
 
+    Tuple* compact_member_list = dict_find(iter, MESSAGE_KEY_CompactMemberList);
+    if (compact_member_list != NULL) {
+        bool enable = (bool)compact_member_list->value->int16;
+        settings->compact_member_list = enable;
+        setting_changed = true;
+    }
+
     Tuple* members = dict_find(iter, MESSAGE_KEY_Members);
     if (members != NULL) {
         members_set_members(members->value->cstring, '|');

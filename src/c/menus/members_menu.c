@@ -9,11 +9,9 @@ static Window* window = NULL;
 static MenuLayer* menu_layer = NULL;
 static uint16_t num_members = 0;
 static ActionMenuLevel* member_menu_level = NULL;
-// static char** members = NULL;
 static Member** members = NULL;
 
-static void
-select(
+static void select(
     MenuLayer* menu_layer,
     MenuIndex* menu_index,
     void* context
@@ -37,12 +35,21 @@ static uint16_t get_num_rows(MenuLayer* layer, uint16_t selected_index, void* ct
 }
 
 static int16_t get_cell_height(struct MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
-    return 44;
+    if (settings_get()->compact_member_list) {
+        return 28;
+    } else {
+        return 44;
+    }
 }
 
 static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
     Member* member = members[cell_index->row];
-    menu_cell_basic_draw(ctx, cell_layer, member->name, member->pronouns, NULL);
+
+    if (settings_get()->compact_member_list) {
+        menu_cell_basic_draw(ctx, cell_layer, member->name, NULL, NULL);
+    } else {
+        menu_cell_basic_draw(ctx, cell_layer, member->name, member->pronouns, NULL);
+    }
 }
 
 static void window_load() {

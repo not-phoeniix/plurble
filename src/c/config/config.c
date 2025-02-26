@@ -9,6 +9,7 @@ static ClaySettings settings;
 
 static void set_defaults() {
     settings.accent_color = GColorRed;
+    settings.compact_member_list = false;
 }
 
 static void apply() {

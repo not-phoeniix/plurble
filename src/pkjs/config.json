@@ -31,6 +31,12 @@
         "label": "UI Accent Color",
         "allowGray": "true",
         "defaultValue": "0xFF0000"
+      },
+      {
+        "type": "toggle",
+        "messageKey": "CompactMemberList",
+        "label": "Compact Member List",
+        "defaultValue": false
       }
     ]
   },

@@ -27,6 +27,7 @@
             "watchface": false
         },
         "messageKeys": [
+            "CompactMemberList",
             "PluralApiKey",
             "AccentColor",
             "Members"
