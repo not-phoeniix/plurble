@@ -49,6 +49,6 @@ void messaging_init() {
     app_message_register_outbox_sent(outbox_sent_handler);
     app_message_register_outbox_failed(outbox_failed_callback);
 
-    // hoping 256 bytes is enough, adjust if necessary later <3
-    app_message_open(256, 256);
+    // hoping 1024 bytes is enough, adjust if necessary later <3
+    app_message_open(1024, 1024);
 }

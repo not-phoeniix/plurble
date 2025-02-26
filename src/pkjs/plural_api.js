@@ -85,7 +85,12 @@ function fetchMembers(callback) {
                     var membersArr = [];
 
                     for (var i = 0; i < membersJson.length; i++) {
-                        membersArr.push(membersJson[i].content.name);
+                        // assemble CSV string of each member data
+                        var memberCsv =
+                            membersJson[i].content.name +
+                            "," +
+                            membersJson[i].content.pronouns;
+                        membersArr.push(memberCsv);
                     }
 
                     callback(membersArr);
