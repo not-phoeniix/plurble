@@ -1,9 +1,12 @@
 #pragma once
 
+#include <pebble.h>
+
 /// @brief A struct that represents a member in a plural system
 typedef struct {
     char name[64];
     char pronouns[64];
+    GColor color;
 } Member;
 
 /// @brief Creates a member struct instance, automatically allocating memory

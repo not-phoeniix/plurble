@@ -14,15 +14,18 @@ Member* member_create(char* member_string) {
     Member* member = malloc(sizeof(Member));
     *member = (Member) {
         .name = {'\0'},
-        .pronouns = {'\0'}
+        .pronouns = {'\0'},
+        .color = GColorBlack
     };
 
     uint16_t length;
     char** csv_split = string_split(member_string, ',', &length);
 
-    // copy strings into newly created struct
+    // copy data into newly created struct
     strcpy(member->name, csv_split[0]);
     strcpy(member->pronouns, csv_split[1]);
+    int hex = atoi(csv_split[2]);
+    member->color = GColorFromHEX(hex);
 
     string_array_free(csv_split, length);
 

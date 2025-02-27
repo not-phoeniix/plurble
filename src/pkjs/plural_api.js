@@ -85,11 +85,22 @@ function fetchMembers(callback) {
                     var membersArr = [];
 
                     for (var i = 0; i < membersJson.length; i++) {
+                        var name = membersJson[i].content.name;
+                        var pronouns = membersJson[i].content.pronouns;
+
+                        //* apparently strtol doesn't exist on pebble 
+                        //*   lol so i need to use atoi using base 
+                        //*   10 numbers <3
+
+                        // strip leading "#" in hex, add a "0x",
+                        //   then do some weird fuckery to convert to
+                        //   a decimal string
+                        var color = (membersJson[i].content.color).slice(1);
+                        color = "0x" + color;
+                        color = Number(color).toString();
+
                         // assemble CSV string of each member data
-                        var memberCsv =
-                            membersJson[i].content.name +
-                            "," +
-                            membersJson[i].content.pronouns;
+                        var memberCsv = name + "," + pronouns + "," + color;
                         membersArr.push(memberCsv);
                     }
 

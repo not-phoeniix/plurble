@@ -51,13 +51,14 @@ static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_ind
     Member* member = members[cell_index->row];
     bool compact = settings_get()->compact_member_list;
 
-    menu_cell_basic_draw(
-        ctx,
-        cell_layer,
-        member->name,
-        compact ? NULL : member->pronouns,
-        NULL
-    );
+    // small color label on member
+    graphics_context_set_fill_color(ctx, member->color);
+    GRect color_tag_bounds = layer_get_bounds(cell_layer);
+    color_tag_bounds.size.w = 3;
+    graphics_fill_rect(ctx, color_tag_bounds, 0, GCornerNone);
+
+    // draw label text itself
+    menu_cell_basic_draw(ctx, cell_layer, member->name, compact ? NULL : member->pronouns, NULL);
 }
 
 static void draw_header(GContext* ctx, const Layer* cell_layer, uint16_t section_index, void* context) {
