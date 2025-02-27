@@ -5,48 +5,74 @@
 
 static Window* window = NULL;
 static SimpleMenuLayer* simple_menu_layer = NULL;
-static SimpleMenuItem items[2];
-static SimpleMenuSection sections[1];
+static SimpleMenuItem member_items[3];
+static SimpleMenuItem extra_items[1];
+static SimpleMenuSection sections[2];
 static bool members_loaded = false;
 
-static void select(int index, void* context) {
+static void member_select(int index, void* context) {
     switch (index) {
-        // "members" case
         case 0:
-            if (members_loaded) {
-                members_menu_push();
-            }
+            printf("fronters pressed!");
             break;
         case 1:
+            if (members_loaded) members_menu_push();
+            break;
+        case 2:
+            printf("custom front pressed!");
             break;
     }
+}
+
+static void extra_select(int index, void* context) {
+    printf("polls! ");
 }
 
 static void window_load() {
     Layer* window_layer = window_get_root_layer(window);
     GRect bounds = layer_get_bounds(window_layer);
 
-    items[0] = (SimpleMenuItem) {
+    member_items[0] = (SimpleMenuItem) {
+        .title = "Fronters",
+        .subtitle = "no one fronting...",
+        .icon = NULL,
+        .callback = member_select
+    };
+
+    member_items[1] = (SimpleMenuItem) {
         .title = "Member List",
         .subtitle = "loading members...",
         .icon = NULL,
-        .callback = select
+        .callback = member_select
     };
 
-    items[1] = (SimpleMenuItem) {
-        .title = "Fronters",
-        .subtitle = "who's at front",
+    member_items[2] = (SimpleMenuItem) {
+        .title = "Custom Front",
+        .subtitle = NULL,
         .icon = NULL,
-        .callback = select
+        .callback = member_select
     };
 
     sections[0] = (SimpleMenuSection) {
-        .items = items,
-        .num_items = 1,
+        .items = member_items,
+        .num_items = 3,
         .title = "Member Management"
     };
 
-    simple_menu_layer = simple_menu_layer_create(bounds, window, sections, 1, NULL);
+    extra_items[0] = (SimpleMenuItem) {
+        .title = "Polls",
+        .subtitle = NULL,
+        .icon = NULL,
+        .callback = extra_select
+    };
+
+    sections[1] = (SimpleMenuSection) {
+        .items = extra_items,
+        .num_items = 1,
+        .title = "Extra"
+    };
+
+    simple_menu_layer = simple_menu_layer_create(bounds, window, sections, 2, NULL);
 
     main_menu_update_colors();
 
@@ -95,7 +121,7 @@ void main_menu_deinit() {
 }
 
 void main_menu_mark_members_loaded() {
-    items[0].subtitle = "members loaded!";
+    member_items[1].subtitle = NULL;
     layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
     members_loaded = true;
 }
