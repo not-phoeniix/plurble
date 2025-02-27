@@ -28,6 +28,7 @@
         },
         "messageKeys": [
             "CompactMemberList",
+            "MemberColorHighlight",
             "PluralApiKey",
             "AccentColor",
             "Members"

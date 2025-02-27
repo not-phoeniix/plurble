@@ -10,6 +10,7 @@ static uint16_t num_members = 0;
 static ActionMenuLevel* member_menu_level = NULL;
 static Member** members = NULL;
 static ActionMenuConfig action_menu_config;
+static GColor highlight_color;
 
 // ~~~ HELPER FUNCTIONS ~~~
 
@@ -19,6 +20,29 @@ static void free_members_arr() {
     }
 
     free(members);
+}
+
+static GColor get_text_color(GColor background) {
+    // linear luminance value from 0-1
+    float luminance =
+        (0.2128f * background.r) +
+        (0.7152f * background.g) +
+        (0.0722f * background.b);
+    luminance /= 6.0f;
+
+    if (luminance >= 0.35f) {
+        return GColorBlack;
+    } else {
+        return GColorWhite;
+    }
+}
+
+static void update_selected_highlight(uint16_t index) {
+    if (settings_get()->member_color_highlight && members != NULL) {
+        highlight_color = members[index]->color;
+    } else {
+        highlight_color = settings_get()->accent_color;
+    }
 }
 
 // ~~~ MENU LAYER SETUP ~~~
@@ -57,6 +81,9 @@ static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_ind
     color_tag_bounds.size.w = 3;
     graphics_fill_rect(ctx, color_tag_bounds, 0, GCornerNone);
 
+    // set the new highlight color before draw
+    menu_layer_set_highlight_colors(menu_layer, highlight_color, get_text_color(highlight_color));
+
     // draw label text itself
     menu_cell_basic_draw(ctx, cell_layer, member->name, compact ? NULL : member->pronouns, NULL);
 }
@@ -71,6 +98,10 @@ static void draw_header(GContext* ctx, const Layer* cell_layer, uint16_t section
 
 static void selection_will_change(MenuLayer* layer, MenuIndex* new_index, MenuIndex old_index, void* context) {
     // can prevent selection changes here!
+}
+
+static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex old_index, void* context) {
+    update_selected_highlight(new_index.row);
 }
 
 static void menu_layer_setup() {
@@ -89,12 +120,14 @@ static void menu_layer_setup() {
             .get_cell_height = get_cell_height,
             .get_header_height = get_header_height,
             .select_click = select,
-            .selection_will_change = selection_will_change
+            .selection_will_change = selection_will_change,
+            .selection_changed = selection_changed
         }
     );
 
     menu_layer_set_click_config_onto_window(menu_layer, window);
     layer_add_child(window_layer, menu_layer_get_layer(menu_layer));
+    update_selected_highlight(0);
 }
 
 // ~~~ ACTION MENU SETUP ~~~
@@ -116,6 +149,7 @@ static void action_menu_setup() {
 
     action_menu_level_add_action(member_menu_level, "Set to front", action_set_to_front, NULL);
     action_menu_level_add_action(member_menu_level, "Add to front", action_add_to_front, NULL);
+    action_menu_level_add_action(member_menu_level, "Remove from front", action_remove_from_front, NULL);
 
     action_menu_config = (ActionMenuConfig) {
         .root_level = member_menu_level,
@@ -179,6 +213,16 @@ void members_set_members(char* p_members, char delim) {
 
     // mark members as loaded to the main menu
     main_menu_mark_members_loaded();
+    update_selected_highlight(0);
+    // menu_layer_set_selected_index(
+    //     menu_layer,
+    //     (MenuIndex) {
+    //         .row = 0,
+    //         .section = 0
+    //     },
+    //     MenuRowAlignCenter,
+    //     true
+    // );
 }
 
 void members_menu_update_colors() {

@@ -37,6 +37,12 @@
         "messageKey": "CompactMemberList",
         "label": "Compact Member List",
         "defaultValue": false
+      },
+      {
+        "type": "toggle",
+        "messageKey": "MemberColorHighlight",
+        "label": "Member Color Highlight",
+        "defaultValue": false
       }
     ]
   },

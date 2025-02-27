@@ -22,8 +22,13 @@ static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
 
     Tuple* compact_member_list = dict_find(iter, MESSAGE_KEY_CompactMemberList);
     if (compact_member_list != NULL) {
-        bool enable = (bool)compact_member_list->value->int16;
-        settings->compact_member_list = enable;
+        settings->compact_member_list = compact_member_list->value->int16;
+        setting_changed = true;
+    }
+
+    Tuple* member_color_highlight = dict_find(iter, MESSAGE_KEY_MemberColorHighlight);
+    if (member_color_highlight != NULL) {
+        settings->member_color_highlight = member_color_highlight->value->int16;
         setting_changed = true;
     }
 
