@@ -1,25 +1,78 @@
 #include "members.h"
 #include <pebble.h>
-#include "../tools/string_tools.h"
-#include "../menus/main_menu.h"
-#include "../menus/members_menu.h"
+#include "tools/string_tools.h"
+#include "menus/main_menu.h"
+#include "menus/members_menu.h"
 
-static Member** members = NULL;
-static uint16_t num_members_stored = 0;
-static uint16_t members_size = 0;
+// ~~~ dynamic array functions ~~~
 
-static void double_size() {
-    if (members == NULL) {
-        members_size = 1;
-        members = malloc(sizeof(Member*));
+static void double_size(MemberList* array) {
+    if (array->members == NULL) {
+        array->members_size = 1;
+        array->members = malloc(sizeof(Member*));
     } else {
-        members_size *= 2;
-        members = realloc(members, sizeof(Member*) * members_size);
-        if (members == NULL) {
+        array->members_size *= 2;
+        array->members = realloc(array->members, sizeof(Member*) * array->members_size);
+
+        if (array->members == NULL) {
             printf("ERROR!!! MEMBERS REALLOC FAILED!!!");
         }
     }
 }
+
+Member* member_list_remove_at(uint16_t index_to_remove, MemberList* array) {
+    if (index_to_remove >= array->num_stored) {
+        return NULL;
+    }
+
+    Member* to_remove = array->members[index_to_remove];
+
+    for (uint16_t i = index_to_remove + 1; i < array->num_stored; i++) {
+        array->members[i - 1] = array->members[i];
+    }
+
+    array->num_stored--;
+    return to_remove;
+}
+
+bool member_list_remove(Member* to_remove, MemberList* array) {
+    for (uint16_t i = 0; i < array->num_stored; i++) {
+        if (array->members[i] == to_remove) {
+            member_list_remove_at(i, array);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void member_list_add(Member* to_add, MemberList* array) {
+    while (array->num_stored >= array->members_size) {
+        double_size(array);
+    }
+
+    array->members[array->num_stored] = to_add;
+    array->num_stored++;
+}
+
+void member_list_clear(MemberList* array) {
+    if (array->members != NULL) {
+        free(array->members);
+        array->members = NULL;
+    }
+    array->members_size = 0;
+    array->num_stored = 0;
+}
+
+void member_list_deep_clear(MemberList* array) {
+    for (uint16_t i = 0; i < array->num_stored; i++) {
+        member_delete(array->members[i]);
+    }
+
+    member_list_clear(array);
+}
+
+// ~~~ member individual creation ~~~
 
 Member* member_create(char* member_string) {
     // allocate memory and create a new member struct
@@ -44,60 +97,6 @@ Member* member_create(char* member_string) {
     return member;
 }
 
-Member* members_add(char* member_string) {
-    if (num_members_stored >= members_size) {
-        double_size();
-    }
-
-    Member* new_member = member_create(member_string);
-    members[num_members_stored] = new_member;
-    num_members_stored++;
-
-    return new_member;
-}
-
 void member_delete(Member* member) {
     free(member);
-}
-
-void members_clear() {
-    for (uint16_t i = 0; i < num_members_stored; i++) {
-        member_delete(members[i]);
-    }
-
-    free(members);
-    members = NULL;
-    members_size = 0;
-    num_members_stored = 0;
-}
-
-void members_set_members(char* p_members) {
-    if (members != NULL) {
-        members_clear();
-    }
-
-    // split array by delimiter
-    char** member_split = string_split(p_members, '|', &num_members_stored);
-
-    // allocate memory for array of member pointers !
-    //   then fill array with members
-    members = malloc(sizeof(Member*) * num_members_stored);
-    for (uint16_t i = 0; i < num_members_stored; i++) {
-        members[i] = member_create(member_split[i]);
-    }
-
-    // free previous array split
-    string_array_free(member_split, num_members_stored);
-
-    // mark members as loaded to the main menu
-    main_menu_mark_members_loaded();
-    members_menu_reset_selected();
-}
-
-Member** members_get() {
-    return members;
-}
-
-uint16_t members_get_num_members() {
-    return num_members_stored;
 }

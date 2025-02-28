@@ -10,7 +10,11 @@ static GColor highlight_color;
 static ActionMenuLevel* member_menu_level = NULL;
 static ActionMenuConfig action_menu_config;
 
-static Member** members = NULL;
+static MemberList members = {
+    .members = NULL,
+    .members_size = 0,
+    .num_stored = 0
+};
 
 // ~~~ HELPER FUNCTIONS ~~~
 
@@ -30,8 +34,8 @@ static GColor get_text_color(GColor background) {
 }
 
 static void update_selected_highlight(uint16_t index) {
-    if (settings_get()->member_color_highlight && members != NULL) {
-        highlight_color = members[index]->color;
+    if (settings_get()->member_color_highlight && members.members != NULL) {
+        highlight_color = members.members[index]->color;
     } else {
         highlight_color = settings_get()->accent_color;
     }
@@ -40,14 +44,14 @@ static void update_selected_highlight(uint16_t index) {
 // ~~~ MENU LAYER SETUP ~~~
 
 static void select(MenuLayer* menu_layer, MenuIndex* menu_index, void* context) {
-    Member* member = members[menu_index->row];
+    Member* member = members.members[menu_index->row];
     printf("wow! you clicked... [%s]!!", member->name);
 
     action_menu_open(&action_menu_config);
 }
 
 static uint16_t get_num_rows(MenuLayer* layer, uint16_t section_index, void* ctx) {
-    return members_get_num_members();
+    return members.num_stored;
 }
 
 static int16_t get_cell_height(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
@@ -64,7 +68,7 @@ static uint16_t get_num_sections(MenuLayer* menu_layer, void* context) {
 }
 
 static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
-    Member* member = members[cell_index->row];
+    Member* member = members.members[cell_index->row];
     bool compact = settings_get()->compact_member_list;
 
     // small color label on member
@@ -97,8 +101,6 @@ static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex o
 }
 
 static void menu_layer_setup() {
-    members = members_get();
-
     Layer* window_layer = window_get_root_layer(window);
     GRect bounds = layer_get_bounds(window_layer);
 
@@ -187,6 +189,28 @@ void members_menu_push() {
     window_stack_push(window, true);
 }
 
+void members_menu_set_members(char* p_members) {
+    member_list_deep_clear(&members);
+
+    // split array by delimiter
+    uint16_t num_members;
+    char** member_split = string_split(p_members, '|', &num_members);
+
+    // allocate memory for array of member pointers !
+    //   then fill array with members
+    for (uint16_t i = 0; i < num_members; i++) {
+        Member* member = member_create(member_split[i]);
+        member_list_add(member, &members);
+    }
+
+    // free previous array split
+    string_array_free(member_split, members.num_stored);
+
+    // mark members as loaded to the main menu
+    main_menu_mark_members_loaded();
+    update_selected_highlight(0);
+}
+
 void members_menu_update_colors() {
     ClaySettings* settings = settings_get();
     if (settings != NULL) {
@@ -213,12 +237,10 @@ void members_menu_deinit() {
         menu_layer = NULL;
     }
 
+    member_list_deep_clear(&members);
+
     if (window != NULL) {
         window_destroy(window);
         window = NULL;
     }
-}
-
-void members_menu_reset_selected() {
-    update_selected_highlight(0);
 }

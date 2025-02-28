@@ -44,7 +44,6 @@ static void init() {
 static void deinit() {
     members_menu_deinit();
     main_menu_deinit();
-    members_clear();
 }
 
 int main() {
