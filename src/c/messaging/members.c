@@ -1,8 +1,8 @@
 #include "members.h"
 #include <pebble.h>
 #include "../tools/string_tools.h"
-#include "main_menu.h"
-#include "members_menu.h"
+#include "../menus/main_menu.h"
+#include "../menus/members_menu.h"
 
 static Member** members = NULL;
 static uint16_t num_members_stored = 0;

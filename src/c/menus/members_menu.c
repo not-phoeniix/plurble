@@ -1,7 +1,7 @@
 #include "members_menu.h"
 #include "../tools/string_tools.h"
 #include "../config/config.h"
-#include "members.h"
+#include "../messaging/members.h"
 #include "main_menu.h"
 
 static Window* window = NULL;

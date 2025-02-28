@@ -3,7 +3,7 @@
 #include "messaging/messaging.h"
 #include "menus/main_menu.h"
 #include "menus/members_menu.h"
-#include "menus/members.h"
+#include "messaging/members.h"
 
 static void update_glance(
     AppGlanceReloadSession* session,

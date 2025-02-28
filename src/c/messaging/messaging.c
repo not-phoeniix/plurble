@@ -1,7 +1,7 @@
 #include "messaging.h"
 #include <pebble.h>
 #include "../config/config.h"
-#include "../menus/members.h"
+#include "../messaging/members.h"
 
 #define NUM_KEYS 3
 
