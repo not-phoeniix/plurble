@@ -3,6 +3,7 @@
 #include "messaging/messaging.h"
 #include "menus/main_menu.h"
 #include "menus/members_menu.h"
+#include "menus/members.h"
 
 static void update_glance(
     AppGlanceReloadSession* session,
@@ -41,11 +42,9 @@ static void init() {
 }
 
 static void deinit() {
-    // unsubscribe from services in here!
-
-    // destroy/deinit menus
     members_menu_deinit();
     main_menu_deinit();
+    members_clear();
 }
 
 int main() {

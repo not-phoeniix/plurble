@@ -1,26 +1,18 @@
 #include "members_menu.h"
 #include "../tools/string_tools.h"
 #include "../config/config.h"
-#include "member.h"
+#include "members.h"
 #include "main_menu.h"
 
 static Window* window = NULL;
 static MenuLayer* menu_layer = NULL;
-static uint16_t num_members = 0;
-static ActionMenuLevel* member_menu_level = NULL;
-static Member** members = NULL;
-static ActionMenuConfig action_menu_config;
 static GColor highlight_color;
+static ActionMenuLevel* member_menu_level = NULL;
+static ActionMenuConfig action_menu_config;
+
+static Member** members = NULL;
 
 // ~~~ HELPER FUNCTIONS ~~~
-
-static void free_members_arr() {
-    for (int i = 0; i < num_members; i++) {
-        member_delete(members[i]);
-    }
-
-    free(members);
-}
 
 static GColor get_text_color(GColor background) {
     // linear luminance value from 0-1
@@ -55,7 +47,7 @@ static void select(MenuLayer* menu_layer, MenuIndex* menu_index, void* context) 
 }
 
 static uint16_t get_num_rows(MenuLayer* layer, uint16_t section_index, void* ctx) {
-    return num_members;
+    return members_get_num_members();
 }
 
 static int16_t get_cell_height(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
@@ -105,6 +97,8 @@ static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex o
 }
 
 static void menu_layer_setup() {
+    members = members_get();
+
     Layer* window_layer = window_get_root_layer(window);
     GRect bounds = layer_get_bounds(window_layer);
 
@@ -193,38 +187,6 @@ void members_menu_push() {
     window_stack_push(window, true);
 }
 
-void members_set_members(char* p_members, char delim) {
-    if (members != NULL) {
-        free_members_arr(members);
-    }
-
-    // split array by delimiter
-    char** member_split = string_split(p_members, delim, &num_members);
-
-    // allocate memory for array of member pointers !
-    //   then fill array with members
-    members = malloc(sizeof(Member*) * num_members);
-    for (uint16_t i = 0; i < num_members; i++) {
-        members[i] = member_create(member_split[i]);
-    }
-
-    // free previous array split
-    string_array_free(member_split, num_members);
-
-    // mark members as loaded to the main menu
-    main_menu_mark_members_loaded();
-    update_selected_highlight(0);
-    // menu_layer_set_selected_index(
-    //     menu_layer,
-    //     (MenuIndex) {
-    //         .row = 0,
-    //         .section = 0
-    //     },
-    //     MenuRowAlignCenter,
-    //     true
-    // );
-}
-
 void members_menu_update_colors() {
     ClaySettings* settings = settings_get();
     if (settings != NULL) {
@@ -241,11 +203,6 @@ void members_menu_update_colors() {
 }
 
 void members_menu_deinit() {
-    if (members != NULL) {
-        free_members_arr();
-        members = NULL;
-    }
-
     if (member_menu_level != NULL) {
         action_menu_hierarchy_destroy(member_menu_level, NULL, NULL);
         member_menu_level = NULL;
@@ -260,4 +217,8 @@ void members_menu_deinit() {
         window_destroy(window);
         window = NULL;
     }
+}
+
+void members_menu_reset_selected() {
+    update_selected_highlight(0);
 }
