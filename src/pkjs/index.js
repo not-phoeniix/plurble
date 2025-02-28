@@ -8,14 +8,7 @@ const pluralApi = require("./plural_api.js");
 
 // once pebble js is ready, grab api cache and try to send members to watch
 Pebble.addEventListener("ready", function (e) {
-    var cachedApiToken = localStorage.getItem("cachedApiToken");
-    if (cachedApiToken) {
-        pluralApi.setApiToken(cachedApiToken);
-    } else {
-        console.log("api token not cached...");
-    }
-
-    pluralApi.sendMembersToWatch();
+    pluralApi.setup();
 });
 
 // on settings window close, grab api key, cache it, then send members again
@@ -28,12 +21,7 @@ Pebble.addEventListener("webviewclosed", function (e) {
     var settingsDict = clay.getSettings(e.response, false);
     var dictApiKey = settingsDict.PluralApiKey.value;
     if (dictApiKey) {
-        console.log("caching plural api key... key: " + dictApiKey);
-        localStorage.setItem("cachedApiToken", dictApiKey);
         pluralApi.setApiToken(dictApiKey);
     }
-
-    // update member list upon every webview change
-    pluralApi.sendMembersToWatch();
 });
 

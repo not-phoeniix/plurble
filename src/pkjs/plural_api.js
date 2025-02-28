@@ -2,6 +2,7 @@ const socketUrl = "wss://api.apparyllis.com/v1/socket";
 const xhrUrl = "https://api.apparyllis.com/v1/";
 var socket;
 var apiToken = "";
+var uid = "";
 
 function onOpenToken(token) {
     return function (e) {
@@ -71,50 +72,55 @@ function xhrRequest(urlExtension, type, callback) {
     xhr.send();
 }
 
-function fetchMembers(callback) {
-    // get user id of yourself!
-    xhrRequest("me", "GET", function (uidResponse) {
-        var uidJson = JSON.parse(uidResponse);
-        if (uidJson.content.uid) {
-            // if uid could be found, send an XHR for members using the UID
-            xhrRequest(
-                "members/" + uidJson.content.uid,
-                "GET",
-                function (response) {
-                    var membersJson = JSON.parse(response);
-                    var membersArr = [];
+function fetchUid(callback) {
+    xhrRequest("me", "GET", function (response) {
+        var json = JSON.parse(response);
+        if (json.content.uid) {
+            uid = json.content.uid;
+            localStorage.setItem("cachedUid", uid);
 
-                    for (var i = 0; i < membersJson.length; i++) {
-                        var name = membersJson[i].content.name;
-                        var pronouns = membersJson[i].content.pronouns;
-
-                        //* apparently strtol doesn't exist on pebble 
-                        //*   lol so i need to use atoi using base 
-                        //*   10 numbers <3
-
-                        // strip leading "#" in hex, add a "0x",
-                        //   then do some weird fuckery to convert to
-                        //   a decimal string
-                        var color = (membersJson[i].content.color).slice(1);
-                        color = "0x" + color;
-                        color = Number(color).toString();
-
-                        // assemble CSV string of each member data
-                        var memberCsv = name + "," + pronouns + "," + color;
-                        membersArr.push(memberCsv);
-                    }
-
-                    callback(membersArr);
-                }
-            );
+            if (callback) {
+                callback();
+            }
         } else {
             console.log("UID could not be fetched!");
         }
     });
 }
 
-function setApiToken(value) {
-    apiToken = value;
+function fetchMembers(callback) {
+    // if uid could be found, send an XHR for members using the UID
+    if (!uid) {
+        console.log("Error: UID not found when fetching members!");
+        return;
+    }
+
+    xhrRequest("members/" + uid, "GET", function (response) {
+        var membersJson = JSON.parse(response);
+        var membersArr = [];
+
+        for (var i = 0; i < membersJson.length; i++) {
+            var name = membersJson[i].content.name;
+            var pronouns = membersJson[i].content.pronouns;
+
+            //* apparently strtol doesn't exist on pebble 
+            //*   lol so i need to use atoi using base 
+            //*   10 numbers <3
+
+            // strip leading "#" in hex, add a "0x",
+            //   then do some weird fuckery to convert to
+            //   a decimal string
+            var color = (membersJson[i].content.color).slice(1);
+            color = "0x" + color;
+            color = Number(color).toString();
+
+            // assemble CSV string of each member data
+            var memberCsv = name + "," + pronouns + "," + color;
+            membersArr.push(memberCsv);
+        }
+
+        callback(membersArr);
+    });
 }
 
 function sendMembersToWatch() {
@@ -145,9 +151,38 @@ function sendMembersToWatch() {
     });
 }
 
+function setup() {
+    // get cached api token
+    var cachedApiToken = localStorage.getItem("cachedApiToken");
+    if (cachedApiToken) {
+        apiToken = cachedApiToken;
+    } else {
+        console.log("api token not cached... cannot run plural api setup...");
+        return;
+    }
+
+    // get cached uid
+    var cachedUid = localStorage.getItem("cachedUid");
+    if (cachedUid) {
+        // if uid was cached, set the value and send members
+        uid = cachedUid;
+        sendMembersToWatch();
+    } else {
+        // if uid was not cached, fetch it and send members callback
+        fetchUid(sendMembersToWatch);
+    }
+}
+
+function setApiToken(token) {
+    // when setting the api token re-fetch the UID as well
+    apiToken = token;
+    localStorage.setItem("cachedApiToken", token);
+    fetchUid(sendMembersToWatch);
+}
+
 module.exports = {
     openSocket: openSocket,
-    getMembers: fetchMembers,
+    setup: setup,
     setApiToken: setApiToken,
     sendMembersToWatch: sendMembersToWatch
 };
