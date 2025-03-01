@@ -31,7 +31,8 @@
             "MemberColorHighlight",
             "PluralApiKey",
             "AccentColor",
-            "Members"
+            "Members",
+            "Fronters"
         ],
         "resources": {
             "media": []

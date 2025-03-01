@@ -28,9 +28,6 @@ void members_set_all(char* members) {
 
     // mark members as loaded to the main menu
     main_menu_mark_members_loaded();
-
-    // TODO: make this dynamic later, this is just testing
-    members_set_fronters("Nikki|Turtle|Phoenix");
 }
 
 MemberList* members_get_fronters() {
@@ -39,6 +36,11 @@ MemberList* members_get_fronters() {
 
 void members_set_fronters(char* fronters_str) {
     member_list_clear(&fronters);
+
+    // if empty string, exit early
+    if (fronters_str[0] == '\0') {
+        return;
+    }
 
     uint16_t num_members;
     char** member_split = string_split(fronters_str, '|', &num_members);

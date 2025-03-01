@@ -89,19 +89,19 @@ function fetchUid(callback) {
 }
 
 function fetchMembers(callback) {
-    // if uid could be found, send an XHR for members using the UID
+    // if uid couldn't be found, print an error and exit
     if (!uid) {
         console.log("Error: UID not found when fetching members!");
         return;
     }
 
     xhrRequest("members/" + uid, "GET", function (response) {
-        var membersJson = JSON.parse(response);
+        var json = JSON.parse(response);
         var membersArr = [];
 
-        for (var i = 0; i < membersJson.length; i++) {
-            var name = membersJson[i].content.name;
-            var pronouns = membersJson[i].content.pronouns;
+        for (var i = 0; i < json.length; i++) {
+            var name = json[i].content.name;
+            var pronouns = json[i].content.pronouns;
 
             //* apparently strtol doesn't exist on pebble 
             //*   lol so i need to use atoi using base 
@@ -110,7 +110,7 @@ function fetchMembers(callback) {
             // strip leading "#" in hex, add a "0x",
             //   then do some weird fuckery to convert to
             //   a decimal string
-            var color = (membersJson[i].content.color).slice(1);
+            var color = (json[i].content.color).slice(1);
             color = "0x" + color;
             color = Number(color).toString();
 
@@ -119,22 +119,56 @@ function fetchMembers(callback) {
             membersArr.push(memberCsv);
         }
 
-        callback(membersArr);
+        if (callback) {
+            callback(membersArr);
+        }
     });
 }
 
-function sendMembersToWatch() {
-    fetchMembers(function (members) {
-        var membersFormatted = "";
-        for (var i = 0; i < members.length; i++) {
-            membersFormatted += members[i];
-            if (i < members.length - 1) {
-                membersFormatted += "|";
-            }
+function fetchFronters(callback) {
+    // if uid couldn't be found, print an error and exit
+    if (!uid) {
+        console.log("Error: UID not found when fetching members!");
+        return;
+    }
+
+    xhrRequest("fronters/", "GET", function (response) {
+        var json = JSON.parse(response);
+        var frontersArr = [];
+
+        var numFrontersFetched = 0;
+        for (var i = 0; i < json.length; i++) {
+            var memberId = json[i].content.member;
+            xhrRequest("member/" + uid + "/" + memberId, "GET", function (response) {
+                try {
+                    var memberJson = JSON.parse(response);
+                    var name = memberJson.content.name;
+                    frontersArr.push(name);
+                } catch (err) {
+                    console.log("error in fetching fronter by id! " + err);
+                }
+
+                numFrontersFetched++;
+
+                // when all fronters have been fetched, call the callback!
+                if (numFrontersFetched >= json.length && callback) {
+                    callback(frontersArr);
+                }
+            });
         }
+    });
+}
 
-        console.log("formatted found members: " + membersFormatted);
+function sendDataToWatch() {
+    var numFetches = 2;
+    var fetchesCompleted = 0;
+    var membersFormatted = "";
+    var frontersFormatted = "";
 
+    // this is the most jank way of doing asynchronous parallel 
+    //   fetching that await all to be done... hope it works <3
+
+    function send() {
         function onSuccess(data) {
             console.log("members sent!");
         }
@@ -144,10 +178,32 @@ function sendMembersToWatch() {
         }
 
         Pebble.sendAppMessage(
-            { "Members": membersFormatted },
+            {
+                "Members": membersFormatted,
+                "Fronters": frontersFormatted
+            },
             onSuccess,
             onFailure
         );
+    }
+
+    function checkSend() {
+        fetchesCompleted++;
+        if (fetchesCompleted >= numFetches) {
+            send();
+        }
+    }
+
+    fetchMembers(function (members) {
+        membersFormatted = members.join("|");
+        console.log("formatted found members: " + membersFormatted);
+        checkSend();
+    });
+
+    fetchFronters(function (fronters) {
+        frontersFormatted = fronters.join("|");
+        console.log("formatted found fronters: " + frontersFormatted);
+        checkSend();
     });
 }
 
@@ -166,10 +222,10 @@ function setup() {
     if (cachedUid) {
         // if uid was cached, set the value and send members
         uid = cachedUid;
-        sendMembersToWatch();
+        sendDataToWatch();
     } else {
         // if uid was not cached, fetch it and send members callback
-        fetchUid(sendMembersToWatch);
+        fetchUid(sendDataToWatch);
     }
 }
 
@@ -177,12 +233,12 @@ function setApiToken(token) {
     // when setting the api token re-fetch the UID as well
     apiToken = token;
     localStorage.setItem("cachedApiToken", token);
-    fetchUid(sendMembersToWatch);
+    fetchUid(sendDataToWatch);
 }
 
 module.exports = {
     openSocket: openSocket,
     setup: setup,
     setApiToken: setApiToken,
-    sendMembersToWatch: sendMembersToWatch
+    sendMembersToWatch: sendDataToWatch
 };
