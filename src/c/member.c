@@ -80,7 +80,8 @@ Member* member_create(char* member_string) {
     *member = (Member) {
         .name = {'\0'},
         .pronouns = {'\0'},
-        .color = GColorBlack
+        .color = GColorBlack,
+        .fronting = false
     };
 
     uint16_t length;

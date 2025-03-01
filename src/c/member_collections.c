@@ -35,6 +35,10 @@ MemberList* members_get_fronters() {
 }
 
 void members_set_fronters(char* fronters_str) {
+    // reset fronting status for everything and clear list
+    for (uint16_t i = 0; i < fronters.num_stored; i++) {
+        fronters.members[i]->fronting = false;
+    }
     member_list_clear(&fronters);
 
     // if empty string, exit early
@@ -63,6 +67,7 @@ void members_set_fronters(char* fronters_str) {
         }
 
         if (found_member != NULL) {
+            found_member->fronting = true;
             member_list_add(found_member, &fronters);
         }
     }

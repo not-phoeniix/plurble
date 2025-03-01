@@ -7,6 +7,7 @@ typedef struct {
     char name[64];
     char pronouns[64];
     GColor color;
+    bool fronting;
 } Member;
 
 /// @brief A struct representing a dynamic array of members

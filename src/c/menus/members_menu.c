@@ -7,7 +7,8 @@
 static Window* window = NULL;
 static MenuLayer* menu_layer = NULL;
 static GColor highlight_color;
-static ActionMenuLevel* member_menu_level = NULL;
+static ActionMenuLevel* non_fronting_action_level = NULL;
+static ActionMenuLevel* fronting_action_level = NULL;
 static ActionMenuConfig action_menu_config;
 
 static MemberList* members = NULL;
@@ -42,6 +43,13 @@ static void update_selected_highlight(uint16_t index) {
 static void select(MenuLayer* menu_layer, MenuIndex* menu_index, void* context) {
     Member* member = members->members[menu_index->row];
     printf("wow! you clicked... [%s]!!", member->name);
+
+    // change popup root level depending on if member is fronting or not
+    if (member->fronting) {
+        action_menu_config.root_level = fronting_action_level;
+    } else {
+        action_menu_config.root_level = non_fronting_action_level;
+    }
 
     action_menu_open(&action_menu_config);
 }
@@ -118,14 +126,16 @@ static void action_remove_from_front(ActionMenu* action_menu, const ActionMenuIt
 }
 
 static void action_menu_setup() {
-    member_menu_level = action_menu_level_create(5);
+    non_fronting_action_level = action_menu_level_create(2);
 
-    action_menu_level_add_action(member_menu_level, "Set to front", action_set_to_front, NULL);
-    action_menu_level_add_action(member_menu_level, "Add to front", action_add_to_front, NULL);
-    action_menu_level_add_action(member_menu_level, "Remove from front", action_remove_from_front, NULL);
+    action_menu_level_add_action(non_fronting_action_level, "Set to front", action_set_to_front, NULL);
+    action_menu_level_add_action(non_fronting_action_level, "Add to front", action_add_to_front, NULL);
+
+    fronting_action_level = action_menu_level_create(1);
+    action_menu_level_add_action(fronting_action_level, "Remove from front", action_remove_from_front, NULL);
 
     action_menu_config = (ActionMenuConfig) {
-        .root_level = member_menu_level,
+        .root_level = non_fronting_action_level,
         .align = ActionMenuAlignTop,
         .colors = {
             .background = settings_get()->accent_color,
@@ -145,8 +155,10 @@ static void window_load() {
 static void window_unload() {
     menu_layer_destroy(menu_layer);
     menu_layer = NULL;
-    action_menu_hierarchy_destroy(member_menu_level, NULL, NULL);
-    member_menu_level = NULL;
+    action_menu_hierarchy_destroy(non_fronting_action_level, NULL, NULL);
+    non_fronting_action_level = NULL;
+    action_menu_hierarchy_destroy(fronting_action_level, NULL, NULL);
+    fronting_action_level = NULL;
 }
 
 /// ~~~ HEADER FUNCTIONS ~~~
@@ -184,9 +196,9 @@ void members_menu_update_colors() {
 }
 
 void members_menu_deinit() {
-    if (member_menu_level != NULL) {
-        action_menu_hierarchy_destroy(member_menu_level, NULL, NULL);
-        member_menu_level = NULL;
+    if (non_fronting_action_level != NULL) {
+        action_menu_hierarchy_destroy(non_fronting_action_level, NULL, NULL);
+        non_fronting_action_level = NULL;
     }
 
     if (menu_layer != NULL) {
