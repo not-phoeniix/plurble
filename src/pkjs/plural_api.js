@@ -99,6 +99,9 @@ function fetchMembers(callback) {
         var json = JSON.parse(response);
         var membersArr = [];
 
+        // cache members json string each time it's fetched
+        localStorage.setItem("cachedMembers", response);
+
         for (var i = 0; i < json.length; i++) {
             var name = json[i].content.name;
             var pronouns = json[i].content.pronouns;
@@ -133,30 +136,80 @@ function fetchFronters(callback) {
     }
 
     xhrRequest("fronters/", "GET", function (response) {
-        var json = JSON.parse(response);
-        var frontersArr = [];
+        try {
+            // if members are cached and json use the cache
+            var cachedMemberStr = localStorage.getItem("cachedMembers");
+            if (cachedMemberStr) {
+                var memberJson = JSON.parse(cachedMemberStr);
+                console.log("getting fronter data from cached members...");
+                handleFrontersCached(response, memberJson, callback);
+            } else {
+                // otherwise, throw an error so the slow fetch for 
+                //    each fronter is executed
+                throw new Error("Members not cached!");
+            }
 
-        var numFrontersFetched = 0;
-        for (var i = 0; i < json.length; i++) {
-            var memberId = json[i].content.member;
-            xhrRequest("member/" + uid + "/" + memberId, "GET", function (response) {
-                try {
-                    var memberJson = JSON.parse(response);
-                    var name = memberJson.content.name;
-                    frontersArr.push(name);
-                } catch (err) {
-                    console.log("error in fetching fronter by id! " + err);
-                }
+        } catch (err) {
 
-                numFrontersFetched++;
-
-                // when all fronters have been fetched, call the callback!
-                if (numFrontersFetched >= json.length && callback) {
-                    callback(frontersArr);
-                }
-            });
+            // if any errors are thrown, catch em, printing status 
+            //   and fetching the data using the XHR method
+            console.log("cached member retrieval failed.. erorr: " + err);
+            console.log("getting fronter data with XHRs...");
+            handleFrontersXhr(response, callback);
         }
     });
+}
+
+function handleFrontersXhr(response, callback) {
+    var json = JSON.parse(response);
+    var frontersArr = [];
+
+    var numFrontersFetched = 0;
+    for (var i = 0; i < json.length; i++) {
+        var memberId = json[i].content.member;
+        xhrRequest("member/" + uid + "/" + memberId, "GET", function (response) {
+            try {
+                var memberJson = JSON.parse(response);
+                var name = memberJson.content.name;
+                frontersArr.push(name);
+            } catch (err) {
+                console.log("error in fetching fronter by id! " + err);
+            }
+
+            numFrontersFetched++;
+
+            // when all fronters have been fetched, call the callback!
+            if (numFrontersFetched >= json.length && callback) {
+                callback(frontersArr);
+            }
+        });
+    }
+}
+
+function handleFrontersCached(response, cachedMemberJson, callback) {
+    var json = JSON.parse(response);
+    var frontersArr = [];
+
+    // iterate across json and search for cached member via UID
+    for (var i = 0; i < json.length; i++) {
+        // for each inputted fronter json, find it by its id 
+        //   ID in the cached members data 
+        var memberId = json[i].content.member;
+        var cachedMember;
+        for (var j = 0; j < cachedMemberJson.length; j++) {
+            if (cachedMemberJson[j].id === memberId) {
+                cachedMember = cachedMemberJson[j];
+            }
+        }
+
+        // and member name to the array if it could be found
+        if (cachedMember) {
+            frontersArr.push(cachedMember.content.name);
+        }
+    }
+
+    // call callback after array has been assembled
+    callback(frontersArr);
 }
 
 function sendDataToWatch() {
