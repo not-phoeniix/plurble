@@ -3,7 +3,7 @@
 #include "messaging/messaging.h"
 #include "menus/main_menu.h"
 #include "menus/members_menu.h"
-#include "members.h"
+#include "member_collections.h"
 
 static void update_glance(
     AppGlanceReloadSession* session,
@@ -44,6 +44,7 @@ static void init() {
 static void deinit() {
     members_menu_deinit();
     main_menu_deinit();
+    member_collections_deinit();
 }
 
 int main() {

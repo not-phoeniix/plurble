@@ -2,6 +2,7 @@
 #include "members_menu.h"
 #include "../tools/string_tools.h"
 #include "../config/config.h"
+#include "../member_collections.h"
 
 static Window* window = NULL;
 static SimpleMenuLayer* simple_menu_layer = NULL;
@@ -13,10 +14,14 @@ static bool members_loaded = false;
 static void member_select(int index, void* context) {
     switch (index) {
         case 0:
-            printf("fronters pressed!");
+            if (members_loaded) {
+                members_menu_push(members_get_fronters());
+            }
             break;
         case 1:
-            if (members_loaded) members_menu_push();
+            if (members_loaded) {
+                members_menu_push(members_get_all());
+            }
             break;
         case 2:
             printf("custom front pressed!");

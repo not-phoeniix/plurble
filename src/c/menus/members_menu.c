@@ -1,7 +1,7 @@
 #include "members_menu.h"
 #include "../tools/string_tools.h"
 #include "../config/config.h"
-#include "../members.h"
+#include "../member.h"
 #include "main_menu.h"
 
 static Window* window = NULL;
@@ -10,11 +10,7 @@ static GColor highlight_color;
 static ActionMenuLevel* member_menu_level = NULL;
 static ActionMenuConfig action_menu_config;
 
-static MemberList members = {
-    .members = NULL,
-    .members_size = 0,
-    .num_stored = 0
-};
+static MemberList* members = NULL;
 
 // ~~~ HELPER FUNCTIONS ~~~
 
@@ -34,8 +30,8 @@ static GColor get_text_color(GColor background) {
 }
 
 static void update_selected_highlight(uint16_t index) {
-    if (settings_get()->member_color_highlight && members.members != NULL) {
-        highlight_color = members.members[index]->color;
+    if (settings_get()->member_color_highlight && members->members != NULL) {
+        highlight_color = members->members[index]->color;
     } else {
         highlight_color = settings_get()->accent_color;
     }
@@ -44,14 +40,14 @@ static void update_selected_highlight(uint16_t index) {
 // ~~~ MENU LAYER SETUP ~~~
 
 static void select(MenuLayer* menu_layer, MenuIndex* menu_index, void* context) {
-    Member* member = members.members[menu_index->row];
+    Member* member = members->members[menu_index->row];
     printf("wow! you clicked... [%s]!!", member->name);
 
     action_menu_open(&action_menu_config);
 }
 
 static uint16_t get_num_rows(MenuLayer* layer, uint16_t section_index, void* ctx) {
-    return members.num_stored;
+    return members->num_stored;
 }
 
 static int16_t get_cell_height(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
@@ -59,16 +55,12 @@ static int16_t get_cell_height(MenuLayer* menu_layer, MenuIndex* cell_index, voi
     return compact ? 28 : 44;
 }
 
-static int16_t get_header_height(MenuLayer* menu_layer, uint16_t section_index, void* context) {
-    return MENU_CELL_BASIC_HEADER_HEIGHT;
-}
-
 static uint16_t get_num_sections(MenuLayer* menu_layer, void* context) {
     return 1;
 }
 
 static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
-    Member* member = members.members[cell_index->row];
+    Member* member = members->members[cell_index->row];
     bool compact = settings_get()->compact_member_list;
 
     // small color label on member
@@ -82,18 +74,6 @@ static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_ind
 
     // draw label text itself
     menu_cell_basic_draw(ctx, cell_layer, member->name, compact ? NULL : member->pronouns, NULL);
-}
-
-static void draw_header(GContext* ctx, const Layer* cell_layer, uint16_t section_index, void* context) {
-    switch (section_index) {
-        case 0:
-            menu_cell_basic_header_draw(ctx, cell_layer, "Members");
-            break;
-    }
-}
-
-static void selection_will_change(MenuLayer* layer, MenuIndex* new_index, MenuIndex old_index, void* context) {
-    // can prevent selection changes here!
 }
 
 static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex old_index, void* context) {
@@ -112,11 +92,8 @@ static void menu_layer_setup() {
             .get_num_rows = get_num_rows,
             .draw_row = draw_row,
             .get_num_sections = get_num_sections,
-            .draw_header = draw_header,
             .get_cell_height = get_cell_height,
-            .get_header_height = get_header_height,
             .select_click = select,
-            .selection_will_change = selection_will_change,
             .selection_changed = selection_changed
         }
     );
@@ -174,7 +151,9 @@ static void window_unload() {
 
 /// ~~~ HEADER FUNCTIONS ~~~
 
-void members_menu_push() {
+void members_menu_push(MemberList* p_members) {
+    members = p_members;
+
     if (window == NULL) {
         window = window_create();
         window_set_window_handlers(
@@ -187,28 +166,6 @@ void members_menu_push() {
     }
 
     window_stack_push(window, true);
-}
-
-void members_menu_set_members(char* p_members) {
-    member_list_deep_clear(&members);
-
-    // split array by delimiter
-    uint16_t num_members;
-    char** member_split = string_split(p_members, '|', &num_members);
-
-    // allocate memory for array of member pointers !
-    //   then fill array with members
-    for (uint16_t i = 0; i < num_members; i++) {
-        Member* member = member_create(member_split[i]);
-        member_list_add(member, &members);
-    }
-
-    // free previous array split
-    string_array_free(member_split, members.num_stored);
-
-    // mark members as loaded to the main menu
-    main_menu_mark_members_loaded();
-    update_selected_highlight(0);
 }
 
 void members_menu_update_colors() {
@@ -236,8 +193,6 @@ void members_menu_deinit() {
         menu_layer_destroy(menu_layer);
         menu_layer = NULL;
     }
-
-    member_list_deep_clear(&members);
 
     if (window != NULL) {
         window_destroy(window);

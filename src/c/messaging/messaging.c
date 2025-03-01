@@ -1,7 +1,7 @@
 #include "messaging.h"
 #include <pebble.h>
 #include "../config/config.h"
-#include "../menus/members_menu.h"
+#include "../member_collections.h"
 
 #define NUM_KEYS 3
 
@@ -34,7 +34,7 @@ static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
 
     Tuple* members = dict_find(iter, MESSAGE_KEY_Members);
     if (members != NULL) {
-        members_menu_set_members(members->value->cstring);
+        members_set_all(members->value->cstring);
     }
 
     // only save settings if any were updated

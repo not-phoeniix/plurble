@@ -1,4 +1,4 @@
-#include "members.h"
+#include "member.h"
 #include <pebble.h>
 #include "tools/string_tools.h"
 #include "menus/main_menu.h"
