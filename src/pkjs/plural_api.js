@@ -3,6 +3,10 @@ const xhrUrl = "https://api.apparyllis.com/v1/";
 var socket;
 var apiToken = "";
 var uid = "";
+var currentFronters = [];
+var frontersTimout = -1;
+
+// #region SOCKET SETUP
 
 function onOpenToken(token) {
     return function (e) {
@@ -12,15 +16,33 @@ function onOpenToken(token) {
             token: token
         }));
 
-        function pingFunc() {
+        setInterval(function () {
             socket.send("ping");
-        }
-
-        setInterval(pingFunc, 10000);
+        }, 10000);
     }
 }
 
+function handleFrontHistory(data) {
+    console.log("a fronting change has occured!");
+
+    // if member change is no longer live, remove them from current fronters!
+    if (data.results.content.live === false) {
+        // augh shoot i gotta grab from member cache again don't i
+        // var name = 
+        var indexToRemove = 2; // find it by name later <3
+        currentFronters.splice(indexToRemove, 1);
+    }
+
+    // make it so that front current fronters are sent after 
+    //   hearing silence from API for 500 ms 
+    //   (prevents super often data transfer)
+    clearTimeout(frontersTimout);
+    frontersTimout = setTimeout(sendSavedFrontersToWatch, 500);
+}
+
 function handleMsg(data) {
+    console.log(JSON.stringify(data));
+
     switch (data.msg) {
         case "Successfully authenticated":
             console.log("socket authentication successful!");
@@ -31,6 +53,15 @@ function handleMsg(data) {
             break;
 
         case "update":
+            switch (data.target) {
+                case "frontHistory":
+                    console.log("fronting history changed!");
+                    // handleFrontHistory(data);
+                    break;
+                default:
+                    console.log("update data target \"" + data.target + "\" not recognized!");
+                    break;
+            }
             break;
 
         default:
@@ -46,17 +77,20 @@ function onMessage(e) {
         handleMsg(data);
     } catch (err) {
         if (e.data != "pong") {
-            console.log("Error parsing data [" + e.data + "]");
+            console.log("Error parsing data: " + err);
         }
     }
 }
 
 function openSocket(token) {
     socket = new WebSocket(socketUrl);
-
     socket.onopen = onOpenToken(token);
     socket.onmessage = onMessage;
 }
+
+// #endregion
+
+// #region XHR FETCHING
 
 function xhrRequest(urlExtension, type, callback) {
     if (apiToken === "" || apiToken === undefined) {
@@ -137,25 +171,10 @@ function fetchFronters(callback) {
 
     xhrRequest("fronters/", "GET", function (response) {
         try {
-            // if members are cached and json use the cache
-            var cachedMemberStr = localStorage.getItem("cachedMembers");
-            if (cachedMemberStr) {
-                var memberJson = JSON.parse(cachedMemberStr);
-                console.log("getting fronter data from cached members...");
-                handleFrontersCached(response, memberJson, callback);
-            } else {
-                // otherwise, throw an error so the slow fetch for 
-                //    each fronter is executed
-                throw new Error("Members not cached!");
-            }
-
+            console.log("getting fronter data from cached members...");
+            handleFrontersCached(response, callback);
         } catch (err) {
-
-            // if any errors are thrown, catch em, printing status 
-            //   and fetching the data using the XHR method
-            console.log("cached member retrieval failed.. erorr: " + err);
-            console.log("getting fronter data with XHRs...");
-            handleFrontersXhr(response, callback);
+            console.log("cached member retrieval failed.. error: " + err);
         }
     });
 }
@@ -186,21 +205,28 @@ function handleFrontersXhr(response, callback) {
     }
 }
 
-function handleFrontersCached(response, cachedMemberJson, callback) {
+function getCachedMember(id) {
+    var cachedMemberString = localStorage.getItem("cachedMembers");
+    if (cachedMemberString) {
+        var json = JSON.parse(cachedMemberString);
+        for (var i = 0; i < json.length; i++) {
+            if (json[i].id === id) {
+                return json[i];
+            }
+        }
+    }
+
+    return null;
+}
+
+function handleFrontersCached(response, callback) {
     var json = JSON.parse(response);
     var frontersArr = [];
 
     // iterate across json and search for cached member via UID
     for (var i = 0; i < json.length; i++) {
-        // for each inputted fronter json, find it by its id 
-        //   ID in the cached members data 
         var memberId = json[i].content.member;
-        var cachedMember;
-        for (var j = 0; j < cachedMemberJson.length; j++) {
-            if (cachedMemberJson[j].id === memberId) {
-                cachedMember = cachedMemberJson[j];
-            }
-        }
+        var cachedMember = getCachedMember(memberId);
 
         // and member name to the array if it could be found
         if (cachedMember) {
@@ -212,31 +238,42 @@ function handleFrontersCached(response, cachedMemberJson, callback) {
     callback(frontersArr);
 }
 
-function sendDataToWatch() {
+// #endregion
+
+function sendSavedFrontersToWatch() {
+    var frontersStr = currentFronters.join("|");
+    Pebble.sendAppMessage(
+        { "Fronters": frontersStr },
+        function (data) {
+            console.log("saved fronters sent!");
+        },
+        function (data, error) {
+            console.log("Error in fronters sending!! error: " + error);
+        }
+    );
+}
+
+function fetchAndSendDataToWatch() {
     var numFetches = 2;
     var fetchesCompleted = 0;
     var membersFormatted = "";
     var frontersFormatted = "";
 
-    // this is the most jank way of doing asynchronous parallel 
-    //   fetching that await all to be done... hope it works <3
+    // this is probably the most jank way of doing asynchronous parallel 
+    //   fetching that await all to be done... hope it works well <3
 
     function send() {
-        function onSuccess(data) {
-            console.log("members sent!");
-        }
-
-        function onFailure(data, error) {
-            console.log("ERROR in member sending!! error: " + error);
-        }
-
         Pebble.sendAppMessage(
             {
                 "Members": membersFormatted,
                 "Fronters": frontersFormatted
             },
-            onSuccess,
-            onFailure
+            function (data) {
+                console.log("members sent!");
+            },
+            function (data, error) {
+                console.log("ERROR in member sending!! error: " + error);
+            }
         );
     }
 
@@ -247,16 +284,17 @@ function sendDataToWatch() {
         }
     }
 
+    // fetch and cache members first so fronters can access cache
     fetchMembers(function (members) {
         membersFormatted = members.join("|");
-        console.log("formatted found members: " + membersFormatted);
         checkSend();
-    });
 
-    fetchFronters(function (fronters) {
-        frontersFormatted = fronters.join("|");
-        console.log("formatted found fronters: " + frontersFormatted);
-        checkSend();
+        // fetch fronters depending on member cache
+        fetchFronters(function (fronters) {
+            currentFronters = fronters;
+            frontersFormatted = currentFronters.join("|");
+            checkSend();
+        });
     });
 }
 
@@ -275,23 +313,26 @@ function setup() {
     if (cachedUid) {
         // if uid was cached, set the value and send members
         uid = cachedUid;
-        sendDataToWatch();
+        fetchAndSendDataToWatch();
     } else {
         // if uid was not cached, fetch it and send members callback
-        fetchUid(sendDataToWatch);
+        fetchUid(fetchAndSendDataToWatch);
     }
+
+    // set up the websocket and begin message listening
+    openSocket(apiToken);
 }
 
 function setApiToken(token) {
     // when setting the api token re-fetch the UID as well
     apiToken = token;
     localStorage.setItem("cachedApiToken", token);
-    fetchUid(sendDataToWatch);
+    fetchUid(fetchAndSendDataToWatch);
 }
 
 module.exports = {
     openSocket: openSocket,
     setup: setup,
     setApiToken: setApiToken,
-    sendMembersToWatch: sendDataToWatch
+    sendMembersToWatch: fetchAndSendDataToWatch
 };
