@@ -41,6 +41,11 @@ static void update_selected_highlight(uint16_t index) {
 // ~~~ MENU LAYER SETUP ~~~
 
 static void select(MenuLayer* menu_layer, MenuIndex* menu_index, void* context) {
+    // prevent crashing if member list is empty
+    if (members->members_size <= 0) {
+        return;
+    }
+
     Member* member = members->members[menu_index->row];
     printf("wow! you clicked... [%s]!!", member->name);
 

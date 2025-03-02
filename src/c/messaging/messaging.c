@@ -12,24 +12,19 @@
 static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
     ClaySettings* settings = settings_get();
 
-    bool setting_changed = false;
-
     Tuple* accent_color = dict_find(iter, MESSAGE_KEY_AccentColor);
     if (accent_color != NULL) {
         settings->accent_color = GColorFromHEX(accent_color->value->int32);
-        setting_changed = true;
     }
 
     Tuple* compact_member_list = dict_find(iter, MESSAGE_KEY_CompactMemberList);
     if (compact_member_list != NULL) {
         settings->compact_member_list = compact_member_list->value->int16;
-        setting_changed = true;
     }
 
     Tuple* member_color_highlight = dict_find(iter, MESSAGE_KEY_MemberColorHighlight);
     if (member_color_highlight != NULL) {
         settings->member_color_highlight = member_color_highlight->value->int16;
-        setting_changed = true;
     }
 
     Tuple* members = dict_find(iter, MESSAGE_KEY_Members);
@@ -42,10 +37,7 @@ static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
         members_set_fronters(fronters->value->cstring);
     }
 
-    // only save settings if any were updated
-    if (setting_changed) {
-        settings_save();
-    }
+    settings_save();
 }
 
 static void inbox_dropped_callback(AppMessageResult reason, void* context) {
