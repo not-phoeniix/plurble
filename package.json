@@ -32,7 +32,11 @@
             "PluralApiKey",
             "AccentColor",
             "Members",
-            "Fronters"
+            "Fronters",
+            "CustomFronts",
+            "AddFrontRequest",
+            "SetFrontRequest",
+            "RemoveFrontRequest"
         ],
         "resources": {
             "media": []

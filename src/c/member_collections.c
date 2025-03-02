@@ -43,6 +43,7 @@ void members_set_fronters(char* fronters_str) {
 
     // if empty string, exit early
     if (fronters_str[0] == '\0') {
+        main_menu_set_fronters_subtitle("no one is fronting...");
         return;
     }
 
@@ -73,6 +74,9 @@ void members_set_fronters(char* fronters_str) {
     }
 
     string_array_free(member_split, num_members);
+
+    // set main menu subtitle to name of the first fronter!
+    main_menu_set_fronters_subtitle(fronters.members[0]->name);
 }
 
 void member_collections_deinit() {

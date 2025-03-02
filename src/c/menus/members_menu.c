@@ -3,6 +3,7 @@
 #include "../config/config.h"
 #include "../member.h"
 #include "main_menu.h"
+#include "../messaging/messaging.h"
 
 static Window* window = NULL;
 static MenuLayer* menu_layer = NULL;
@@ -10,6 +11,7 @@ static GColor highlight_color;
 static ActionMenuLevel* non_fronting_action_level = NULL;
 static ActionMenuLevel* fronting_action_level = NULL;
 static ActionMenuConfig action_menu_config;
+static Member* selected_member = NULL;
 
 static MemberList* members = NULL;
 
@@ -42,7 +44,7 @@ static void update_selected_highlight(uint16_t index) {
 
 static void select(MenuLayer* menu_layer, MenuIndex* menu_index, void* context) {
     // prevent crashing if member list is empty
-    if (members->members_size <= 0) {
+    if (members->num_stored <= 0) {
         return;
     }
 
@@ -56,6 +58,7 @@ static void select(MenuLayer* menu_layer, MenuIndex* menu_index, void* context) 
         action_menu_config.root_level = non_fronting_action_level;
     }
 
+    selected_member = member;
     action_menu_open(&action_menu_config);
 }
 
@@ -123,7 +126,9 @@ static void action_set_to_front(ActionMenu* action_menu, const ActionMenuItem* a
 }
 
 static void action_add_to_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
-    printf("adding to front...");
+    if (selected_member != NULL) {
+        messaging_add_to_front(selected_member);
+    }
 }
 
 static void action_remove_from_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
@@ -164,6 +169,7 @@ static void window_unload() {
     non_fronting_action_level = NULL;
     action_menu_hierarchy_destroy(fronting_action_level, NULL, NULL);
     fronting_action_level = NULL;
+    selected_member = NULL;
 }
 
 /// ~~~ HEADER FUNCTIONS ~~~

@@ -6,6 +6,55 @@ var uid = "";
 var currentFronters = [];
 var frontersTimout = -1;
 
+// #region UTILITIES
+
+function xhrRequest(urlExtension, type, data, callback) {
+    if (!apiToken) {
+        throw new Error("Cannot make an XHR with API token undefined!");
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.onload = function () {
+        if (callback) {
+            callback(this.responseText);
+        }
+    };
+    xhr.open(type, xhrUrl + urlExtension);
+    xhr.setRequestHeader("Authorization", apiToken);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.send(data ? JSON.stringify(data) : null);
+}
+
+function getCachedMemberById(id) {
+    var cachedMemberString = localStorage.getItem("cachedMembers");
+    if (cachedMemberString) {
+        var json = JSON.parse(cachedMemberString);
+        for (var i = 0; i < json.length; i++) {
+            if (json[i].id === id) {
+                return json[i];
+            }
+        }
+    }
+
+    return null;
+}
+
+function getCachedMemberByName(name) {
+    var cachedMemberString = localStorage.getItem("cachedMembers");
+    if (cachedMemberString) {
+        var json = JSON.parse(cachedMemberString);
+        for (var i = 0; i < json.length; i++) {
+            if (json[i].content.name === name) {
+                return json[i];
+            }
+        }
+    }
+
+    return null;
+}
+
+// #endregion
+
 // #region SOCKET SETUP
 
 function onOpenToken(token) {
@@ -24,7 +73,7 @@ function onOpenToken(token) {
 }
 
 function handleFrontHistory(data) {
-    var member = getCachedMember(data.results[0].content.member);
+    var member = getCachedMemberById(data.results[0].content.member);
 
     // cannot handle fronting change if member cannot be found in cache
     if (!member) return;
@@ -48,8 +97,6 @@ function handleFrontHistory(data) {
 }
 
 function handleMsg(data) {
-    console.log(JSON.stringify(data));
-
     switch (data.msg) {
         case "Successfully authenticated":
             console.log("socket authentication successful!");
@@ -98,22 +145,8 @@ function openSocket(token) {
 
 // #region XHR FETCHING
 
-function xhrRequest(urlExtension, type, callback) {
-    if (apiToken === "" || apiToken === undefined) {
-        throw new Error("Cannot make an XHR with API token undefined!");
-    }
-
-    var xhr = new XMLHttpRequest();
-    xhr.onload = function () {
-        callback(this.responseText);
-    };
-    xhr.open(type, xhrUrl + urlExtension);
-    xhr.setRequestHeader("Authorization", apiToken);
-    xhr.send();
-}
-
 function fetchUid(callback) {
-    xhrRequest("me", "GET", function (response) {
+    xhrRequest("me", "GET", null, function (response) {
         var json = JSON.parse(response);
         if (json.content.uid) {
             uid = json.content.uid;
@@ -135,7 +168,7 @@ function fetchMembers(callback) {
         return;
     }
 
-    xhrRequest("members/" + uid, "GET", function (response) {
+    xhrRequest("members/" + uid, "GET", null, function (response) {
         var json = JSON.parse(response);
         var membersArr = [];
 
@@ -168,6 +201,10 @@ function fetchMembers(callback) {
     });
 }
 
+function fetchCustomFronts(callback) {
+    // TODO: custom front fetching and displaying
+}
+
 function fetchFronters(callback) {
     // if uid couldn't be found, print an error and exit
     if (!uid) {
@@ -175,7 +212,7 @@ function fetchFronters(callback) {
         return;
     }
 
-    xhrRequest("fronters/", "GET", function (response) {
+    xhrRequest("fronters/", "GET", null, function (response) {
         try {
             var json = JSON.parse(response);
             var frontersArr = [];
@@ -183,7 +220,7 @@ function fetchFronters(callback) {
             // iterate across json and search for cached member via UID
             for (var i = 0; i < json.length; i++) {
                 var memberId = json[i].content.member;
-                var cachedMember = getCachedMember(memberId);
+                var cachedMember = getCachedMemberById(memberId);
 
                 // and member name to the array if it could be found
                 if (cachedMember) {
@@ -201,19 +238,35 @@ function fetchFronters(callback) {
 
 // #endregion
 
-function getCachedMember(id) {
-    var cachedMemberString = localStorage.getItem("cachedMembers");
-    if (cachedMemberString) {
-        var json = JSON.parse(cachedMemberString);
-        for (var i = 0; i < json.length; i++) {
-            if (json[i].id === id) {
-                return json[i];
-            }
-        }
-    }
+// #region XHR SENDING
 
-    return null;
+function setToFront(id) {
+    // TODO: set to front
 }
+
+function addToFront(id) {
+    console.log("adding id " + id + " to front...");
+
+    var options = {
+        customStatus: "",
+        custom: false,
+        live: true,
+        startTime: Date.now(),
+        member: id
+    };
+
+    xhrRequest("frontHistory/" + id, "POST", options, function (response) {
+        console.log(response);
+    });
+}
+
+function removeFromFront(id) {
+    // TODO: remove from front
+}
+
+// #endregion
+
+// #region DATA MANAGEMENT
 
 function sendSavedFrontersToWatch() {
     var frontersStr = currentFronters.join("|");
@@ -273,6 +326,8 @@ function fetchAndSendDataToWatch() {
     });
 }
 
+// #endregion
+
 function setup() {
     // get cached api token
     var cachedApiToken = localStorage.getItem("cachedApiToken");
@@ -306,8 +361,10 @@ function setApiToken(token) {
 }
 
 module.exports = {
-    openSocket: openSocket,
     setup: setup,
     setApiToken: setApiToken,
+    addToFront: addToFront,
+    getCachedMemberByName: getCachedMemberByName,
+    getCachedMemberById: getCachedMemberById,
     sendMembersToWatch: fetchAndSendDataToWatch
 };

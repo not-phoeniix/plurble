@@ -130,3 +130,7 @@ void main_menu_mark_members_loaded() {
     layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
     members_loaded = true;
 }
+
+void main_menu_set_fronters_subtitle(const char* subtitle) {
+    member_items[0].subtitle = subtitle;
+}

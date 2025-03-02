@@ -59,5 +59,27 @@ void messaging_init() {
     app_message_register_outbox_failed(outbox_failed_callback);
 
     // hoping 1024 bytes is enough, adjust if necessary later <3
-    app_message_open(1024, 1024);
+    app_message_open(1024, 128);
+}
+
+void messaging_add_to_front(Member* member) {
+    // dictionary to send!
+    DictionaryIterator* iter;
+
+    // begin outbox app message
+    AppMessageResult result = app_message_outbox_begin(&iter);
+    if (result == APP_MSG_OK) {
+        // write member name as the request string data value
+        dict_write_cstring(iter, MESSAGE_KEY_AddFrontRequest, member->name);
+
+        // send outbox message itself
+        result = app_message_outbox_send();
+
+        if (result != APP_MSG_OK) {
+            APP_LOG(APP_LOG_LEVEL_ERROR, "Error sending add_to_front data: %d", (int)result);
+        }
+
+    } else {
+        APP_LOG(APP_LOG_LEVEL_ERROR, "Error preparing add_to_front outbox: %d", (int)result);
+    }
 }

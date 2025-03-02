@@ -25,3 +25,19 @@ Pebble.addEventListener("webviewclosed", function (e) {
     }
 });
 
+Pebble.addEventListener("appmessage", function (e) {
+    var dict = e.payload;
+
+    console.log("got message: " + JSON.stringify(dict));
+
+    //* ~~ adding to front ~~
+    if (dict.AddFrontRequest) {
+        var memberName = dict.AddFrontRequest;
+
+        // attempt to add member to front if they could be found
+        var member = pluralApi.getCachedMemberByName(memberName);
+        if (member) {
+            pluralApi.addToFront(member.id);
+        }
+    }
+});
