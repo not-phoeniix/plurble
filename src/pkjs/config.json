@@ -4,7 +4,7 @@
     "items": [
       {
         "type": "heading",
-        "defaultValue": "PluralKit"
+        "defaultValue": "SimplyPlural for Pebble"
       },
       {
         "type": "text",
@@ -17,20 +17,36 @@
     "items": [
       {
         "type": "heading",
-        "defaultValue": "Config"
+        "defaultValue": "API Token"
       },
       {
         "type": "input",
         "messageKey": "PluralApiKey",
-        "label": "Simply Plural API Key",
-        "description": "Get your API key from Dashboard > Tokens :]"
+        "label": "API Token",
+        "description": "Get your API token from Dashboard > Tokens in the SimplyPlural app :]\n\nMake sure your token has Read+Write permissions!"
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "App Customization"
       },
       {
         "type": "color",
         "messageKey": "AccentColor",
         "label": "UI Accent Color",
         "allowGray": "true",
-        "defaultValue": "0xFF0000"
+        "defaultValue": "0xFFFF00"
+      },
+      {
+        "type": "color",
+        "messageKey": "BackgroundColor",
+        "label": "UI Background Color",
+        "allowGray": "true",
+        "defaultValue": "0x000000"
       },
       {
         "type": "toggle",

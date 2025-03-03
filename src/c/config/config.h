@@ -4,6 +4,7 @@
 
 typedef struct {
     GColor accent_color;
+    GColor background_color;
     bool compact_member_list;
     bool member_color_highlight;
 } ClaySettings;

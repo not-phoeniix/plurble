@@ -4,6 +4,7 @@
 #include "../member.h"
 #include "main_menu.h"
 #include "../messaging/messaging.h"
+#include "../tools/drawing.h"
 
 static Window* window = NULL;
 static MenuLayer* menu_layer = NULL;
@@ -16,21 +17,6 @@ static Member* selected_member = NULL;
 static MemberList* members = NULL;
 
 // ~~~ HELPER FUNCTIONS ~~~
-
-static GColor get_text_color(GColor background) {
-    // linear luminance value from 0-1
-    float luminance =
-        (0.2128f * background.r) +
-        (0.7152f * background.g) +
-        (0.0722f * background.b);
-    luminance /= 6.0f;
-
-    if (luminance >= 0.35f) {
-        return GColorBlack;
-    } else {
-        return GColorWhite;
-    }
-}
 
 static void update_selected_highlight(uint16_t index) {
     if (settings_get()->member_color_highlight && members->members != NULL) {
@@ -86,7 +72,11 @@ static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_ind
     graphics_fill_rect(ctx, color_tag_bounds, 0, GCornerNone);
 
     // set the new highlight color before draw
-    menu_layer_set_highlight_colors(menu_layer, highlight_color, get_text_color(highlight_color));
+    menu_layer_set_highlight_colors(
+        menu_layer,
+        highlight_color,
+        gcolor_legible_over(highlight_color)
+    );
 
     // draw label text itself
     menu_cell_basic_draw(ctx, cell_layer, member->name, compact ? NULL : member->pronouns, NULL);
@@ -202,8 +192,17 @@ void members_menu_update_colors() {
             menu_layer_set_highlight_colors(
                 menu_layer,
                 settings->accent_color,
-                GColorWhite
+                gcolor_legible_over(settings->accent_color)
             );
+            menu_layer_set_normal_colors(
+                menu_layer,
+                settings->background_color,
+                gcolor_legible_over(settings->background_color)
+            );
+        }
+
+        if (window != NULL) {
+            window_set_background_color(window, settings->background_color);
         }
 
         action_menu_config.colors.background = settings->accent_color;

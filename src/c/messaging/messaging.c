@@ -37,6 +37,11 @@ static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
         settings->accent_color = GColorFromHEX(accent_color->value->int32);
     }
 
+    Tuple* background_color = dict_find(iter, MESSAGE_KEY_BackgroundColor);
+    if (background_color != NULL) {
+        settings->background_color = GColorFromHEX(background_color->value->int32);
+    }
+
     Tuple* compact_member_list = dict_find(iter, MESSAGE_KEY_CompactMemberList);
     if (compact_member_list != NULL) {
         settings->compact_member_list = compact_member_list->value->int16;

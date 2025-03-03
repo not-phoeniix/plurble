@@ -31,6 +31,7 @@
             "MemberColorHighlight",
             "PluralApiKey",
             "AccentColor",
+            "BackgroundColor",
             "Members",
             "Fronters",
             "CustomFronts",
