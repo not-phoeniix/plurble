@@ -122,7 +122,9 @@ static void menu_layer_setup() {
 // ~~~ ACTION MENU SETUP ~~~
 
 static void action_set_to_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
-    printf("setting to front...");
+    if (selected_member != NULL) {
+        messaging_set_to_front(selected_member);
+    }
 }
 
 static void action_add_to_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
@@ -132,7 +134,9 @@ static void action_add_to_front(ActionMenu* action_menu, const ActionMenuItem* a
 }
 
 static void action_remove_from_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
-    printf("removing from front...");
+    if (selected_member != NULL) {
+        messaging_remove_from_front(selected_member);
+    }
 }
 
 static void action_menu_setup() {

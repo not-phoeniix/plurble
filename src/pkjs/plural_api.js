@@ -244,7 +244,13 @@ function fetchFronters(callback) {
 // #region XHR SENDING
 
 function setToFront(id) {
-    // TODO: set to front
+    // remove all current fronters
+    for (var i = 0; i < currentFronters.length; i++) {
+        removeFromFront(currentFronters[i].content.member);
+    }
+
+    // add new ID to front
+    addToFront(id);
 }
 
 function addToFront(id) {
@@ -258,13 +264,43 @@ function addToFront(id) {
         member: id
     };
 
-    xhrRequest("frontHistory/" + id, "POST", options, function (response) {
+    xhrRequest("frontHistory/", "POST", options, function (response) {
         console.log(response);
     });
 }
 
 function removeFromFront(id) {
-    // TODO: remove from front
+    // find current fronter data based on member ID
+    var currentFronter;
+    for (var i = 0; i < currentFronters.length; i++) {
+        if (currentFronters[i].content.member === id) {
+            currentFronter = currentFronters[i];
+            break;
+        }
+    }
+
+    // exit if fronter cannot be found
+    if (!currentFronter) return;
+
+    // assemble options to send to the API
+    var options = {
+        customStatus: "",
+        custom: false,
+        live: false,
+        startTime: currentFronter.content.startTime,
+        endTime: Date.now(),
+        member: id
+    };
+
+    // actually send patch request
+    xhrRequest(
+        "frontHistory/" + currentFronter.id,
+        "PATCH",
+        options,
+        function (response) {
+            console.log(response);
+        }
+    );
 }
 
 // #endregion
@@ -371,6 +407,8 @@ module.exports = {
     setup: setup,
     setApiToken: setApiToken,
     addToFront: addToFront,
+    setToFront: setToFront,
+    removeFromFront: removeFromFront,
     getCachedMemberByName: getCachedMemberByName,
     getCachedMemberById: getCachedMemberById,
     sendMembersToWatch: fetchAndSendDataToWatch

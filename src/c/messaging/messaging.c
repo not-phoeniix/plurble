@@ -3,11 +3,31 @@
 #include "../config/config.h"
 #include "../member_collections.h"
 
-#define NUM_KEYS 3
-
 //! NOTE: all the MESSAGE_KEY_WhateverKey defines are added
 //!   later via the compiler.... these will look like errors
 //!   in vscode but there's nothing wrong with em dw <3
+
+static void front_message(Member* member, const uint32_t message_key) {
+    // dictionary to send!
+    DictionaryIterator* iter;
+
+    // begin outbox app message
+    AppMessageResult result = app_message_outbox_begin(&iter);
+    if (result == APP_MSG_OK) {
+        // write member name as the request string data value
+        dict_write_cstring(iter, message_key, member->name);
+
+        // send outbox message itself
+        result = app_message_outbox_send();
+
+        if (result != APP_MSG_OK) {
+            APP_LOG(APP_LOG_LEVEL_ERROR, "Error sending front message data: %d", (int)result);
+        }
+
+    } else {
+        APP_LOG(APP_LOG_LEVEL_ERROR, "Error preparing front message outbox: %d", (int)result);
+    }
+}
 
 static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
     ClaySettings* settings = settings_get();
@@ -63,23 +83,13 @@ void messaging_init() {
 }
 
 void messaging_add_to_front(Member* member) {
-    // dictionary to send!
-    DictionaryIterator* iter;
+    front_message(member, MESSAGE_KEY_AddFrontRequest);
+}
 
-    // begin outbox app message
-    AppMessageResult result = app_message_outbox_begin(&iter);
-    if (result == APP_MSG_OK) {
-        // write member name as the request string data value
-        dict_write_cstring(iter, MESSAGE_KEY_AddFrontRequest, member->name);
+void messaging_set_to_front(Member* member) {
+    front_message(member, MESSAGE_KEY_SetFrontRequest);
+}
 
-        // send outbox message itself
-        result = app_message_outbox_send();
-
-        if (result != APP_MSG_OK) {
-            APP_LOG(APP_LOG_LEVEL_ERROR, "Error sending add_to_front data: %d", (int)result);
-        }
-
-    } else {
-        APP_LOG(APP_LOG_LEVEL_ERROR, "Error preparing add_to_front outbox: %d", (int)result);
-    }
+void messaging_remove_from_front(Member* member) {
+    front_message(member, MESSAGE_KEY_RemoveFrontRequest);
 }
