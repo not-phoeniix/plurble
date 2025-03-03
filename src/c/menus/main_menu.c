@@ -39,7 +39,7 @@ static void window_load() {
 
     member_items[0] = (SimpleMenuItem) {
         .title = "Fronters",
-        .subtitle = "no one fronting...",
+        .subtitle = "loading fronters...",
         .icon = NULL,
         .callback = member_select
     };
