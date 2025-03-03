@@ -52,6 +52,11 @@ static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
         settings->member_color_highlight = member_color_highlight->value->int16;
     }
 
+    Tuple* global_fronter_accent = dict_find(iter, MESSAGE_KEY_GlobalFronterAccent);
+    if (global_fronter_accent != NULL) {
+        settings->global_fronter_accent = global_fronter_accent->value->int16;
+    }
+
     Tuple* members = dict_find(iter, MESSAGE_KEY_Members);
     if (members != NULL) {
         members_set_all(members->value->cstring);

@@ -111,8 +111,8 @@ void main_menu_update_colors() {
         if (simple_menu_layer != NULL) {
             menu_layer_set_highlight_colors(
                 simple_menu_layer_get_menu_layer(simple_menu_layer),
-                settings->accent_color,
-                gcolor_legible_over(settings->accent_color)
+                settings_get_global_accent(),
+                gcolor_legible_over(settings_get_global_accent())
             );
             menu_layer_set_normal_colors(
                 simple_menu_layer_get_menu_layer(simple_menu_layer),

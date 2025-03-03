@@ -2,6 +2,7 @@
 #include "../messaging/messaging.h"
 #include "../menus/main_menu.h"
 #include "../menus/members_menu.h"
+#include "../member_collections.h"
 
 #define SETTINGS_KEY 1
 
@@ -9,9 +10,10 @@ static ClaySettings settings;
 
 static void set_defaults() {
     settings.accent_color = GColorChromeYellow;
-    settings.background_color = GColorBlack;
+    settings.background_color = GColorWhite;
     settings.compact_member_list = false;
     settings.member_color_highlight = false;
+    settings.global_fronter_accent = false;
 }
 
 static void apply() {
@@ -23,6 +25,16 @@ static void apply() {
     if (top_window != NULL) {
         Layer* window_layer = window_get_root_layer(top_window);
         layer_mark_dirty(window_layer);
+    }
+}
+
+GColor settings_get_global_accent() {
+    Member* first_fronter = members_get_first_fronter();
+
+    if (settings.global_fronter_accent && first_fronter != NULL) {
+        return first_fronter->color;
+    } else {
+        return settings.accent_color;
     }
 }
 

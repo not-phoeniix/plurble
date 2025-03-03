@@ -22,8 +22,11 @@
       {
         "type": "input",
         "messageKey": "PluralApiKey",
-        "label": "API Token",
-        "description": "Get your API token from Dashboard > Tokens in the SimplyPlural app :]\n\nMake sure your token has Read+Write permissions!"
+        "label": "API Token - REQUIRED FOR APP TO WORK!",
+        "description": "Get/create your API token from Dashboard > Tokens in the SimplyPlural app :]<br><em style='font-weight: bold;'>Make sure your token has Read+Write permissions!</em>",
+        "attributes": {
+          "type": "password"
+        }
       }
     ]
   },
@@ -39,6 +42,7 @@
         "messageKey": "AccentColor",
         "label": "UI Accent Color",
         "allowGray": "true",
+        "description": "App-wide UI accent color.",
         "defaultValue": "0xFFFF00"
       },
       {
@@ -46,18 +50,28 @@
         "messageKey": "BackgroundColor",
         "label": "UI Background Color",
         "allowGray": "true",
-        "defaultValue": "0x000000"
+        "description": "App-wide UI background color.",
+        "defaultValue": "0xFFFFFF"
       },
       {
         "type": "toggle",
         "messageKey": "CompactMemberList",
         "label": "Compact Member List",
+        "description": "Makes member list entries more compact, hides pronouns.",
         "defaultValue": false
       },
       {
         "type": "toggle",
         "messageKey": "MemberColorHighlight",
         "label": "Member Color Highlight",
+        "description": "Sets the highlight color in the member list when scrolling to that of the currently highlighted member.",
+        "defaultValue": false
+      },
+      {
+        "type": "toggle",
+        "messageKey": "GlobalFronterAccent",
+        "label": "Global Fronter Color Accent",
+        "description": "Set the app-wide accent color to that of the current first fronting member, uses accent color as fallback.",
         "defaultValue": false
       }
     ]

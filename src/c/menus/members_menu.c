@@ -37,6 +37,17 @@ static void select(MenuLayer* menu_layer, MenuIndex* menu_index, void* context) 
     Member* member = members->members[menu_index->row];
     printf("wow! you clicked... [%s]!!", member->name);
 
+    // set background/bar color of action menu to either member
+    //   color or global accent depending on prefs
+    if (settings_get()->member_color_highlight) {
+        action_menu_config.colors.background = member->color;
+    } else {
+        action_menu_config.colors.background = settings_get_global_accent();
+    }
+
+    // set little dots colors to whatever is legible for new bg color
+    action_menu_config.colors.foreground = gcolor_legible_over(action_menu_config.colors.background);
+
     // change popup root level depending on if member is fronting or not
     if (member->fronting) {
         action_menu_config.root_level = fronting_action_level;
@@ -44,6 +55,7 @@ static void select(MenuLayer* menu_layer, MenuIndex* menu_index, void* context) 
         action_menu_config.root_level = non_fronting_action_level;
     }
 
+    // change selected member and open menu itself
     selected_member = member;
     action_menu_open(&action_menu_config);
 }
@@ -63,23 +75,7 @@ static uint16_t get_num_sections(MenuLayer* menu_layer, void* context) {
 
 static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
     Member* member = members->members[cell_index->row];
-    bool compact = settings_get()->compact_member_list;
-
-    // small color label on member
-    graphics_context_set_fill_color(ctx, member->color);
-    GRect color_tag_bounds = layer_get_bounds(cell_layer);
-    color_tag_bounds.size.w = 3;
-    graphics_fill_rect(ctx, color_tag_bounds, 0, GCornerNone);
-
-    // set the new highlight color before draw
-    menu_layer_set_highlight_colors(
-        menu_layer,
-        highlight_color,
-        gcolor_legible_over(highlight_color)
-    );
-
-    // draw label text itself
-    menu_cell_basic_draw(ctx, cell_layer, member->name, compact ? NULL : member->pronouns, NULL);
+    drawing_draw_member_cell(ctx, member, menu_layer, cell_layer, highlight_color);
 }
 
 static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex old_index, void* context) {
@@ -191,8 +187,8 @@ void members_menu_update_colors() {
         if (menu_layer != NULL) {
             menu_layer_set_highlight_colors(
                 menu_layer,
-                settings->accent_color,
-                gcolor_legible_over(settings->accent_color)
+                settings_get_global_accent(),
+                gcolor_legible_over(settings_get_global_accent())
             );
             menu_layer_set_normal_colors(
                 menu_layer,
@@ -204,8 +200,6 @@ void members_menu_update_colors() {
         if (window != NULL) {
             window_set_background_color(window, settings->background_color);
         }
-
-        action_menu_config.colors.background = settings->accent_color;
     }
 }
 
