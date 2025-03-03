@@ -53,6 +53,18 @@ function getCachedMemberByName(name) {
     return null;
 }
 
+function getFormattedFronters() {
+    var members = [];
+    for (var i = 0; i < currentFronters.length; i++) {
+        var member = getCachedMemberById(currentFronters[i].content.member);
+        if (member) {
+            members.push(member.content.name);
+        }
+    }
+
+    return members.join("|");
+}
+
 // #endregion
 
 // #region SOCKET SETUP
@@ -73,27 +85,37 @@ function onOpenToken(token) {
 }
 
 function handleFrontHistory(data) {
-    var member = getCachedMemberById(data.results[0].content.member);
-
-    // cannot handle fronting change if member cannot be found in cache
-    if (!member) return;
+    // grab member result data, exit early if it doesn't exist
+    var messageMember = data.results[0];
+    if (!messageMember) return;
 
     // if member change is no longer live, remove them from current fronters!
     if (data.results[0].content.live === false) {
-        var i = currentFronters.indexOf(member.content.name);
-        if (i >= 0) {
-            currentFronters.splice(i, 1);
+        // get index of inputted member so it can be removed
+        var index = -1;
+        for (var i = 0; i < currentFronters.length; i++) {
+            if (currentFronters[i].content.member === messageMember.content.member) {
+                index = i;
+                break;
+            }
         }
+
+        // if index was found, remove fronter at that index from the array
+        if (index > -1) {
+            currentFronters.splice(index, 1);
+        }
+
     } else {
         // else, if member change is now live, add them to the fronters list!!
-        currentFronters.push(member.content.name);
+        // currentFronters.push(member.content.name);
+        currentFronters.push(messageMember);
     }
 
     // make it so that front current fronters are sent after 
-    //   hearing silence from API for 200 ms 
+    //   hearing silence from API for 300 ms 
     //   (prevents super often data transfer)
     clearTimeout(frontersTimout);
-    frontersTimout = setTimeout(sendSavedFrontersToWatch, 200);
+    frontersTimout = setTimeout(sendSavedFrontersToWatch, 300);
 }
 
 function handleMsg(data) {
@@ -213,26 +235,7 @@ function fetchFronters(callback) {
     }
 
     xhrRequest("fronters/", "GET", null, function (response) {
-        try {
-            var json = JSON.parse(response);
-            var frontersArr = [];
-
-            // iterate across json and search for cached member via UID
-            for (var i = 0; i < json.length; i++) {
-                var memberId = json[i].content.member;
-                var cachedMember = getCachedMemberById(memberId);
-
-                // and member name to the array if it could be found
-                if (cachedMember) {
-                    frontersArr.push(cachedMember.content.name);
-                }
-            }
-
-            // call callback after array has been assembled
-            callback(frontersArr);
-        } catch (err) {
-            console.log("cached member retrieval failed.. error: " + err);
-        }
+        callback(JSON.parse(response));
     });
 }
 
@@ -269,9 +272,8 @@ function removeFromFront(id) {
 // #region DATA MANAGEMENT
 
 function sendSavedFrontersToWatch() {
-    var frontersStr = currentFronters.join("|");
     Pebble.sendAppMessage(
-        { "Fronters": frontersStr },
+        { "Fronters": getFormattedFronters() },
         function (data) {
             console.log("saved fronters sent!");
         },
@@ -319,8 +321,13 @@ function fetchAndSendDataToWatch() {
 
         // fetch fronters depending on member cache
         fetchFronters(function (fronters) {
-            currentFronters = fronters;
-            frontersFormatted = currentFronters.join("|");
+            console.log(JSON.stringify(fronters));
+
+            for (var i = 0; i < fronters.length; i++) {
+                currentFronters.push(fronters[i]);
+            }
+
+            frontersFormatted = getFormattedFronters();
             checkSend();
         });
     });
