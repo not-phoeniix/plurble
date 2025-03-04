@@ -29,6 +29,7 @@
         "messageKeys": [
             "CompactMemberList",
             "MemberColorHighlight",
+            "MemberColorTag",
             "GlobalFronterAccent",
             "PluralApiKey",
             "AccentColor",

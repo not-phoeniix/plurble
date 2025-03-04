@@ -13,6 +13,7 @@ static void set_defaults() {
     settings.background_color = GColorWhite;
     settings.compact_member_list = false;
     settings.member_color_highlight = false;
+    settings.member_color_tag = PBL_IF_COLOR_ELSE(true, false);
     settings.global_fronter_accent = false;
 }
 

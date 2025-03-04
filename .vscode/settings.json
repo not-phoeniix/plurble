@@ -2,6 +2,7 @@
     "files.associations": {
         "menus.h": "c",
         "pebble.h": "c",
-        "members_menu.h": "c"
+        "members_menu.h": "c",
+        "member_collections.h": "c"
     }
 }

@@ -49,12 +49,26 @@ static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
 
     Tuple* member_color_highlight = dict_find(iter, MESSAGE_KEY_MemberColorHighlight);
     if (member_color_highlight != NULL) {
-        settings->member_color_highlight = member_color_highlight->value->int16;
+        settings->member_color_highlight = PBL_IF_COLOR_ELSE(
+            member_color_highlight->value->int16,
+            false
+        );
+    }
+
+    Tuple* member_color_tag = dict_find(iter, MESSAGE_KEY_MemberColorTag);
+    if (member_color_tag != NULL) {
+        settings->member_color_tag = PBL_IF_COLOR_ELSE(
+            member_color_tag->value->int16,
+            false
+        );
     }
 
     Tuple* global_fronter_accent = dict_find(iter, MESSAGE_KEY_GlobalFronterAccent);
     if (global_fronter_accent != NULL) {
-        settings->global_fronter_accent = global_fronter_accent->value->int16;
+        settings->global_fronter_accent = PBL_IF_COLOR_ELSE(
+            global_fronter_accent->value->int16,
+            false
+        );
     }
 
     Tuple* members = dict_find(iter, MESSAGE_KEY_Members);
