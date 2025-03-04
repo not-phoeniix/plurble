@@ -243,7 +243,7 @@ function fetchFronters(callback) {
 
 // #region XHR SENDING
 
-function setToFront(id) {
+function setAsFront(id) {
     // remove all current fronters
     for (var i = 0; i < currentFronters.length; i++) {
         removeFromFront(currentFronters[i].content.member);
@@ -407,7 +407,7 @@ module.exports = {
     setup: setup,
     setApiToken: setApiToken,
     addToFront: addToFront,
-    setToFront: setToFront,
+    setAsFront: setAsFront,
     removeFromFront: removeFromFront,
     getCachedMemberByName: getCachedMemberByName,
     getCachedMemberById: getCachedMemberById,

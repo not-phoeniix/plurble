@@ -59,7 +59,7 @@ Pebble.addEventListener("appmessage", function (e) {
 
         // if member could be found, set them to front
         if (member) {
-            pluralApi.setToFront(member.id);
+            pluralApi.setAsFront(member.id);
         }
     }
 });

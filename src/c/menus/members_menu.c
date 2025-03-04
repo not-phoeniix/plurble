@@ -107,9 +107,10 @@ static void menu_layer_setup() {
 
 // ~~~ ACTION MENU SETUP ~~~
 
-static void action_set_to_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
+static void action_set_as_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
     if (selected_member != NULL) {
-        messaging_set_to_front(selected_member);
+        messaging_set_as_front(selected_member);
+        window_stack_remove(window, true);
     }
 }
 
@@ -128,7 +129,7 @@ static void action_remove_from_front(ActionMenu* action_menu, const ActionMenuIt
 static void action_menu_setup() {
     non_fronting_action_level = action_menu_level_create(2);
 
-    action_menu_level_add_action(non_fronting_action_level, "Set to front", action_set_to_front, NULL);
+    action_menu_level_add_action(non_fronting_action_level, "Set as front", action_set_as_front, NULL);
     action_menu_level_add_action(non_fronting_action_level, "Add to front", action_add_to_front, NULL);
 
     fronting_action_level = action_menu_level_create(1);

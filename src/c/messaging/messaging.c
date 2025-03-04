@@ -110,7 +110,7 @@ void messaging_add_to_front(Member* member) {
     front_message(member, MESSAGE_KEY_AddFrontRequest);
 }
 
-void messaging_set_to_front(Member* member) {
+void messaging_set_as_front(Member* member) {
     front_message(member, MESSAGE_KEY_SetFrontRequest);
 }
 
