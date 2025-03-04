@@ -8,6 +8,7 @@ typedef struct {
     char pronouns[64];
     GColor color;
     bool fronting;
+    bool custom;
 } Member;
 
 /// @brief A struct representing a dynamic array of members
@@ -19,8 +20,13 @@ typedef struct {
 
 /// @brief Creates a member struct instance, automatically allocating memory
 /// @param member_string Member string, in format "name,pronouns,colordecimal"
-/// @return Pointer to member that was created
+/// @return Pointer to member that was created on the heap
 Member* member_create(char* member_string);
+
+/// @brief Creates a member struct instance for a custom front entry, auto allocating memory
+/// @param custom_front_string Custom front string, in format "name,,colordecimal"
+/// @return Pointer to member that was created on the heap
+Member* custom_front_create(char* custom_front_string);
 
 /// @brief Deletes a member, freeing memory
 /// @param member Member to delete

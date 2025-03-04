@@ -74,6 +74,12 @@ void member_list_deep_clear(MemberList* array) {
 
 // ~~~ member individual creation ~~~
 
+Member* custom_front_create(char* custom_front_string) {
+    Member* front = member_create(custom_front_string);
+    front->custom = true;
+    return front;
+}
+
 Member* member_create(char* member_string) {
     // allocate memory and create a new member struct
     Member* member = malloc(sizeof(Member));
@@ -81,7 +87,8 @@ Member* member_create(char* member_string) {
         .name = {'\0'},
         .pronouns = {'\0'},
         .color = GColorBlack,
-        .fronting = false
+        .fronting = false,
+        .custom = false
     };
 
     uint16_t length;

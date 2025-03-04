@@ -73,7 +73,12 @@ static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
 
     Tuple* members = dict_find(iter, MESSAGE_KEY_Members);
     if (members != NULL) {
-        members_set_all(members->value->cstring);
+        members_set_members(members->value->cstring);
+    }
+
+    Tuple* custom_fronts = dict_find(iter, MESSAGE_KEY_CustomFronts);
+    if (custom_fronts != NULL) {
+        members_set_custom_fronts(custom_fronts->value->cstring);
     }
 
     Tuple* fronters = dict_find(iter, MESSAGE_KEY_Fronters);

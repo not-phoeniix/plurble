@@ -12,8 +12,8 @@ static GColor highlight_color;
 static ActionMenuLevel* non_fronting_action_level = NULL;
 static ActionMenuLevel* fronting_action_level = NULL;
 static ActionMenuConfig action_menu_config;
-static Member* selected_member = NULL;
 
+static Member* selected_member = NULL;
 static MemberList* members = NULL;
 
 // ~~~ HELPER FUNCTIONS ~~~
@@ -35,7 +35,6 @@ static void select(MenuLayer* menu_layer, MenuIndex* menu_index, void* context) 
     }
 
     Member* member = members->members[menu_index->row];
-    printf("wow! you clicked... [%s]!!", member->name);
 
     // set background/bar color of action menu to either member
     //   color or global accent depending on prefs

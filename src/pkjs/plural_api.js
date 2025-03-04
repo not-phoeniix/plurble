@@ -25,44 +25,68 @@ function xhrRequest(urlExtension, type, data, callback) {
     xhr.send(data ? JSON.stringify(data) : null);
 }
 
-function getCachedMemberById(id) {
-    var cachedMemberString = localStorage.getItem("cachedMembers");
+function getCachedFrontable(localStorageName, searchFunc) {
+    var cachedMemberString = localStorage.getItem(localStorageName);
     if (cachedMemberString) {
         var json = JSON.parse(cachedMemberString);
         for (var i = 0; i < json.length; i++) {
-            if (json[i].id === id) {
+            if (searchFunc(json[i])) {
                 return json[i];
             }
         }
     }
 
     return null;
+}
+
+function getCachedMemberById(id) {
+    return getCachedFrontable("cachedMembers", function (member) {
+        return member.id === id;
+    });
 }
 
 function getCachedMemberByName(name) {
-    var cachedMemberString = localStorage.getItem("cachedMembers");
-    if (cachedMemberString) {
-        var json = JSON.parse(cachedMemberString);
-        for (var i = 0; i < json.length; i++) {
-            if (json[i].content.name === name) {
-                return json[i];
-            }
-        }
-    }
+    return getCachedFrontable("cachedMembers", function (member) {
+        return member.content.name === name;
+    });
+}
 
-    return null;
+function getCachedCustomFrontById(id) {
+    return getCachedFrontable("cachedCustomFronts", function (customFront) {
+        return customFront.id === id
+    });
+}
+
+function getCachedCustomFrontByName(name) {
+    return getCachedFrontable("cachedCustomFronts", function (customFront) {
+        return customFront.content.name === name;
+    });
 }
 
 function getFormattedFronters() {
-    var members = [];
+    var fronters = [];
     for (var i = 0; i < currentFronters.length; i++) {
-        var member = getCachedMemberById(currentFronters[i].content.member);
-        if (member) {
-            members.push(member.content.name);
+        // try to get member first
+        var fronter = getCachedMemberById(currentFronters[i].content.member);
+
+        // then try to get custom front if member is null
+        if (!fronter) {
+            console.log("WAHHHHH trying to get custom front!");
+            fronter = getCachedCustomFrontById(currentFronters[i].content.member);
+        }
+        
+        if (!fronter) {
+            console.log("couldn't find inputted fronter with id " + currentFronters[i].content.member + "...");
+        }
+
+        // finally, push member if it exists
+        if (fronter) {
+            fronters.push(fronter.content.name);
         }
     }
 
-    return members.join("|");
+    // return formatted string joined by the "|" delimiter
+    return fronters.join("|");
 }
 
 // #endregion
@@ -106,8 +130,9 @@ function handleFrontHistory(data) {
         }
 
     } else {
+        console.log(JSON.stringify(messageMember));
+
         // else, if member change is now live, add them to the fronters list!!
-        // currentFronters.push(member.content.name);
         currentFronters.push(messageMember);
     }
 
@@ -191,11 +216,10 @@ function fetchMembers(callback) {
     }
 
     xhrRequest("members/" + uid, "GET", null, function (response) {
+        localStorage.setItem("cachedMembers", response);
+
         var json = JSON.parse(response);
         var membersArr = [];
-
-        // cache members json string each time it's fetched
-        localStorage.setItem("cachedMembers", response);
 
         for (var i = 0; i < json.length; i++) {
             var name = json[i].content.name;
@@ -224,7 +248,41 @@ function fetchMembers(callback) {
 }
 
 function fetchCustomFronts(callback) {
-    // TODO: custom front fetching and displaying
+    // if uid couldn't be found, print an error and exit
+    if (!uid) {
+        console.log("Error: UID not found when fetching custom fronts!");
+        return;
+    }
+
+    xhrRequest("customFronts/" + uid, "GET", null, function (response) {
+        localStorage.setItem("cachedCustomFronts", response);
+
+        var json = JSON.parse(response);
+        var customFrontsArr = [];
+
+        for (var i = 0; i < json.length; i++) {
+            var name = json[i].content.name;
+
+            //* apparently strtol doesn't exist on pebble 
+            //*   lol so i need to use atoi using base 
+            //*   10 numbers <3
+
+            // strip leading "#" in hex, add a "0x",
+            //   then do some weird fuckery to convert to
+            //   a decimal string
+            var color = (json[i].content.color).slice(1);
+            color = "0x" + color;
+            color = Number(color).toString();
+
+            // assemble CSV string of each custom front data,,, has no pronouns!
+            var customFrontCsv = name + ",," + color;
+            customFrontsArr.push(customFrontCsv);
+        }
+
+        if (callback) {
+            callback(customFrontsArr);
+        }
+    });
 }
 
 function fetchFronters(callback) {
@@ -235,7 +293,9 @@ function fetchFronters(callback) {
     }
 
     xhrRequest("fronters/", "GET", null, function (response) {
-        callback(JSON.parse(response));
+        if (callback) {
+            callback(JSON.parse(response));
+        }
     });
 }
 
@@ -243,22 +303,20 @@ function fetchFronters(callback) {
 
 // #region XHR SENDING
 
-function setAsFront(id) {
+function setAsFront(id, custom) {
     // remove all current fronters
     for (var i = 0; i < currentFronters.length; i++) {
         removeFromFront(currentFronters[i].content.member);
     }
 
     // add new ID to front
-    addToFront(id);
+    addToFront(id, custom);
 }
 
-function addToFront(id) {
-    console.log("adding id " + id + " to front...");
-
+function addToFront(id, custom) {
     var options = {
         customStatus: "",
-        custom: false,
+        custom: custom,
         live: true,
         startTime: Date.now(),
         member: id
@@ -284,8 +342,8 @@ function removeFromFront(id) {
 
     // assemble options to send to the API
     var options = {
-        customStatus: "",
-        custom: false,
+        customStatus: currentFronter.content.customStatus,
+        custom: currentFronter.content.custom,
         live: false,
         startTime: currentFronter.content.startTime,
         endTime: Date.now(),
@@ -320,10 +378,11 @@ function sendSavedFrontersToWatch() {
 }
 
 function fetchAndSendDataToWatch() {
-    var numFetches = 2;
+    var numFetches = 3;
     var fetchesCompleted = 0;
     var membersFormatted = "";
     var frontersFormatted = "";
+    var customFrontsFormatted = "";
 
     // this is probably the most jank way of doing asynchronous parallel 
     //   fetching that await all to be done... hope it works well <3
@@ -332,6 +391,7 @@ function fetchAndSendDataToWatch() {
         Pebble.sendAppMessage(
             {
                 "Members": membersFormatted,
+                "CustomFronts": customFrontsFormatted,
                 "Fronters": frontersFormatted
             },
             function (data) {
@@ -354,18 +414,25 @@ function fetchAndSendDataToWatch() {
     fetchMembers(function (members) {
         membersFormatted = members.join("|");
         checkSend();
+    });
 
-        // fetch fronters depending on member cache
-        fetchFronters(function (fronters) {
-            console.log(JSON.stringify(fronters));
+    fetchCustomFronts(function (customFronts) {
+        console.log(customFronts);
+        customFrontsFormatted = customFronts.join("|");
+        console.log(customFrontsFormatted);
+        checkSend();
+    });
 
-            for (var i = 0; i < fronters.length; i++) {
-                currentFronters.push(fronters[i]);
-            }
+    // fetch fronters depending on member cache
+    fetchFronters(function (fronters) {
+        console.log(JSON.stringify(fronters));
 
-            frontersFormatted = getFormattedFronters();
-            checkSend();
-        });
+        for (var i = 0; i < fronters.length; i++) {
+            currentFronters.push(fronters[i]);
+        }
+
+        frontersFormatted = getFormattedFronters();
+        checkSend();
     });
 }
 
@@ -403,13 +470,44 @@ function setApiToken(token) {
     fetchUid(fetchAndSendDataToWatch);
 }
 
+function onAppMessage(messageDict) {
+    function frontRequest(callback, memberName) {
+        // attempt to find member via name
+        var isCustom = false;
+        var member = getCachedMemberByName(memberName);
+        if (!member) {
+            member = getCachedCustomFrontByName(memberName);
+            if (member) {
+                isCustom = true;
+            }
+        }
+
+        // if member could be found, handle callback with them
+        if (member) {
+            callback(member.id, isCustom);
+        }
+    }
+
+    if (messageDict.AddFrontRequest) {
+        frontRequest(addToFront, messageDict.AddFrontRequest);
+    }
+
+    if (messageDict.RemoveFrontRequest) {
+        frontRequest(removeFromFront, messageDict.RemoveFrontRequest);
+    }
+
+    if (messageDict.SetFrontRequest) {
+        frontRequest(setAsFront, messageDict.SetFrontRequest);
+    }
+}
+
 module.exports = {
     setup: setup,
     setApiToken: setApiToken,
-    addToFront: addToFront,
-    setAsFront: setAsFront,
-    removeFromFront: removeFromFront,
     getCachedMemberByName: getCachedMemberByName,
     getCachedMemberById: getCachedMemberById,
-    sendMembersToWatch: fetchAndSendDataToWatch
+    getCachedCustomFrontById: getCachedCustomFrontById,
+    getCachedCustomFrontByName: getCachedCustomFrontByName,
+    sendMembersToWatch: fetchAndSendDataToWatch,
+    onAppMessage: onAppMessage
 };

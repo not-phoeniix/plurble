@@ -30,36 +30,5 @@ Pebble.addEventListener("appmessage", function (e) {
 
     console.log("got message: " + JSON.stringify(dict));
 
-    if (dict.AddFrontRequest) {
-        // attempt to find member via name
-        var memberName = dict.AddFrontRequest;
-        var member = pluralApi.getCachedMemberByName(memberName);
-
-        // if member could be found, add them to front
-        if (member) {
-            pluralApi.addToFront(member.id);
-        }
-    }
-
-    if (dict.RemoveFrontRequest) {
-        // attempt to find member via name
-        var memberName = dict.RemoveFrontRequest;
-        var member = pluralApi.getCachedMemberByName(memberName);
-
-        // if member could be found, remove them from front
-        if (member) {
-            pluralApi.removeFromFront(member.id);
-        }
-    }
-
-    if (dict.SetFrontRequest) {
-        // attempt to find member via name
-        var memberName = dict.SetFrontRequest;
-        var member = pluralApi.getCachedMemberByName(memberName);
-
-        // if member could be found, set them to front
-        if (member) {
-            pluralApi.setAsFront(member.id);
-        }
-    }
+    pluralApi.onAppMessage(dict);
 });

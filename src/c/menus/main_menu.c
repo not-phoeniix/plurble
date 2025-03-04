@@ -11,21 +11,24 @@ static SimpleMenuItem member_items[3];
 static SimpleMenuItem extra_items[1];
 static SimpleMenuSection sections[2];
 static bool members_loaded = false;
+static bool custom_fronts_loaded = false;
 
 static void member_select(int index, void* context) {
     switch (index) {
         case 0:
-            if (members_loaded) {
+            if (members_loaded && custom_fronts_loaded) {
                 members_menu_push(members_get_fronters());
             }
             break;
         case 1:
             if (members_loaded) {
-                members_menu_push(members_get_all());
+                members_menu_push(members_get_members());
             }
             break;
         case 2:
-            printf("custom front pressed!");
+            if (custom_fronts_loaded) {
+                members_menu_push(members_get_custom_fronts());
+            }
             break;
     }
 }
@@ -54,7 +57,7 @@ static void window_load() {
 
     member_items[2] = (SimpleMenuItem) {
         .title = "Custom Front",
-        .subtitle = NULL,
+        .subtitle = "loading custom fronts...",
         .icon = NULL,
         .callback = member_select
     };
@@ -141,6 +144,12 @@ void main_menu_mark_members_loaded() {
     member_items[1].subtitle = NULL;
     layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
     members_loaded = true;
+}
+
+void main_menu_mark_custom_fronts_loaded() {
+    member_items[2].subtitle = NULL;
+    layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    custom_fronts_loaded = true;
 }
 
 void main_menu_set_fronters_subtitle(const char* subtitle) {

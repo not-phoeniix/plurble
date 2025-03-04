@@ -40,7 +40,7 @@ void drawing_draw_member_cell(GContext* ctx, Member* member, MenuLayer* menu_lay
         ctx,
         cell_layer,
         member->name,
-        compact ? NULL : member->pronouns,
+        compact || member->custom ? NULL : member->pronouns,
         NULL
     );
 }

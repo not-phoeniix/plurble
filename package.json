@@ -35,6 +35,7 @@
             "AccentColor",
             "BackgroundColor",
             "Members",
+            "CustomFronts",
             "Fronters",
             "CustomFronts",
             "AddFrontRequest",
