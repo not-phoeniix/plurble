@@ -72,6 +72,7 @@ static void menu_layer_setup(MemberMenu* menu) {
     menu_layer_set_click_config_onto_window(menu->menu_layer, menu->window);
     layer_add_child(window_layer, menu_layer_get_layer(menu->menu_layer));
     update_selected_highlight(menu, 0);
+    member_menu_update_colors(menu);
 }
 
 // ~~~ ACTION MENU SETUP ~~~

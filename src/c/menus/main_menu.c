@@ -95,7 +95,7 @@ static void window_load() {
         window, 
         sections, 
         1, 
-        // 1, 
+        // 2, 
         NULL
     );
 

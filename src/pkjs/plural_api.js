@@ -426,6 +426,9 @@ function fetchAndSendDataToWatch() {
     fetchFronters(function (fronters) {
         console.log(JSON.stringify(fronters));
 
+        // remove all previous fronters when fetching new fronters
+        currentFronters = [];
+
         for (var i = 0; i < fronters.length; i++) {
             currentFronters.push(fronters[i]);
         }

@@ -1,5 +1,5 @@
 {
-    "name": "simplyplural_pebble",
+    "name": "plurble",
     "author": "Nikki",
     "version": "0.1.0",
     "keywords": [
@@ -10,7 +10,7 @@
         "pebble-clay": "^1.0.4"
     },
     "pebble": {
-        "displayName": "SimplyPlural",
+        "displayName": "Plurble",
         "uuid": "ce4767cb-43af-4b3b-b7ac-fcc4dfe84e9b",
         "sdkVersion": "3",
         "capabilities": [
