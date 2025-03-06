@@ -9,7 +9,7 @@
 static Window* window = NULL;
 static SimpleMenuLayer* simple_menu_layer = NULL;
 static SimpleMenuItem member_items[3];
-static SimpleMenuItem extra_items[1];
+static SimpleMenuItem extra_items[2];
 static SimpleMenuSection sections[2];
 static bool members_loaded = false;
 static bool custom_fronts_loaded = false;
@@ -67,7 +67,7 @@ static void window_load() {
     sections[0] = (SimpleMenuSection) {
         .items = member_items,
         .num_items = 3,
-        .title = "Member Management"
+        // .title = "Member Management"
     };
 
     extra_items[0] = (SimpleMenuItem) {
@@ -77,13 +77,27 @@ static void window_load() {
         .callback = extra_select
     };
 
+    extra_items[1] = (SimpleMenuItem) {
+        .title = "Chat",
+        .subtitle = NULL,
+        .icon = NULL,
+        .callback = extra_select
+    };
+
     sections[1] = (SimpleMenuSection) {
         .items = extra_items,
-        .num_items = 1,
+        .num_items = 2,
         .title = "Extra"
     };
 
-    simple_menu_layer = simple_menu_layer_create(bounds, window, sections, 2, NULL);
+    simple_menu_layer = simple_menu_layer_create(
+        bounds, 
+        window, 
+        sections, 
+        1, 
+        // 1, 
+        NULL
+    );
 
     main_menu_update_colors();
 
