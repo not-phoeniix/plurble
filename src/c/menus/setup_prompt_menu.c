@@ -1,5 +1,4 @@
 #include "setup_prompt_menu.h"
-#include <pebble.h>
 #include "../config/config.h"
 
 static Window* window = NULL;
@@ -76,4 +75,8 @@ void setup_prompt_menu_remove() {
         window_destroy(window);
         window = NULL;
     }
+}
+
+bool setup_prompt_menu_shown() {
+    return window_stack_get_top_window() == window;
 }

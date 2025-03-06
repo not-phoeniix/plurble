@@ -26,7 +26,10 @@ static void apply() {
     all_members_menu_update_colors();
     custom_fronts_menu_update_colors();
     fronters_menu_update_colors();
-    if (settings.api_key_valid) {
+
+    // only push main menu and remove prompt if
+    //   the prompt is shown in the first place!
+    if (settings.api_key_valid && setup_prompt_menu_shown()) {
         main_menu_push();
         setup_prompt_menu_remove();
     }

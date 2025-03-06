@@ -74,7 +74,7 @@ function getFormattedFronters() {
             console.log("WAHHHHH trying to get custom front!");
             fronter = getCachedCustomFrontById(currentFronters[i].content.member);
         }
-        
+
         if (!fronter) {
             console.log("couldn't find inputted fronter with id " + currentFronters[i].content.member + "...");
         }
@@ -87,6 +87,35 @@ function getFormattedFronters() {
 
     // return formatted string joined by the "|" delimiter
     return fronters.join("|");
+}
+
+function formatMember(member) {
+    var name = "";
+    if (member.content.name) {
+        name = member.content.name;
+    }
+
+    var pronouns = "";
+    if (member.content.pronouns) {
+        pronouns = member.content.pronouns;
+    }
+
+    //* apparently strtol doesn't exist on pebble 
+    //*   lol so i need to use atoi using base 
+    //*   10 numbers <3
+
+    // strip leading "#" in hex, add a "0x",
+    //   then do some weird fuckery to convert to
+    //   a decimal string
+    var color = "";
+    if (member.content.color) {
+        color = (member.content.color).slice(1);
+        color = "0x" + color;
+        color = Number(color).toString();
+    }
+
+    // assemble CSV string of each member data
+    return name + "," + pronouns + "," + color;
 }
 
 // #endregion
@@ -222,23 +251,7 @@ function fetchMembers(callback) {
         var membersArr = [];
 
         for (var i = 0; i < json.length; i++) {
-            var name = json[i].content.name;
-            var pronouns = json[i].content.pronouns;
-
-            //* apparently strtol doesn't exist on pebble 
-            //*   lol so i need to use atoi using base 
-            //*   10 numbers <3
-
-            // strip leading "#" in hex, add a "0x",
-            //   then do some weird fuckery to convert to
-            //   a decimal string
-            var color = (json[i].content.color).slice(1);
-            color = "0x" + color;
-            color = Number(color).toString();
-
-            // assemble CSV string of each member data
-            var memberCsv = name + "," + pronouns + "," + color;
-            membersArr.push(memberCsv);
+            membersArr.push(formatMember(json[i]));
         }
 
         if (callback) {
@@ -261,22 +274,7 @@ function fetchCustomFronts(callback) {
         var customFrontsArr = [];
 
         for (var i = 0; i < json.length; i++) {
-            var name = json[i].content.name;
-
-            //* apparently strtol doesn't exist on pebble 
-            //*   lol so i need to use atoi using base 
-            //*   10 numbers <3
-
-            // strip leading "#" in hex, add a "0x",
-            //   then do some weird fuckery to convert to
-            //   a decimal string
-            var color = (json[i].content.color).slice(1);
-            color = "0x" + color;
-            color = Number(color).toString();
-
-            // assemble CSV string of each custom front data,,, has no pronouns!
-            var customFrontCsv = name + ",," + color;
-            customFrontsArr.push(customFrontCsv);
+            customFrontsArr.push(formatMember(json[i]));
         }
 
         if (callback) {
@@ -396,10 +394,10 @@ function fetchAndSendDataToWatch() {
                 "ApiKeyValid": true
             },
             function (data) {
-                console.log("members sent!");
+                console.log("fetched data sent!");
             },
             function (data, error) {
-                console.log("ERROR in member sending!! error: " + error);
+                console.log("ERROR in fetched data sending!! error: " + error);
             }
         );
     }
@@ -437,6 +435,44 @@ function fetchAndSendDataToWatch() {
     });
 }
 
+function sendCachedDataToWatch() {
+    var data = {};
+
+    var cachedMembers = localStorage.getItem("cachedMembers");
+    if (cachedMembers) {
+        var json = JSON.parse(cachedMembers);
+
+        var membersArr = [];
+        for (var i = 0; i < json.length; i++) {
+            membersArr.push(formatMember(json[i]));
+        }
+
+        data.Members = membersArr.join("|");
+    }
+
+    var cachedCustomFronts = localStorage.getItem("cachedCustomFronts");
+    if (cachedCustomFronts) {
+        var json = JSON.parse(cachedCustomFronts);
+
+        var frontsArr = [];
+        for (var i = 0; i < json.length; i++) {
+            frontsArr.push(formatMember(json[i]));
+        }
+
+        data.CustomFronts = frontsArr.join("|");
+    }
+
+    Pebble.sendAppMessage(
+        data,
+        function (data) {
+            console.log("cached data sent!");
+        },
+        function (data, error) {
+            console.log("ERROR in cached data sending!! error: " + error);
+        }
+    )
+}
+
 // #endregion
 
 function setup() {
@@ -462,6 +498,9 @@ function setup() {
 
     // set up the websocket and begin message listening
     openSocket(apiToken);
+
+    // send cached data to watch immediately for snappiness
+    sendCachedDataToWatch();
 }
 
 function setApiToken(token) {
