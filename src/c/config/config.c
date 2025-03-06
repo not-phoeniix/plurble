@@ -2,7 +2,7 @@
 #include "../messaging/messaging.h"
 #include "../menus/main_menu.h"
 #include "../menus/members_menu.h"
-#include "../member_collections.h"
+#include "../members/member_collections.h"
 
 #define SETTINGS_KEY 1
 

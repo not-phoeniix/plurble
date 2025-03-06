@@ -1,7 +1,7 @@
 #include "messaging.h"
 #include <pebble.h>
 #include "../config/config.h"
-#include "../member_collections.h"
+#include "../members/member_collections.h"
 
 //! NOTE: all the MESSAGE_KEY_WhateverKey defines are added
 //!   later via the compiler.... these will look like errors

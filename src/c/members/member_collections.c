@@ -1,6 +1,6 @@
 #include "member_collections.h"
-#include "tools/string_tools.h"
-#include "menus/main_menu.h"
+#include "../tools/string_tools.h"
+#include "../menus/main_menu.h"
 
 static MemberList all_members;
 static MemberList custom_fronts;

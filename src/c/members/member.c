@@ -1,8 +1,8 @@
 #include "member.h"
 #include <pebble.h>
-#include "tools/string_tools.h"
-#include "menus/main_menu.h"
-#include "menus/members_menu.h"
+#include "../tools/string_tools.h"
+#include "../menus/main_menu.h"
+#include "../menus/members_menu.h"
 
 // ~~~ dynamic array functions ~~~
 

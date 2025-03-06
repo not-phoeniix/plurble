@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../member.h"
+#include "../members/member.h"
 
 void messaging_init();
 void messaging_add_to_front(Member* member);

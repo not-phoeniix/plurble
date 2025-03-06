@@ -3,8 +3,7 @@
 #include "messaging/messaging.h"
 #include "menus/main_menu.h"
 #include "menus/members_menu.h"
-#include "member_collections.h"
-#include "tools/drawing.h"
+#include "members/member_collections.h"
 
 static void init() {
     messaging_init();
@@ -16,7 +15,6 @@ static void deinit() {
     members_menu_deinit();
     main_menu_deinit();
     member_collections_deinit();
-    drawing_deinit();
 }
 
 int main() {

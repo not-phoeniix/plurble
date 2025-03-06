@@ -3,6 +3,8 @@
         "menus.h": "c",
         "pebble.h": "c",
         "members_menu.h": "c",
-        "member_collections.h": "c"
+        "member_collections.h": "c",
+        "drawing.h": "c",
+        "member_menu.h": "c"
     }
 }

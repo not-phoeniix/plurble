@@ -1,9 +1,10 @@
 #include "main_menu.h"
-#include "members_menu.h"
 #include "../tools/string_tools.h"
-#include "../tools/drawing.h"
 #include "../config/config.h"
-#include "../member_collections.h"
+#include "../members/member_collections.h"
+#include "all_members_menu.h"
+#include "fronters_menu.h"
+#include "custom_fronts_menu.h"
 
 static Window* window = NULL;
 static SimpleMenuLayer* simple_menu_layer = NULL;
@@ -17,17 +18,17 @@ static void member_select(int index, void* context) {
     switch (index) {
         case 0:
             if (members_loaded && custom_fronts_loaded) {
-                members_menu_push(members_get_fronters());
+                fronters_menu_push();
             }
             break;
         case 1:
             if (members_loaded) {
-                members_menu_push(members_get_members());
+                all_members_menu_push();
             }
             break;
         case 2:
             if (custom_fronts_loaded) {
-                members_menu_push(members_get_custom_fronts());
+                custom_fronts_menu_push();
             }
             break;
     }
@@ -131,6 +132,9 @@ void main_menu_update_colors() {
 }
 
 void main_menu_deinit() {
+    all_members_menu_deinit();
+    fronters_menu_deinit();
+
     if (simple_menu_layer != NULL) {
         simple_menu_layer_destroy(simple_menu_layer);
     }
