@@ -1,7 +1,9 @@
 #include "config.h"
 #include "../messaging/messaging.h"
 #include "../menus/main_menu.h"
-#include "../menus/members_menu.h"
+#include "../menus/all_members_menu.h"
+#include "../menus/custom_fronts_menu.h"
+#include "../menus/fronters_menu.h"
 #include "../members/member_collections.h"
 
 #define SETTINGS_KEY 1
@@ -19,7 +21,9 @@ static void set_defaults() {
 
 static void apply() {
     main_menu_update_colors();
-    members_menu_update_colors();
+    all_members_menu_update_colors();
+    custom_fronts_menu_update_colors();
+    fronters_menu_update_colors();
 
     // mark current window layer for redraw on settings application
     Window* top_window = window_stack_get_top_window();

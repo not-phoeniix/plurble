@@ -132,9 +132,6 @@ void main_menu_update_colors() {
 }
 
 void main_menu_deinit() {
-    all_members_menu_deinit();
-    fronters_menu_deinit();
-
     if (simple_menu_layer != NULL) {
         simple_menu_layer_destroy(simple_menu_layer);
     }

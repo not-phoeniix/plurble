@@ -1,6 +1,6 @@
 #include "fronters_menu.h"
 #include <pebble.h>
-#include "../members/member_menu.h"
+#include "member_menu.h"
 #include "../members/member_collections.h"
 
 static MemberMenu* menu = NULL;
@@ -32,5 +32,11 @@ void fronters_menu_deinit() {
     if (menu != NULL) {
         member_menu_destroy(menu);
         menu = NULL;
+    }
+}
+
+void fronters_menu_update_colors() {
+    if (menu != NULL) {
+        member_menu_update_colors(menu);
     }
 }
