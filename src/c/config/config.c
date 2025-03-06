@@ -5,6 +5,7 @@
 #include "../menus/custom_fronts_menu.h"
 #include "../menus/fronters_menu.h"
 #include "../members/member_collections.h"
+#include "../menus/setup_prompt_menu.h"
 
 #define SETTINGS_KEY 1
 
@@ -17,6 +18,7 @@ static void set_defaults() {
     settings.member_color_highlight = false;
     settings.member_color_tag = PBL_IF_COLOR_ELSE(true, false);
     settings.global_fronter_accent = false;
+    settings.api_key_valid = false;
 }
 
 static void apply() {
@@ -24,6 +26,10 @@ static void apply() {
     all_members_menu_update_colors();
     custom_fronts_menu_update_colors();
     fronters_menu_update_colors();
+    if (settings.api_key_valid) {
+        main_menu_push();
+        setup_prompt_menu_remove();
+    }
 
     // mark current window layer for redraw on settings application
     Window* top_window = window_stack_get_top_window();

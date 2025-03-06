@@ -6,11 +6,17 @@
 #include "menus/all_members_menu.h"
 #include "menus/custom_fronts_menu.h"
 #include "menus/fronters_menu.h"
+#include "menus/setup_prompt_menu.h"
 
 static void init() {
     messaging_init();
     settings_load();
-    main_menu_push();
+
+    if (settings_get()->api_key_valid) {
+        main_menu_push();
+    } else {
+        setup_prompt_menu_push();
+    }
 }
 
 static void deinit() {

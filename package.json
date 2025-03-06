@@ -32,6 +32,7 @@
             "MemberColorTag",
             "GlobalFronterAccent",
             "PluralApiKey",
+            "ApiKeyValid",
             "AccentColor",
             "BackgroundColor",
             "Members",
@@ -43,7 +44,13 @@
             "RemoveFrontRequest"
         ],
         "resources": {
-            "media": []
+            "media": [
+                {
+                    "type": "bitmap",
+                    "name": "ConfigRequired",
+                    "file": "config-required.png"
+                }
+            ]
         }
     }
 }

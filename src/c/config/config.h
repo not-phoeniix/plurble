@@ -9,6 +9,7 @@ typedef struct {
     bool member_color_tag;
     bool member_color_highlight;
     bool global_fronter_accent;
+    bool api_key_valid;
 } ClaySettings;
 
 ClaySettings* settings_get();

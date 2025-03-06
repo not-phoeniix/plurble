@@ -43,7 +43,7 @@
         "label": "UI Accent Color",
         "allowGray": "true",
         "description": "App-wide UI accent color.",
-        "defaultValue": "0xFFFF00"
+        "defaultValue": "0xFFAA00"
       },
       {
         "type": "color",

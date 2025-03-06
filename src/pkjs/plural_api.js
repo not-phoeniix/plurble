@@ -392,7 +392,8 @@ function fetchAndSendDataToWatch() {
             {
                 "Members": membersFormatted,
                 "CustomFronts": customFrontsFormatted,
-                "Fronters": frontersFormatted
+                "Fronters": frontersFormatted,
+                "ApiKeyValid": true
             },
             function (data) {
                 console.log("members sent!");

@@ -86,6 +86,11 @@ static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
         members_set_fronters(fronters->value->cstring);
     }
 
+    Tuple* api_key_valid = dict_find(iter, MESSAGE_KEY_ApiKeyValid);
+    if (api_key_valid != NULL) {
+        settings->api_key_valid = api_key_valid->value->int16;
+    }
+
     settings_save();
 }
 

@@ -42,23 +42,24 @@ static void window_load() {
     Layer* window_layer = window_get_root_layer(window);
     GRect bounds = layer_get_bounds(window_layer);
 
+    bool fronters_loaded = members_loaded && custom_fronts_loaded;
     member_items[0] = (SimpleMenuItem) {
         .title = "Fronters",
-        .subtitle = "loading fronters...",
+        .subtitle = fronters_loaded ? "no one is fronting" : "loading fronters...",
         .icon = NULL,
         .callback = member_select
     };
 
     member_items[1] = (SimpleMenuItem) {
         .title = "Member List",
-        .subtitle = "loading members...",
+        .subtitle = members_loaded ? NULL : "loading members...",
         .icon = NULL,
         .callback = member_select
     };
 
     member_items[2] = (SimpleMenuItem) {
         .title = "Custom Front",
-        .subtitle = "loading custom fronts...",
+        .subtitle = custom_fronts_loaded ? NULL : "loading custom fronts...",
         .icon = NULL,
         .callback = member_select
     };
@@ -143,13 +144,19 @@ void main_menu_deinit() {
 
 void main_menu_mark_members_loaded() {
     member_items[1].subtitle = NULL;
-    layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    if (simple_menu_layer != NULL) {
+        layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    }
+
     members_loaded = true;
 }
 
 void main_menu_mark_custom_fronts_loaded() {
     member_items[2].subtitle = NULL;
-    layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    if (simple_menu_layer != NULL) {
+        layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    }
+
     custom_fronts_loaded = true;
 }
 
