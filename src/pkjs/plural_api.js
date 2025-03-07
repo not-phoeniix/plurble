@@ -247,15 +247,8 @@ function fetchMembers(callback) {
     xhrRequest("members/" + uid, "GET", null, function (response) {
         localStorage.setItem("cachedMembers", response);
 
-        var json = JSON.parse(response);
-        var membersArr = [];
-
-        for (var i = 0; i < json.length; i++) {
-            membersArr.push(formatMember(json[i]));
-        }
-
         if (callback) {
-            callback(membersArr);
+            callback(JSON.parse(response));
         }
     });
 }
@@ -270,15 +263,8 @@ function fetchCustomFronts(callback) {
     xhrRequest("customFronts/" + uid, "GET", null, function (response) {
         localStorage.setItem("cachedCustomFronts", response);
 
-        var json = JSON.parse(response);
-        var customFrontsArr = [];
-
-        for (var i = 0; i < json.length; i++) {
-            customFrontsArr.push(formatMember(json[i]));
-        }
-
         if (callback) {
-            callback(customFrontsArr);
+            callback(JSON.parse(response));
         }
     });
 }
@@ -286,11 +272,25 @@ function fetchCustomFronts(callback) {
 function fetchFronters(callback) {
     // if uid couldn't be found, print an error and exit
     if (!uid) {
-        console.log("Error: UID not found when fetching members!");
+        console.log("Error: UID not found when fetching fronters!");
         return;
     }
 
     xhrRequest("fronters/", "GET", null, function (response) {
+        if (callback) {
+            callback(JSON.parse(response));
+        }
+    });
+}
+
+function fetchGroups(callback) {
+    // if uid couldn't be found, print an error and exit
+    if (!uid) {
+        console.log("Error: UID not found when fetching groups!");
+        return;
+    }
+
+    xhrRequest("groups/" + uid, "GET", null, function (response) {
         if (callback) {
             callback(JSON.parse(response));
         }
@@ -409,20 +409,26 @@ function fetchAndSendDataToWatch() {
         }
     }
 
-    // fetch and cache members first so fronters can access cache
-    fetchMembers(function (members) {
-        membersFormatted = members.join("|");
+    fetchMembers(function (membersJson) {
+        var membersArr = [];
+        for (var i = 0; i < membersJson.length; i++) {
+            membersArr.push(formatMember(membersJson[i]));
+        }
+
+        membersFormatted = membersArr.join("|");
         checkSend();
     });
 
-    fetchCustomFronts(function (customFronts) {
-        console.log(customFronts);
-        customFrontsFormatted = customFronts.join("|");
-        console.log(customFrontsFormatted);
+    fetchCustomFronts(function (customFrontsJson) {
+        var customFrontsArr = [];
+        for (var i = 0; i < customFrontsJson.length; i++) {
+            customFrontsArr.push(formatMember(customFrontsJson[i]));
+        }
+
+        customFrontsFormatted = customFrontsArr.join("|");
         checkSend();
     });
 
-    // fetch fronters depending on member cache
     fetchFronters(function (fronters) {
         console.log(JSON.stringify(fronters));
 

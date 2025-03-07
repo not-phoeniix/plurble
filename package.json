@@ -49,6 +49,12 @@
                     "type": "bitmap",
                     "name": "ConfigRequired",
                     "file": "config-required.png"
+                },
+                {
+                    "type": "bitmap",
+                    "name": "MenuIcon",
+                    "menuIcon": "true",
+                    "file": "icon.png"
                 }
             ]
         }
