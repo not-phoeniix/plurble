@@ -212,6 +212,10 @@ function onMessage(e) {
 }
 
 function openSocket(token) {
+    if (socket) {
+        socket.close();
+    }
+
     socket = new WebSocket(socketUrl);
     socket.onopen = onOpenToken(token);
     socket.onmessage = onMessage;
