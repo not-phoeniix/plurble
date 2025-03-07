@@ -20,15 +20,16 @@ static void window_load(Window* window) {
     GRect text_bounds = {
         .origin = (GPoint) {.x = 0, .y = 0},
         .size = {
-            .w = bounds.size.w * 3 / 4,
-            .h = 40
+            .w = 130,
+            .h = 80
         }
     };
+
     grect_align(&text_bounds, &bounds, GAlignCenter, false);
 
     text_layer = text_layer_create(text_bounds);
-    text_layer_set_font(text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
-    text_layer_set_text(text_layer, "no one is currently fronting...");
+    text_layer_set_font(text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+    text_layer_set_text(text_layer, "No one is currently fronting...");
     text_layer_set_text_alignment(text_layer, GTextAlignmentCenter);
 
     if (members_get_fronters()->num_stored <= 0) {
