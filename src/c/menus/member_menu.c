@@ -38,7 +38,16 @@ static uint16_t get_num_rows(MenuLayer* layer, uint16_t section_index, void* con
 
 static int16_t get_cell_height(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
     bool compact = settings_get()->compact_member_list;
+
+#if defined(PBL_ROUND)
+    if (menu_layer_is_index_selected(menu_layer, cell_index)) {
+        return compact ? 28 : 50;
+    } else {
+        return compact ? 28 : 32;
+    }
+#else
     return compact ? 28 : 44;
+#endif
 }
 
 static uint16_t get_num_sections(MenuLayer* menu_layer, void* context) {
@@ -272,4 +281,8 @@ MemberList* member_menu_get_members(MemberMenu* menu) {
 
 void member_menu_set_members(MemberMenu* menu, MemberList* members) {
     menu->members = members;
+}
+
+Window* member_menu_get_window(MemberMenu* menu) {
+    return menu->window;
 }

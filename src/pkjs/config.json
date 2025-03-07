@@ -67,7 +67,8 @@
         "description": "Small tag in the member list of each member's color next to their name.",
         "defaultValue": true,
         "capabilities": [
-          "COLOR"
+          "COLOR",
+          "RECT"
         ]
       },
       {

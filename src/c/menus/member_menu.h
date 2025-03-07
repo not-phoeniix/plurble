@@ -23,3 +23,4 @@ void member_menu_window_push(MemberMenu* menu);
 void member_menu_window_remove(MemberMenu* menu);
 void member_menu_set_members(MemberMenu* menu, MemberList* members);
 MemberList* member_menu_get_members(MemberMenu* menu);
+Window* member_menu_get_window(MemberMenu* menu);

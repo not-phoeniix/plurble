@@ -1,6 +1,7 @@
 #include "member_collections.h"
 #include "../tools/string_tools.h"
 #include "../menus/main_menu.h"
+#include "../menus/fronters_menu.h"
 
 static MemberList all_members;
 static MemberList custom_fronts;
@@ -77,6 +78,7 @@ void members_set_fronters(char* fronters_str) {
     // if empty string, exit early
     if (strcmp(fronters_str, "") == 0) {
         main_menu_set_fronters_subtitle("no one is fronting");
+        fronters_menu_set_is_empty(true);
         return;
     }
 
@@ -123,8 +125,9 @@ void members_set_fronters(char* fronters_str) {
 
     string_array_free(member_split, num_members);
 
-    // set main menu subtitle to name of the first fronter!
+    // update menu information status information
     main_menu_set_fronters_subtitle(fronters.members[0]->name);
+    fronters_menu_set_is_empty(false);
 }
 
 void member_collections_deinit() {
