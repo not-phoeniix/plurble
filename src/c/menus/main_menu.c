@@ -11,6 +11,7 @@ static SimpleMenuLayer* simple_menu_layer = NULL;
 static SimpleMenuItem member_items[3];
 static SimpleMenuItem extra_items[2];
 static SimpleMenuSection sections[2];
+static TextLayer* status_bar_text = NULL;
 static bool members_loaded = false;
 static bool custom_fronts_loaded = false;
 
@@ -40,7 +41,6 @@ static void extra_select(int index, void* context) {
 
 static void window_load() {
     Layer* window_layer = window_get_root_layer(window);
-    GRect bounds = layer_get_bounds(window_layer);
 
     bool fronters_loaded = members_loaded && custom_fronts_loaded;
     member_items[0] = (SimpleMenuItem) {
@@ -90,23 +90,38 @@ static void window_load() {
         .title = "Extra"
     };
 
+    GRect menu_bounds = layer_get_bounds(window_layer);
+    menu_bounds.origin.y += STATUS_BAR_LAYER_HEIGHT;
+    menu_bounds.size.h -= STATUS_BAR_LAYER_HEIGHT;
+
     simple_menu_layer = simple_menu_layer_create(
-        bounds, 
-        window, 
-        sections, 
-        1, 
-        // 2, 
+        menu_bounds,
+        window,
+        sections,
+        1,
+        // 2,
         NULL
     );
 
-    main_menu_update_colors();
-
     layer_add_child(window_layer, simple_menu_layer_get_layer(simple_menu_layer));
+
+    GRect status_bar_bounds = layer_get_bounds(window_layer);
+    status_bar_bounds.size.h = STATUS_BAR_LAYER_HEIGHT;
+    status_bar_bounds.origin.y -= 2;
+    status_bar_text = text_layer_create(status_bar_bounds);
+    text_layer_set_font(status_bar_text, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+    text_layer_set_text_alignment(status_bar_text, GTextAlignmentCenter);
+    text_layer_set_text(status_bar_text, "Plurble");
+    layer_add_child(window_layer, text_layer_get_layer(status_bar_text));
+
+    main_menu_update_colors();
 }
 
 static void window_unload() {
     simple_menu_layer_destroy(simple_menu_layer);
     simple_menu_layer = NULL;
+    text_layer_destroy(status_bar_text);
+    status_bar_text = NULL;
 }
 
 void main_menu_push() {
@@ -126,31 +141,31 @@ void main_menu_push() {
 
 void main_menu_update_colors() {
     ClaySettings* settings = settings_get();
-    if (settings != NULL) {
-        if (simple_menu_layer != NULL) {
-            menu_layer_set_highlight_colors(
-                simple_menu_layer_get_menu_layer(simple_menu_layer),
-                settings_get_global_accent(),
-                gcolor_legible_over(settings_get_global_accent())
-            );
-            menu_layer_set_normal_colors(
-                simple_menu_layer_get_menu_layer(simple_menu_layer),
-                settings->background_color,
-                gcolor_legible_over(settings->background_color)
-            );
-        }
 
-        if (window != NULL) {
-            window_set_background_color(window, settings->background_color);
-        }
+    if (simple_menu_layer != NULL) {
+        menu_layer_set_highlight_colors(
+            simple_menu_layer_get_menu_layer(simple_menu_layer),
+            settings_get_global_accent(),
+            gcolor_legible_over(settings_get_global_accent())
+        );
+        menu_layer_set_normal_colors(
+            simple_menu_layer_get_menu_layer(simple_menu_layer),
+            settings->background_color,
+            gcolor_legible_over(settings->background_color)
+        );
+    }
+
+    if (status_bar_text != NULL) {
+        text_layer_set_background_color(status_bar_text, settings->background_color);
+        text_layer_set_text_color(status_bar_text, gcolor_legible_over(settings->background_color));
+    }
+
+    if (window != NULL) {
+        window_set_background_color(window, settings->background_color);
     }
 }
 
 void main_menu_deinit() {
-    if (simple_menu_layer != NULL) {
-        simple_menu_layer_destroy(simple_menu_layer);
-    }
-
     if (window != NULL) {
         window_destroy(window);
     }

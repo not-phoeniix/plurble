@@ -22,7 +22,7 @@ void all_members_menu_push() {
             .window_unload = NULL
         };
 
-        menu = member_menu_create(callbacks, members_get_members());
+        menu = member_menu_create(callbacks, members_get_members(), "Member List");
     }
 
     member_menu_window_push(menu);

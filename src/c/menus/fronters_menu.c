@@ -1,6 +1,7 @@
 #include "fronters_menu.h"
 #include "member_menu.h"
 #include "../members/member_collections.h"
+#include "../config/config.h"
 
 static MemberMenu* menu = NULL;
 static TextLayer* text_layer = NULL;
@@ -30,6 +31,8 @@ static void window_load(Window* window) {
     text_layer = text_layer_create(text_bounds);
     text_layer_set_font(text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
     text_layer_set_text(text_layer, "No one is currently fronting...");
+    text_layer_set_background_color(text_layer, settings_get()->background_color);
+    text_layer_set_text_color(text_layer, gcolor_legible_over(settings_get()->background_color));
     text_layer_set_text_alignment(text_layer, GTextAlignmentCenter);
 
     if (members_get_fronters()->num_stored <= 0) {
@@ -54,7 +57,7 @@ void fronters_menu_push() {
             .window_unload = window_unload
         };
 
-        menu = member_menu_create(callbacks, members_get_fronters());
+        menu = member_menu_create(callbacks, members_get_fronters(), "Fronters");
     }
 
     member_menu_window_push(menu);
@@ -70,6 +73,11 @@ void fronters_menu_deinit() {
 void fronters_menu_update_colors() {
     if (menu != NULL) {
         member_menu_update_colors(menu);
+    }
+
+    if (text_layer != NULL) {
+        text_layer_set_background_color(text_layer, settings_get()->background_color);
+        text_layer_set_text_color(text_layer, gcolor_legible_over(settings_get()->background_color));
     }
 }
 

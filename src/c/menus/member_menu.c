@@ -10,6 +10,9 @@ struct MemberMenu {
     ActionMenuLevel* fronting_action_level;
     ActionMenuConfig action_menu_config;
 
+    const char* name;
+    TextLayer* status_bar_text;
+
     Member* selected_member;
     MemberList* members;
     GColor highlight_color;
@@ -63,6 +66,8 @@ static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex o
 static void menu_layer_setup(MemberMenu* menu) {
     Layer* window_layer = window_get_root_layer(menu->window);
     GRect bounds = layer_get_bounds(window_layer);
+    bounds.size.h -= STATUS_BAR_LAYER_HEIGHT;
+    bounds.origin.y += STATUS_BAR_LAYER_HEIGHT;
 
     menu->menu_layer = menu_layer_create(bounds);
     menu_layer_set_callbacks(
@@ -82,6 +87,21 @@ static void menu_layer_setup(MemberMenu* menu) {
     layer_add_child(window_layer, menu_layer_get_layer(menu->menu_layer));
     update_selected_highlight(menu, 0);
     member_menu_update_colors(menu);
+}
+
+static void status_bar_setup(MemberMenu* menu) {
+    Layer* root_layer = window_get_root_layer(menu->window);
+
+    GRect status_bar_bounds = layer_get_bounds(root_layer);
+    status_bar_bounds.size.h = STATUS_BAR_LAYER_HEIGHT;
+    status_bar_bounds.origin.y -= 2;
+
+    menu->status_bar_text = text_layer_create(status_bar_bounds);
+    text_layer_set_font(menu->status_bar_text, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+    text_layer_set_text_alignment(menu->status_bar_text, GTextAlignmentCenter);
+    text_layer_set_text(menu->status_bar_text, menu->name);
+
+    layer_add_child(root_layer, text_layer_get_layer(menu->status_bar_text));
 }
 
 // ~~~ ACTION MENU SETUP ~~~
@@ -134,7 +154,10 @@ static void window_load(Window* window) {
     MemberMenu* menu = (MemberMenu*)window_get_user_data(window);
 
     menu_layer_setup(menu);
+    status_bar_setup(menu);
     action_menu_setup(menu);
+
+    member_menu_update_colors(menu);
 
     if (menu->callbacks.window_load != NULL) {
         menu->callbacks.window_load(window);
@@ -143,7 +166,15 @@ static void window_load(Window* window) {
 
 static void window_unload(Window* window) {
     MemberMenu* menu = (MemberMenu*)window_get_user_data(window);
+
     menu_layer_destroy(menu->menu_layer);
+    menu->menu_layer = NULL;
+    text_layer_destroy(menu->status_bar_text);
+    menu->status_bar_text = NULL;
+    action_menu_hierarchy_destroy(menu->fronting_action_level, NULL, NULL);
+    menu->fronting_action_level = NULL;
+    action_menu_hierarchy_destroy(menu->non_fronting_action_level, NULL, NULL);
+    menu->non_fronting_action_level = NULL;
 
     if (menu->callbacks.window_unload != NULL) {
         menu->callbacks.window_unload(window);
@@ -217,27 +248,31 @@ void member_menu_select_member(MemberMenu* menu, MenuIndex* cell_index) {
 
 void member_menu_update_colors(MemberMenu* menu) {
     ClaySettings* settings = settings_get();
-    if (settings != NULL) {
-        if (menu->menu_layer != NULL) {
-            menu_layer_set_highlight_colors(
-                menu->menu_layer,
-                settings_get_global_accent(),
-                gcolor_legible_over(settings_get_global_accent())
-            );
-            menu_layer_set_normal_colors(
-                menu->menu_layer,
-                settings->background_color,
-                gcolor_legible_over(settings->background_color)
-            );
-        }
 
-        if (menu->window != NULL) {
-            window_set_background_color(menu->window, settings->background_color);
-        }
+    if (menu->menu_layer != NULL) {
+        menu_layer_set_highlight_colors(
+            menu->menu_layer,
+            settings_get_global_accent(),
+            gcolor_legible_over(settings_get_global_accent())
+        );
+        menu_layer_set_normal_colors(
+            menu->menu_layer,
+            settings->background_color,
+            gcolor_legible_over(settings->background_color)
+        );
+    }
+
+    if (menu->status_bar_text != NULL) {
+        text_layer_set_background_color(menu->status_bar_text, settings->background_color);
+        text_layer_set_text_color(menu->status_bar_text, gcolor_legible_over(settings->background_color));
+    }
+
+    if (menu->window != NULL) {
+        window_set_background_color(menu->window, settings->background_color);
     }
 }
 
-MemberMenu* member_menu_create(MemberMenuCallbacks callbacks, MemberList* members) {
+MemberMenu* member_menu_create(MemberMenuCallbacks callbacks, MemberList* members, const char* name) {
     // create window and set up handlers
     Window* window = window_create();
     window_set_window_handlers(
@@ -253,7 +288,8 @@ MemberMenu* member_menu_create(MemberMenuCallbacks callbacks, MemberList* member
     *menu = (MemberMenu) {
         .window = window,
         .callbacks = callbacks,
-        .members = members
+        .members = members,
+        .name = name
     };
 
     // set user data of windows to be the related member menu pointer

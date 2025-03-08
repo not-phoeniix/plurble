@@ -25,6 +25,7 @@ static void deinit() {
     fronters_menu_deinit();
     main_menu_deinit();
     member_collections_deinit();
+    setup_prompt_menu_remove();
 }
 
 int main() {
