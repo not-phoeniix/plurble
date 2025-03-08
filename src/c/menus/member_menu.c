@@ -12,6 +12,7 @@ struct MemberMenu {
 
     const char* name;
     TextLayer* status_bar_text;
+    Layer* status_bar_layer;
 
     Member* selected_member;
     MemberList* members;
@@ -63,11 +64,23 @@ static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex o
     update_selected_highlight(menu, new_index.row);
 }
 
+static void status_bar_update_proc(Layer* layer, GContext* ctx) {
+    graphics_context_set_fill_color(ctx, settings_get()->background_color);
+    graphics_fill_rect(ctx, layer_get_bounds(layer), 0, GCornerNone);
+}
+
 static void menu_layer_setup(MemberMenu* menu) {
-    Layer* window_layer = window_get_root_layer(menu->window);
-    GRect bounds = layer_get_bounds(window_layer);
+    Layer* root_layer = window_get_root_layer(menu->window);
+    GRect bounds = layer_get_bounds(root_layer);
+
+    // ~~~ create menu layers ~~~
+
+#if !defined(PBL_ROUND)
+    // only offset if not round, that way round watches
+    //   keep the highlighted option centered !
     bounds.size.h -= STATUS_BAR_LAYER_HEIGHT;
     bounds.origin.y += STATUS_BAR_LAYER_HEIGHT;
+#endif
 
     menu->menu_layer = menu_layer_create(bounds);
     menu_layer_set_callbacks(
@@ -84,24 +97,29 @@ static void menu_layer_setup(MemberMenu* menu) {
     );
 
     menu_layer_set_click_config_onto_window(menu->menu_layer, menu->window);
-    layer_add_child(window_layer, menu_layer_get_layer(menu->menu_layer));
+    layer_add_child(root_layer, menu_layer_get_layer(menu->menu_layer));
     update_selected_highlight(menu, 0);
     member_menu_update_colors(menu);
-}
 
-static void status_bar_setup(MemberMenu* menu) {
-    Layer* root_layer = window_get_root_layer(menu->window);
+    // ~~~ create status bar layers ~~~
 
     GRect status_bar_bounds = layer_get_bounds(root_layer);
     status_bar_bounds.size.h = STATUS_BAR_LAYER_HEIGHT;
-    status_bar_bounds.origin.y -= 2;
 
-    menu->status_bar_text = text_layer_create(status_bar_bounds);
+    GRect status_bar_text_bounds = status_bar_bounds;
+    status_bar_text_bounds.size.h = 14;
+    grect_align(&status_bar_text_bounds, &status_bar_bounds, GAlignCenter, false);
+
+    menu->status_bar_layer = layer_create(status_bar_bounds);
+    layer_set_update_proc(menu->status_bar_layer, status_bar_update_proc);
+
+    menu->status_bar_text = text_layer_create(status_bar_text_bounds);
     text_layer_set_font(menu->status_bar_text, fonts_get_system_font(FONT_KEY_GOTHIC_14));
     text_layer_set_text_alignment(menu->status_bar_text, GTextAlignmentCenter);
     text_layer_set_text(menu->status_bar_text, menu->name);
 
-    layer_add_child(root_layer, text_layer_get_layer(menu->status_bar_text));
+    layer_add_child(menu->status_bar_layer, text_layer_get_layer(menu->status_bar_text));
+    layer_add_child(root_layer, menu->status_bar_layer);
 }
 
 // ~~~ ACTION MENU SETUP ~~~
@@ -154,7 +172,6 @@ static void window_load(Window* window) {
     MemberMenu* menu = (MemberMenu*)window_get_user_data(window);
 
     menu_layer_setup(menu);
-    status_bar_setup(menu);
     action_menu_setup(menu);
 
     member_menu_update_colors(menu);
@@ -169,6 +186,8 @@ static void window_unload(Window* window) {
 
     menu_layer_destroy(menu->menu_layer);
     menu->menu_layer = NULL;
+    layer_destroy(menu->status_bar_layer);
+    menu->status_bar_layer = NULL;
     text_layer_destroy(menu->status_bar_text);
     menu->status_bar_text = NULL;
     action_menu_hierarchy_destroy(menu->fronting_action_level, NULL, NULL);

@@ -12,6 +12,7 @@ static SimpleMenuItem member_items[3];
 static SimpleMenuItem extra_items[2];
 static SimpleMenuSection sections[2];
 static TextLayer* status_bar_text = NULL;
+static Layer* status_bar_layer = NULL;
 static bool members_loaded = false;
 static bool custom_fronts_loaded = false;
 
@@ -39,8 +40,15 @@ static void extra_select(int index, void* context) {
     printf("polls! ");
 }
 
+static void status_bar_update_proc(Layer* layer, GContext* ctx) {
+    graphics_context_set_fill_color(ctx, settings_get()->background_color);
+    graphics_fill_rect(ctx, layer_get_bounds(layer), 0, GCornerNone);
+}
+
 static void window_load() {
-    Layer* window_layer = window_get_root_layer(window);
+    Layer* root_layer = window_get_root_layer(window);
+
+    // ~~~ create menu items ~~~
 
     bool fronters_loaded = members_loaded && custom_fronts_loaded;
     member_items[0] = (SimpleMenuItem) {
@@ -90,9 +98,14 @@ static void window_load() {
         .title = "Extra"
     };
 
-    GRect menu_bounds = layer_get_bounds(window_layer);
+    GRect menu_bounds = layer_get_bounds(root_layer);
+
+#if !defined(PBL_ROUND)
+    // only offset if not round, that way round watches
+    //   keep the highlighted option centered !
     menu_bounds.origin.y += STATUS_BAR_LAYER_HEIGHT;
     menu_bounds.size.h -= STATUS_BAR_LAYER_HEIGHT;
+#endif
 
     simple_menu_layer = simple_menu_layer_create(
         menu_bounds,
@@ -103,18 +116,28 @@ static void window_load() {
         NULL
     );
 
-    layer_add_child(window_layer, simple_menu_layer_get_layer(simple_menu_layer));
+    layer_add_child(root_layer, simple_menu_layer_get_layer(simple_menu_layer));
+    main_menu_update_colors();
 
-    GRect status_bar_bounds = layer_get_bounds(window_layer);
+    // ~~~ create status bar layers ~~~
+
+    GRect status_bar_bounds = layer_get_bounds(root_layer);
     status_bar_bounds.size.h = STATUS_BAR_LAYER_HEIGHT;
-    status_bar_bounds.origin.y -= 2;
-    status_bar_text = text_layer_create(status_bar_bounds);
+
+    GRect status_bar_text_bounds = status_bar_bounds;
+    status_bar_text_bounds.size.h = 14;
+    grect_align(&status_bar_text_bounds, &status_bar_bounds, GAlignCenter, false);
+
+    status_bar_layer = layer_create(status_bar_bounds);
+    layer_set_update_proc(status_bar_layer, status_bar_update_proc);
+
+    status_bar_text = text_layer_create(status_bar_text_bounds);
     text_layer_set_font(status_bar_text, fonts_get_system_font(FONT_KEY_GOTHIC_14));
     text_layer_set_text_alignment(status_bar_text, GTextAlignmentCenter);
     text_layer_set_text(status_bar_text, "Plurble");
-    layer_add_child(window_layer, text_layer_get_layer(status_bar_text));
 
-    main_menu_update_colors();
+    layer_add_child(status_bar_layer, text_layer_get_layer(status_bar_text));
+    layer_add_child(root_layer, status_bar_layer);
 }
 
 static void window_unload() {
@@ -122,6 +145,8 @@ static void window_unload() {
     simple_menu_layer = NULL;
     text_layer_destroy(status_bar_text);
     status_bar_text = NULL;
+    layer_destroy(status_bar_layer);
+    status_bar_layer = NULL;
 }
 
 void main_menu_push() {
