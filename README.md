@@ -1,7 +1,14 @@
 # Plurble
+<img src="aseprite/banner.png" alt="Plurble" width="50%">
+
 A Simply Plural client for Pebble! Plurble is an app designed to help people who are plural/systems manage and keep track of members on the go!
 
 This was an app originally made for the Rebble Hackathon #002!
+
+## Screenshots
+![Main menu](screenshots/basalt/basalt_main.png)
+![Member list](screenshots/basalt/basalt_members.png)
+![Custom front list](screenshots/basalt/basalt_custom_fronts.png)
 
 ## Feature list
 ### Current Features
