@@ -495,6 +495,13 @@ function setup() {
         apiToken = cachedApiToken;
     } else {
         console.log("api token not cached... cannot run plural api setup...");
+        Pebble.sendAppMessage(
+            {
+                "ApiKeyValid": false
+            },
+            null,
+            null
+        );
         return;
     }
 
@@ -521,6 +528,7 @@ function setApiToken(token) {
     apiToken = token;
     localStorage.setItem("cachedApiToken", token);
     fetchUid(fetchAndSendDataToWatch);
+    openSocket(token);
 }
 
 function onAppMessage(messageDict) {

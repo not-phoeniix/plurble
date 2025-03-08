@@ -110,6 +110,11 @@ static void menu_layer_setup(MemberMenu* menu) {
     status_bar_text_bounds.size.h = 14;
     grect_align(&status_bar_text_bounds, &status_bar_bounds, GAlignCenter, false);
 
+#if !defined(PBL_ROUND)
+    // shift status bar text up 3 pixels for non round watches!
+    status_bar_text_bounds.origin.y -= 3;
+#endif
+
     menu->status_bar_layer = layer_create(status_bar_bounds);
     layer_set_update_proc(menu->status_bar_layer, status_bar_update_proc);
 
