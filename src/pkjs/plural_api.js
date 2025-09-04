@@ -1,5 +1,6 @@
 const socketUrl = "wss://api.apparyllis.com/v1/socket";
 const xhrUrl = "https://api.apparyllis.com/v1/";
+
 var socket;
 var apiToken = "";
 var uid = "";
@@ -132,6 +133,7 @@ function onOpenToken(token) {
 
         // interval ping to keep web socket open every 10 seconds
         setInterval(function () {
+            console.log("pinging socket...");
             socket.send("ping");
         }, 10000);
     }

@@ -112,8 +112,8 @@ void messaging_init() {
     app_message_register_outbox_sent(outbox_sent_handler);
     app_message_register_outbox_failed(outbox_failed_callback);
 
-    // hoping 1024 bytes is enough, adjust if necessary later <3
-    app_message_open(1024, 128);
+    app_message_open(4092, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
+    // app_message_open(1024, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
 }
 
 void messaging_add_to_front(Member* member) {
