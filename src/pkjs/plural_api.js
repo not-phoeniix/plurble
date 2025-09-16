@@ -1,11 +1,18 @@
-const socketUrl = "wss://api.apparyllis.com/v1/socket";
-const xhrUrl = "https://api.apparyllis.com/v1/";
+// plural api file, handles the tracking/updating of fronters 
+//   and general communication with the simplyplural api
+
+const cache = require("./cache.js");
+
+const socketUrl = "wss://devapi.apparyllis.com/v1/socket";
+const xhrUrl = "https://devapi.apparyllis.com/v1/";
 
 var socket;
+var socketInterval;
 var apiToken = "";
 var uid = "";
-var currentFronters = [];
 var frontersTimout = -1;
+
+var sendFrontersCallback;
 
 // #region UTILITIES
 
@@ -13,6 +20,8 @@ function xhrRequest(urlExtension, type, data, callback) {
     if (!apiToken) {
         throw new Error("Cannot make an XHR with API token undefined!");
     }
+
+    console.log("making " + type + " XHR to " + xhrUrl + urlExtension + "...");
 
     var xhr = new XMLHttpRequest();
     xhr.onload = function () {
@@ -24,99 +33,6 @@ function xhrRequest(urlExtension, type, data, callback) {
     xhr.setRequestHeader("Authorization", apiToken);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.send(data ? JSON.stringify(data) : null);
-}
-
-function getCachedFrontable(localStorageName, searchFunc) {
-    var cachedMemberString = localStorage.getItem(localStorageName);
-    if (cachedMemberString) {
-        var json = JSON.parse(cachedMemberString);
-        for (var i = 0; i < json.length; i++) {
-            if (searchFunc(json[i])) {
-                return json[i];
-            }
-        }
-    }
-
-    return null;
-}
-
-function getCachedMemberById(id) {
-    return getCachedFrontable("cachedMembers", function (member) {
-        return member.id === id;
-    });
-}
-
-function getCachedMemberByName(name) {
-    return getCachedFrontable("cachedMembers", function (member) {
-        return member.content.name === name;
-    });
-}
-
-function getCachedCustomFrontById(id) {
-    return getCachedFrontable("cachedCustomFronts", function (customFront) {
-        return customFront.id === id
-    });
-}
-
-function getCachedCustomFrontByName(name) {
-    return getCachedFrontable("cachedCustomFronts", function (customFront) {
-        return customFront.content.name === name;
-    });
-}
-
-function getFormattedFronters() {
-    var fronters = [];
-    for (var i = 0; i < currentFronters.length; i++) {
-        // try to get member first
-        var fronter = getCachedMemberById(currentFronters[i].content.member);
-
-        // then try to get custom front if member is null
-        if (!fronter) {
-            console.log("WAHHHHH trying to get custom front!");
-            fronter = getCachedCustomFrontById(currentFronters[i].content.member);
-        }
-
-        if (!fronter) {
-            console.log("couldn't find inputted fronter with id " + currentFronters[i].content.member + "...");
-        }
-
-        // finally, push member if it exists
-        if (fronter) {
-            fronters.push(fronter.content.name);
-        }
-    }
-
-    // return formatted string joined by the "|" delimiter
-    return fronters.join("|");
-}
-
-function formatMember(member) {
-    var name = "";
-    if (member.content.name) {
-        name = member.content.name;
-    }
-
-    var pronouns = "";
-    if (member.content.pronouns) {
-        pronouns = member.content.pronouns;
-    }
-
-    //* apparently strtol doesn't exist on pebble 
-    //*   lol so i need to use atoi using base 
-    //*   10 numbers <3
-
-    // strip leading "#" in hex, add a "0x",
-    //   then do some weird fuckery to convert to
-    //   a decimal string
-    var color = "";
-    if (member.content.color) {
-        color = (member.content.color).slice(1);
-        color = "0x" + color;
-        color = Number(color).toString();
-    }
-
-    // assemble CSV string of each member data
-    return name + "," + pronouns + "," + color;
 }
 
 // #endregion
@@ -131,8 +47,10 @@ function onOpenToken(token) {
             token: token
         }));
 
+        clearInterval(socketInterval);
+
         // interval ping to keep web socket open every 10 seconds
-        setInterval(function () {
+        socketInterval = setInterval(function () {
             console.log("pinging socket...");
             socket.send("ping");
         }, 10000);
@@ -142,10 +60,15 @@ function onOpenToken(token) {
 function handleFrontHistory(data) {
     // grab member result data, exit early if it doesn't exist
     var messageMember = data.results[0];
-    if (!messageMember) return;
+    if (!messageMember) {
+        console.warn("socket front history: member at index 0 doesn't exist!");
+        return;
+    }
+
+    var currentFronters = cache.getCurrentFronters();
 
     // if member change is no longer live, remove them from current fronters!
-    if (data.results[0].content.live === false) {
+    if (messageMember.content.live === false) {
         // get index of inputted member so it can be removed
         var index = -1;
         for (var i = 0; i < currentFronters.length; i++) {
@@ -167,11 +90,13 @@ function handleFrontHistory(data) {
         currentFronters.push(messageMember);
     }
 
+    cache.setCurrentFronters(currentFronters);
+
     // make it so that front current fronters are sent after 
-    //   hearing silence from API for 300 ms 
+    //   hearing silence from API for 200 ms 
     //   (prevents super often data transfer)
     clearTimeout(frontersTimout);
-    frontersTimout = setTimeout(sendSavedFrontersToWatch, 300);
+    frontersTimout = setTimeout(sendFrontersCallback, 200);
 }
 
 function handleMsg(data) {
@@ -181,23 +106,25 @@ function handleMsg(data) {
             break;
 
         case "Authentication violation: Token is missing or invalid. Goodbye :)":
-            console.log("API key missing or invalid!");
+            console.warn("API key missing or invalid!");
             break;
 
         case "update":
+            console.log("socket update detected!");
+
             switch (data.target) {
                 case "frontHistory":
                     handleFrontHistory(data);
                     break;
                 default:
-                    console.log("update data target \"" + data.target + "\" not recognized!");
+                    console.warn("update data target \"" + data.target + "\" not recognized!");
                     break;
             }
             break;
 
         default:
-            console.log("msg [" + data.msg + "] not recognized!");
-            console.log("msg data: " + JSON.stringify(data));
+            console.error("msg [" + data.msg + "] not recognized!");
+            console.error("msg data: " + JSON.stringify(data));
             break;
     }
 }
@@ -208,18 +135,20 @@ function onMessage(e) {
         handleMsg(data);
     } catch (err) {
         if (e.data != "pong") {
-            console.log("Error parsing data: " + err);
+            console.error("Error parsing data: " + err);
+        } else {
+            console.log(e.data);
         }
     }
 }
 
-function openSocket(token) {
+function openSocket() {
     if (socket) {
         socket.close();
     }
 
     socket = new WebSocket(socketUrl);
-    socket.onopen = onOpenToken(token);
+    socket.onopen = onOpenToken(apiToken);
     socket.onmessage = onMessage;
 }
 
@@ -238,7 +167,7 @@ function fetchUid(callback) {
                 callback();
             }
         } else {
-            console.log("UID could not be fetched!");
+            console.error("UID could not be fetched!");
         }
     });
 }
@@ -246,7 +175,7 @@ function fetchUid(callback) {
 function fetchMembers(callback) {
     // if uid couldn't be found, print an error and exit
     if (!uid) {
-        console.log("Error: UID not found when fetching members!");
+        console.error("UID not found when fetching members!");
         return;
     }
 
@@ -262,7 +191,7 @@ function fetchMembers(callback) {
 function fetchCustomFronts(callback) {
     // if uid couldn't be found, print an error and exit
     if (!uid) {
-        console.log("Error: UID not found when fetching custom fronts!");
+        console.error("UID not found when fetching custom fronts!");
         return;
     }
 
@@ -278,7 +207,7 @@ function fetchCustomFronts(callback) {
 function fetchFronters(callback) {
     // if uid couldn't be found, print an error and exit
     if (!uid) {
-        console.log("Error: UID not found when fetching fronters!");
+        console.error("UID not found when fetching fronters!");
         return;
     }
 
@@ -292,7 +221,7 @@ function fetchFronters(callback) {
 function fetchGroups(callback) {
     // if uid couldn't be found, print an error and exit
     if (!uid) {
-        console.log("Error: UID not found when fetching groups!");
+        console.error("UID not found when fetching groups!");
         return;
     }
 
@@ -308,6 +237,8 @@ function fetchGroups(callback) {
 // #region XHR SENDING
 
 function setAsFront(id, custom) {
+    var currentFronters = cache.getCurrentFronters();
+
     // remove all current fronters
     for (var i = 0; i < currentFronters.length; i++) {
         removeFromFront(currentFronters[i].content.member);
@@ -332,6 +263,8 @@ function addToFront(id, custom) {
 }
 
 function removeFromFront(id) {
+    var currentFronters = cache.getCurrentFronters();
+
     // find current fronter data based on member ID
     var currentFronter;
     for (var i = 0; i < currentFronters.length; i++) {
@@ -342,7 +275,10 @@ function removeFromFront(id) {
     }
 
     // exit if fronter cannot be found
-    if (!currentFronter) return;
+    if (!currentFronter) {
+        console.error("cannot remove fronter, fronter id " + id + " could not be found!");
+        return;
+    }
 
     // assemble options to send to the API
     var options = {
@@ -367,136 +303,19 @@ function removeFromFront(id) {
 
 // #endregion
 
-// #region DATA MANAGEMENT
+function setup(callback, frontersCallback) {
+    console.log("setting up SimplyPlural API...");
 
-function sendSavedFrontersToWatch() {
-    Pebble.sendAppMessage(
-        { "Fronters": getFormattedFronters() },
-        function (data) {
-            console.log("saved fronters sent!");
-        },
-        function (data, error) {
-            console.log("Error in fronters sending!! error: " + error);
-        }
-    );
-}
+    sendFrontersCallback = frontersCallback;
 
-function fetchAndSendDataToWatch() {
-    var numFetches = 3;
-    var fetchesCompleted = 0;
-    var membersFormatted = "";
-    var frontersFormatted = "";
-    var customFrontsFormatted = "";
-
-    // this is probably the most jank way of doing asynchronous parallel 
-    //   fetching that await all to be done... hope it works well <3
-
-    function send() {
-        Pebble.sendAppMessage(
-            {
-                "Members": membersFormatted,
-                "CustomFronts": customFrontsFormatted,
-                "Fronters": frontersFormatted,
-                "ApiKeyValid": true
-            },
-            function (data) {
-                console.log("fetched data sent!");
-            },
-            function (data, error) {
-                console.log("ERROR in fetched data sending!! error: " + error);
-            }
-        );
-    }
-
-    function checkSend() {
-        fetchesCompleted++;
-        if (fetchesCompleted >= numFetches) {
-            send();
-        }
-    }
-
-    fetchMembers(function (membersJson) {
-        var membersArr = [];
-        for (var i = 0; i < membersJson.length; i++) {
-            membersArr.push(formatMember(membersJson[i]));
-        }
-
-        membersFormatted = membersArr.join("|");
-        checkSend();
-    });
-
-    fetchCustomFronts(function (customFrontsJson) {
-        var customFrontsArr = [];
-        for (var i = 0; i < customFrontsJson.length; i++) {
-            customFrontsArr.push(formatMember(customFrontsJson[i]));
-        }
-
-        customFrontsFormatted = customFrontsArr.join("|");
-        checkSend();
-    });
-
-    fetchFronters(function (fronters) {
-        console.log(JSON.stringify(fronters));
-
-        // remove all previous fronters when fetching new fronters
-        currentFronters = [];
-
-        for (var i = 0; i < fronters.length; i++) {
-            currentFronters.push(fronters[i]);
-        }
-
-        frontersFormatted = getFormattedFronters();
-        checkSend();
-    });
-}
-
-function sendCachedDataToWatch() {
-    var data = {};
-
-    var cachedMembers = localStorage.getItem("cachedMembers");
-    if (cachedMembers) {
-        var json = JSON.parse(cachedMembers);
-
-        var membersArr = [];
-        for (var i = 0; i < json.length; i++) {
-            membersArr.push(formatMember(json[i]));
-        }
-
-        data.Members = membersArr.join("|");
-    }
-
-    var cachedCustomFronts = localStorage.getItem("cachedCustomFronts");
-    if (cachedCustomFronts) {
-        var json = JSON.parse(cachedCustomFronts);
-
-        var frontsArr = [];
-        for (var i = 0; i < json.length; i++) {
-            frontsArr.push(formatMember(json[i]));
-        }
-
-        data.CustomFronts = frontsArr.join("|");
-    }
-
-    Pebble.sendAppMessage(
-        data,
-        function (data) {
-            console.log("cached data sent!");
-        },
-        function (data, error) {
-            console.log("ERROR in cached data sending!! error: " + error);
-        }
-    )
-}
-
-// #endregion
-
-function setup() {
     // get cached api token
+    console.log("getting cached API token...");
     var cachedApiToken = localStorage.getItem("cachedApiToken");
     if (cachedApiToken) {
+        console.log("API token cached! setting value...");
         apiToken = cachedApiToken;
     } else {
-        console.log("api token not cached... cannot run plural api setup...");
+        console.error("api token not cached... cannot run plural api setup...");
         Pebble.sendAppMessage(
             {
                 "ApiKeyValid": false
@@ -504,73 +323,52 @@ function setup() {
             null,
             null
         );
-        return;
+        return false;
     }
 
     // get cached uid
+    console.log("getting cached UID...");
     var cachedUid = localStorage.getItem("cachedUid");
     if (cachedUid) {
+        console.log("UID cached! setting value...");
+
         // if uid was cached, set the value and send members
         uid = cachedUid;
-        fetchAndSendDataToWatch();
+        if (callback) {
+            callback();
+        }
+
     } else {
+        console.log("UID not cached, fetching...");
+
         // if uid was not cached, fetch it and send members callback
-        fetchUid(fetchAndSendDataToWatch);
+        fetchUid(callback);
     }
 
     // set up the websocket and begin message listening
-    openSocket(apiToken);
+    openSocket();
 
-    // send cached data to watch immediately for snappiness
-    sendCachedDataToWatch();
+    console.log("SimplyPlural API set up!");
+
+    return true;
 }
 
-function setApiToken(token) {
+function setApiToken(token, uidFetchCallback) {
     // when setting the api token re-fetch the UID as well
     apiToken = token;
     localStorage.setItem("cachedApiToken", token);
-    fetchUid(fetchAndSendDataToWatch);
-    openSocket(token);
-}
-
-function onAppMessage(messageDict) {
-    function frontRequest(callback, memberName) {
-        // attempt to find member via name
-        var isCustom = false;
-        var member = getCachedMemberByName(memberName);
-        if (!member) {
-            member = getCachedCustomFrontByName(memberName);
-            if (member) {
-                isCustom = true;
-            }
-        }
-
-        // if member could be found, handle callback with them
-        if (member) {
-            callback(member.id, isCustom);
-        }
-    }
-
-    if (messageDict.AddFrontRequest) {
-        frontRequest(addToFront, messageDict.AddFrontRequest);
-    }
-
-    if (messageDict.RemoveFrontRequest) {
-        frontRequest(removeFromFront, messageDict.RemoveFrontRequest);
-    }
-
-    if (messageDict.SetFrontRequest) {
-        frontRequest(setAsFront, messageDict.SetFrontRequest);
-    }
+    fetchUid(uidFetchCallback);
+    openSocket();
 }
 
 module.exports = {
     setup: setup,
     setApiToken: setApiToken,
-    getCachedMemberByName: getCachedMemberByName,
-    getCachedMemberById: getCachedMemberById,
-    getCachedCustomFrontById: getCachedCustomFrontById,
-    getCachedCustomFrontByName: getCachedCustomFrontByName,
-    sendMembersToWatch: fetchAndSendDataToWatch,
-    onAppMessage: onAppMessage
+    fetchCustomFronts: fetchCustomFronts,
+    fetchFronters: fetchFronters,
+    fetchGroups: fetchGroups,
+    fetchMembers: fetchMembers,
+    setAsFront: setAsFront,
+    addToFront: addToFront,
+    removeFromFront: removeFromFront,
 };

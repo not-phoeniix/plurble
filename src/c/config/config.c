@@ -58,11 +58,14 @@ ClaySettings* settings_get() {
 
 void settings_load() {
     set_defaults();
-    persist_read_data(SETTINGS_KEY, &settings, sizeof(settings));
+    persist_read_data(SETTINGS_KEY, &settings, sizeof(ClaySettings));
     apply();
 }
 
 void settings_save() {
-    persist_write_data(SETTINGS_KEY, &settings, sizeof(settings));
+    persist_write_data(SETTINGS_KEY, &settings, sizeof(ClaySettings));
     apply();
 }
+
+// Member* settings_make_member_from_cache(uint32_t id) {
+// }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pebble.h>
+#include "../members/member.h"
 
 typedef struct {
     GColor accent_color;

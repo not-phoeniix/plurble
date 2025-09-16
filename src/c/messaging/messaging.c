@@ -7,28 +7,6 @@
 //!   later via the compiler.... these will look like errors
 //!   in vscode but there's nothing wrong with em dw <3
 
-static void front_message(Member* member, const uint32_t message_key) {
-    // dictionary to send!
-    DictionaryIterator* iter;
-
-    // begin outbox app message
-    AppMessageResult result = app_message_outbox_begin(&iter);
-    if (result == APP_MSG_OK) {
-        // write member name as the request string data value
-        dict_write_cstring(iter, message_key, member->name);
-
-        // send outbox message itself
-        result = app_message_outbox_send();
-
-        if (result != APP_MSG_OK) {
-            APP_LOG(APP_LOG_LEVEL_ERROR, "Error sending front message data: %d", (int)result);
-        }
-
-    } else {
-        APP_LOG(APP_LOG_LEVEL_ERROR, "Error preparing front message outbox: %d", (int)result);
-    }
-}
-
 static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
     ClaySettings* settings = settings_get();
 
@@ -114,6 +92,28 @@ void messaging_init() {
 
     app_message_open(4092, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
     // app_message_open(1024, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
+}
+
+static void front_message(Member* member, const uint32_t message_key) {
+    // dictionary to send!
+    DictionaryIterator* iter;
+
+    // begin outbox app message
+    AppMessageResult result = app_message_outbox_begin(&iter);
+    if (result == APP_MSG_OK) {
+        // write member name as the request string data value
+        dict_write_cstring(iter, message_key, member->name);
+
+        // send outbox message itself
+        result = app_message_outbox_send();
+
+        if (result != APP_MSG_OK) {
+            APP_LOG(APP_LOG_LEVEL_ERROR, "Error sending front message data: %d", (int)result);
+        }
+
+    } else {
+        APP_LOG(APP_LOG_LEVEL_ERROR, "Error preparing front message outbox: %d", (int)result);
+    }
 }
 
 void messaging_add_to_front(Member* member) {
