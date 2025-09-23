@@ -38,20 +38,13 @@ Pebble.addEventListener("appmessage", function (e) {
 
     console.log("got message: " + JSON.stringify(dict));
 
-    function frontRequest(callback, memberName) {
+    function frontRequest(callback, hash) {
         // attempt to find member via name
-        var isCustom = false;
-        var member = cache.getCachedMemberByName(memberName);
-        if (!member) {
-            member = cache.getCachedCustomFrontByName(memberName);
-            if (member) {
-                isCustom = true;
-            }
-        }
+        var member = cache.getFrontable(hash);
 
         // if member could be found, handle callback with them
         if (member) {
-            callback(member.id, isCustom);
+            callback(member.id, member.isCustomFront);
         }
     }
 

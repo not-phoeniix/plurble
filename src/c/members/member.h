@@ -4,6 +4,7 @@
 
 /// @brief A struct that represents a member in a plural system
 typedef struct {
+    uint32_t hash;
     char name[64];
     char pronouns[64];
     GColor color;

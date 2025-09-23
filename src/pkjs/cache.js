@@ -2,6 +2,8 @@
 
 const utils = require("./utils.js");
 
+/*
+
 function getCachedFrontable(localStorageName, searchFunc) {
     var cachedMemberString = localStorage.getItem(localStorageName);
     if (cachedMemberString) {
@@ -131,6 +133,8 @@ function formatMember(member) {
     return name + "," + pronouns + "," + color;
 }
 
+*/
+
 function getCurrentFronters() {
     var frontersStr = localStorage.getItem("currentFronters");
     if (frontersStr) {
@@ -144,32 +148,35 @@ function setCurrentFronters(fronters) {
     localStorage.setItem("currentFronters", JSON.stringify(fronters));
 }
 
-/* NEW hashing system !!
-
-function getMember(hash) {
+function getFrontable(hash) {
     var members = null;
-    var cache = localStorage.getItem("cachedMembers");
-    if (cache) {
-        members = JSON.stringify(cache);
+    var memberCache = localStorage.getItem("cachedMembers");
+    if (memberCache) {
+        members = JSON.stringify(memberCache);
     }
 
-    return members[hash];
-}
-
-function getCustomFront(hash) {
-    var fronts = null;
-    var cache = localStorage.getItem("cachedCustomFronts");
-    if (cache) {
-        fronts = JSON.stringify(cache);
+    if (members) {
+        return members[hash];
     }
 
-    return fronts[hash];
+    var customFronts = null;
+    var customFrontCache = localStorage.getItem("cachedCustomFronts");
+    if (customFrontCache) {
+        customFronts = JSON.stringify(customFrontCache);
+    }
+
+    if (customFronts) {
+        return customFronts[hash];
+    }
+
+    return null;
 }
 
 function cacheMembers(spMemberJson) {
     var cache = {};
     for (var i = 0; i < spMemberJson.length; i++) {
         var member = spMemberJson[i];
+        member.isCustomFront = false;
         var hash = utils.genHash(member.id);
         cache[hash] = member;
     }
@@ -177,17 +184,22 @@ function cacheMembers(spMemberJson) {
     localStorage.setItem("cachedMembers", JSON.stringify(cache));
 }
 
-*/
+function cacheCustomFronts(spCustomFrontJson) {
+    var cache = {};
+    for (var i = 0; i < spCustomFrontJson.length; i++) {
+        var customFront = spCustomFrontJson[i];
+        customFront.isCustomFront = true;
+        var hash = utils.genHash(customFront.id);
+        cache[hash] = customFront;
+    }
+
+    localStorage.setItem("cachedCustomFronts", JSON.stringify(cache));
+}
 
 module.exports = {
-    getCachedMemberByName: getCachedMemberByName,
-    getCachedMemberById: getCachedMemberById,
-    getCachedCustomFrontById: getCachedCustomFrontById,
-    getCachedCustomFrontByName: getCachedCustomFrontByName,
-    getFormattedMembers: getFormattedMembers,
-    getFormattedCustomFronts: getFormattedCustomFronts,
-    getFormattedFronters: getFormattedFronters,
-    formatMember: formatMember,
     getCurrentFronters: getCurrentFronters,
-    setCurrentFronters: setCurrentFronters
+    setCurrentFronters: setCurrentFronters,
+    getFrontable: getFrontable,
+    cacheMembers: cacheMembers,
+    cacheCustomFronts: cacheCustomFronts
 };
