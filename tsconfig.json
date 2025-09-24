@@ -1,0 +1,11 @@
+{
+  "extends": "pkts/config/tsconfig.json",
+  "include": [
+    "src/ts/**/*",
+    "node_modules/pkts/lib/**/*"
+  ],
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "esModuleInterop": true
+  }
+}
