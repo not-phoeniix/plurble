@@ -72,6 +72,8 @@ export function cacheCurrentFronts(messages: FrontEntryMessage[]) {
 }
 
 export function addFrontToCache(message: FrontEntryMessage) {
+    console.log(`adding ${message.content.member} to front cache...`);
+
     let currentFronts = getCurrentFronts();
     if (currentFronts) {
         // only add fronts if they don't already exist
@@ -86,6 +88,8 @@ export function addFrontToCache(message: FrontEntryMessage) {
 }
 
 export function removeFrontFromCache(message: FrontEntryMessage) {
+    console.log(`removing ${message.content.member} from front cache...`);
+
     let currentFronts = getCurrentFronts();
     if (currentFronts) {
         // only remove fronts if they exist
@@ -126,4 +130,8 @@ export function isFronting(frontable: Frontable): boolean {
     }
 
     return false;
+}
+
+export function clearAllCache() {
+    localStorage.clear();
 }

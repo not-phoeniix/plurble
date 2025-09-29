@@ -11,6 +11,7 @@ interface RouteDescription {
 }
 
 export function init(apiToken: string) {
+    console.log(`initializing plural API with token ${apiToken}...`);
     token = apiToken;
 }
 

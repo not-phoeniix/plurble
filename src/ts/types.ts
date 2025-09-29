@@ -1,7 +1,18 @@
-interface ApiMessage<T> {
+export interface ApiMessage<T = any> {
     exists: boolean;
     id: string;
     content: T
+}
+
+export interface SocketMessage<T = any> {
+    msg: "Successfully authenticated" | "update";
+    target?: "frontHistory";
+    results: {
+        exists: boolean;
+        id: string;
+        operationType: "update" | "insert";
+        content: T;
+    }[];
 }
 
 export interface Member {
@@ -57,3 +68,11 @@ export type FrontableCollection = Record<number, Frontable>;
 export type FrontEntryMessage = ApiMessage<FrontEntry>;
 export type MemberMessage = ApiMessage<Member>;
 export type CustomFrontMessage = ApiMessage<CustomFront>;
+export type FrontEntrySocketMessage = SocketMessage<FrontEntry>;
+export type AuthSocketMessage = SocketMessage<undefined> & {
+    resolvedToken: {
+        uid: string;
+        accessType: number;
+        jwt: false;
+    };
+};
