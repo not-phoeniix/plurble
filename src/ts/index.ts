@@ -36,6 +36,39 @@ Pebble.addEventListener("ready", async (e) => {
     // const frontables = cache.getAllFrontables();
 });
 
+Pebble.addEventListener("appmessage", async (e) => {
+    console.log("received app message !!! payload: " + JSON.stringify(e.payload));
+
+    const dict = e.payload;
+
+    if (dict.AddFrontRequest) {
+        const frontable = cache.getFrontable(dict.AddFrontRequest);
+        if (frontable) {
+            pluralApi.addToFront(frontable);
+        } else {
+            throw new Error(`Cannot add member to front! Member hash ${dict.AddFrontRequest} was not cached!`);
+        }
+    }
+
+    if (dict.SetFrontRequest) {
+        const frontable = cache.getFrontable(dict.SetFrontRequest);
+        if (frontable) {
+            pluralApi.setAsFront(frontable);
+        } else {
+            throw new Error(`Cannot set member as front! Member hash ${dict.AddFrontRequest} was not cached!`);
+        }
+    }
+
+    if (dict.RemoveFrontRequest) {
+        const frontable = cache.getFrontable(dict.RemoveFrontRequest);
+        if (frontable) {
+            pluralApi.removeFromFront(frontable);
+        } else {
+            throw new Error(`Cannot remove member from front! Member hash ${dict.AddFrontRequest} was not cached!`);
+        }
+    }
+});
+
 // ignore this error, pebble kit TS doesn't support this event 
 //   in the syntax linting but it works i swear
 Pebble.addEventListener("webviewclosed", async (e: any) => {
