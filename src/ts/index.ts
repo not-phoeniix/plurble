@@ -2,6 +2,9 @@ import config from "./config.json";
 import * as pluralApi from "./pluralApi";
 import * as pluralSocket from "./pluralSocket";
 import * as cache from "./cache";
+import * as messaging from "./messaging";
+import * as utils from "./utils";
+import { Frontable, Member, CustomFront, CustomFrontMessage, MemberMessage } from "./types";
 
 // i gotta use node CommonJS requires unfortunately, it's not a TS module
 const Clay = require("pebble-clay");
@@ -15,25 +18,66 @@ async function setupApi(token: string) {
     pluralApi.init(token);
     pluralSocket.init(token);
 
-    const id = await pluralApi.getSystemId();
-    console.log(`system id ${id} fetched! caching now...`);
-    cache.cacheSystemId(id);
+    console.log("API and socket set up!");
+
+    let uid = cache.getSystemId();
+    if (!uid) {
+        console.log("system ID not cached, fetching from API...");
+        uid = await pluralApi.getSystemId();
+        console.log(`system id ${uid} fetched! caching now...`);
+        cache.cacheSystemId(uid);
+    } else {
+        console.log("system id cached, continuing but fetching up-to-date id asynchronously anyways...");
+        pluralApi.getSystemId().then(cache.cacheSystemId);
+    }
 
     console.log("api set up!!");
 }
 
 Pebble.addEventListener("ready", async (e) => {
-    console.log("hello !!!")
-
+    // try to get cached api token
     const token = cache.getApiToken();
     if (token) {
         await setupApi(token);
     } else {
-        console.warn("Warning: API Token not cached!");
+        console.warn("Warning: API Token not cached! api can't be set up! running off cache...");
     }
 
-    // const uid = cache.getSystemId();
-    // const frontables = cache.getAllFrontables();
+    // try to get cached uid
+    const uid = cache.getSystemId();
+    if (!uid) {
+        console.error("UID not cached! Cannot run fetching operations...");
+    }
+
+    // assemble cached fronters to send to watch, fetch if missing
+    let frontables = cache.getAllFrontables();
+    if (!frontables) {
+        if (uid) {
+            let frontableArr: Frontable[] = [];
+
+            // fetch data from api
+            (await pluralApi.getAllMembers(uid))
+                .forEach(m => frontableArr.push(Member.create(m)));
+            (await pluralApi.getAllCustomFronts(uid))
+                .forEach(c => frontableArr.push(CustomFront.create(c)));
+
+            // assemble and convert
+            frontables = utils.toFrontableCollection(frontableArr);
+        } else {
+            console.error("Cannot fetch members from API, UID was never cached!");
+        }
+    }
+
+    if (frontables) {
+        await messaging.sendFrontablesToWatch(frontables);
+    }
+
+    // always fetch and send current fronters to 
+    //   watch, don't rely on cache
+    let currentFronters = await pluralApi.getCurrentFronts();
+    await messaging.sendCurrentFrontersToWatch(currentFronters);
+
+    console.log("hey! app finished fetching and sending things! :)");
 });
 
 Pebble.addEventListener("appmessage", async (e) => {
@@ -80,6 +124,7 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
         const dictApiKey: string = settingsDict.PluralApiKey.value;
         if (dictApiKey) {
             cache.cacheApiToken(dictApiKey);
+            messaging.sendApiKeyIsValid(true);
             await setupApi(dictApiKey);
         }
 

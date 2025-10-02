@@ -11,7 +11,13 @@ static FrontableList current_fronters;
 FrontableList* cache_get_members() { return &members; }
 FrontableList* cache_get_custom_fronts() { return &custom_fronts; }
 FrontableList* cache_get_current_fronters() { return &current_fronters; }
-Frontable* cache_get_first_fronter() { return current_fronters.frontables[0]; }
+Frontable* cache_get_first_fronter() {
+    if (current_fronters.frontables != NULL) {
+        return current_fronters.frontables[0];
+    }
+
+    return NULL;
+}
 
 void cache_add_frontable(Frontable* frontable) {
     if (frontable_get_is_custom(frontable)) {

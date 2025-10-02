@@ -1,10 +1,12 @@
+import { FrontableCollection, Frontable } from "./types";
+
 // utils file, holds a handful of utility functions
 
 // this is the Jenkins one-at-a-time hash function!
 //   https://en.wikipedia.org/wiki/Jenkins_hash_function
 //! NOTE: this may result in hash collisions, as far as I've tested 
 //!   there have been none but be aware in case of future issues
-function genHash(str: string) {
+export function genHash(str: string) {
     var hash = 0;
     for (var i = 0; i < str.length; i++) {
         hash += str.charCodeAt(i);
@@ -20,6 +22,14 @@ function genHash(str: string) {
     return ((hash & 0xFFFFFFFF) >>> 0);
 }
 
-export {
-    genHash,
-};
+
+export function toFrontableCollection(frontableArr: Frontable[]): FrontableCollection {
+    const collection: FrontableCollection = {};
+
+    for (const frontable of frontableArr) {
+        const hash = genHash(frontable.id);
+        collection[hash] = frontable;
+    }
+
+    return collection;
+}

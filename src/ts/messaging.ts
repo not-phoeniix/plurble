@@ -1,4 +1,5 @@
-import { Frontable, FrontableCollection, Member } from "./types";
+import { FrontableCollection, FrontEntryMessage, Member } from "./types";
+import * as utils from "./utils";
 
 export async function sendFrontablesToWatch(frontables: FrontableCollection): Promise<void> {
     let i = 0;
@@ -32,10 +33,24 @@ export async function sendFrontablesToWatch(frontables: FrontableCollection): Pr
     }
 }
 
-export async function sendCurrentFrontersToWatch(currentFronterHashes: number[]): Promise<void> {
-    const msg: Record<string, any> = {
-        "CurrentFronters": currentFronterHashes
-    };
+export async function sendCurrentFrontersToWatch(currentFronters: FrontEntryMessage[]): Promise<void> {
+    for (let i = 0; i < currentFronters.length; i++) {
+        const fronter = currentFronters[i];
 
-    return PebbleTS.sendAppMessage(msg);
+        const msg: Record<string, any> = {
+            "CurrentFronter": utils.genHash(fronter.content.member)
+        };
+
+        if (i == 0) {
+            msg["NumCurrentFronters"] = currentFronters.length;
+        }
+
+        await PebbleTS.sendAppMessage(msg);
+    }
+}
+
+export async function sendApiKeyIsValid(valid: boolean): Promise<void> {
+    return PebbleTS.sendAppMessage({
+        "ApiKeyValid": valid
+    });
 }

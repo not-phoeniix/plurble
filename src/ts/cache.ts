@@ -1,22 +1,10 @@
 import { Frontable, FrontableCollection, FrontEntryMessage } from "./types";
-import * as utils from "./utils";
 
 enum CacheKeys {
     Frontables = "cachedFrontables",
     ApiToken = "cachedApiToken",
     SystemId = "cachedSystemId",
     CurrentFronts = "cachedCurrentFrontMessages",
-}
-
-export function toFrontableCollection(frontables: Frontable[]): FrontableCollection {
-    const collection: FrontableCollection = {};
-
-    for (const frontable of frontables) {
-        const hash = utils.genHash(frontable.id);
-        collection[hash] = frontable;
-    }
-
-    return collection;
 }
 
 export function cacheFrontables(frontables: FrontableCollection) {

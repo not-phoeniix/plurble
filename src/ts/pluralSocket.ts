@@ -9,7 +9,9 @@ let socket: WebSocket;
 let interval: NodeJS.Timeout | undefined = undefined;
 
 export function init(apiToken: string) {
+    console.log(`initializing plural socket with token ${apiToken}...`);
     token = apiToken;
+    startSocket();
 }
 
 export function startSocket() {
@@ -39,11 +41,13 @@ function onOpen(e: Event) {
             console.log("socket ping...");
             socket.send("ping");
         },
-        10_000
+        9_000
     );
 }
 
 function onMessage(e: MessageEvent) {
+    console.log(e.data);
+
     if (e.data) {
         const data: SocketMessage = JSON.parse(e.data);
 

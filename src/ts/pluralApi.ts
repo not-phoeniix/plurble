@@ -1,4 +1,4 @@
-import { Member, CustomFront, FrontEntry, FrontEntryMessage, Frontable, MemberMessage, CustomFrontMessage } from "./types";
+import { FrontEntry, FrontEntryMessage, Frontable, MemberMessage, CustomFrontMessage } from "./types";
 import * as cache from "./cache";
 
 const FETCH_URL = "https://devapi.apparyllis.com/v1/";
@@ -129,3 +129,9 @@ export async function getSystemId(): Promise<string> {
     }).then(data => data.id as string);
 }
 
+export async function getCurrentFronts(): Promise<FrontEntryMessage[]> {
+    return pluralMessage({
+        route: `fronters`,
+        method: "GET"
+    }).then(data => data as FrontEntryMessage[]);
+}

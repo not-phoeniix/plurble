@@ -2,6 +2,7 @@
 #include <pebble.h>
 #include "../data/config.h"
 #include "../data/frontable_cache.h"
+#include "../menus/main_menu.h"
 
 //! NOTE: all the MESSAGE_KEY_WhateverKey defines are added
 //!   later via the compiler.... these will look like errors
@@ -91,10 +92,13 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
         cache_add_frontable(f);
 
         frontable_counter++;
+        APP_LOG(APP_LOG_LEVEL_INFO, "Recieved frontable '%s'!", f->name);
     }
 
-    if (frontable_counter >= total_frontables) {
+    if (frontable_counter >= total_frontables && total_frontables != 0) {
         APP_LOG(APP_LOG_LEVEL_INFO, "All frontables recieved!");
+        main_menu_mark_custom_fronts_loaded();
+        main_menu_mark_members_loaded();
     }
 
     static int current_front_counter = 0;
@@ -115,8 +119,12 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
         cache_add_current_fronter(current_fronter->value->uint32);
     }
 
-    if (current_front_counter >= total_current_fronters) {
-        APP_LOG(APP_LOG_LEVEL_INFO, "All current fronters recieved!");
+    if (current_front_counter >= total_current_fronters && total_current_fronters != 0) {
+        if (total_current_fronters != 0) {
+            APP_LOG(APP_LOG_LEVEL_INFO, "All current fronters recieved!");
+        }
+
+        main_menu_mark_fronters_loaded();
     }
 }
 
