@@ -14,7 +14,7 @@ static void double_size(FrontableList* list) {
     }
 }
 
-void frontable_list_add(const Frontable* to_add, FrontableList* list) {
+void frontable_list_add(Frontable* to_add, FrontableList* list) {
     while (list->num_stored >= list->size) {
         double_size(list);
     }

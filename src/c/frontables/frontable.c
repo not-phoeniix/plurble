@@ -2,71 +2,71 @@
 
 #define NUM_COLORS 64
 
-static const GColor const colors[NUM_COLORS] = {
-    GColorBlack,
-    GColorOxfordBlue,
-    GColorDukeBlue,
-    GColorBlue,
-    GColorDarkGreen,
-    GColorMidnightGreen,
-    GColorCobaltBlue,
-    GColorBlueMoon,
-    GColorIslamicGreen,
-    GColorJaegerGreen,
-    GColorTiffanyBlue,
-    GColorVividCerulean,
-    GColorGreen,
-    GColorMalachite,
-    GColorMediumSpringGreen,
-    GColorCyan,
-    GColorBulgarianRose,
-    GColorImperialPurple,
-    GColorIndigo,
-    GColorElectricUltramarine,
-    GColorArmyGreen,
-    GColorDarkGray,
-    GColorLiberty,
-    GColorVeryLightBlue,
-    GColorKellyGreen,
-    GColorMayGreen,
-    GColorCadetBlue,
-    GColorPictonBlue,
-    GColorBrightGreen,
-    GColorScreaminGreen,
-    GColorMediumAquamarine,
-    GColorElectricBlue,
-    GColorDarkCandyAppleRed,
-    GColorJazzberryJam,
-    GColorPurple,
-    GColorVividViolet,
-    GColorWindsorTan,
-    GColorRoseVale,
-    GColorPurpureus,
-    GColorLavenderIndigo,
-    GColorLimerick,
-    GColorBrass,
-    GColorLightGray,
-    GColorBabyBlueEyes,
-    GColorSpringBud,
-    GColorInchworm,
-    GColorMintGreen,
-    GColorCeleste,
-    GColorRed,
-    GColorFolly,
-    GColorFashionMagenta,
-    GColorMagenta,
-    GColorOrange,
-    GColorSunsetOrange,
-    GColorBrilliantRose,
-    GColorShockingPink,
-    GColorChromeYellow,
-    GColorRajah,
-    GColorMelon,
-    GColorRichBrilliantLavender,
+static uint8_t colors[NUM_COLORS] = {
+    GColorBlackARGB8,
+    GColorOxfordBlueARGB8,
+    GColorDukeBlueARGB8,
+    GColorBlueARGB8,
+    GColorDarkGreenARGB8,
+    GColorMidnightGreenARGB8,
+    GColorCobaltBlueARGB8,
+    GColorBlueMoonARGB8,
+    GColorIslamicGreenARGB8,
+    GColorJaegerGreenARGB8,
+    GColorTiffanyBlueARGB8,
+    GColorVividCeruleanARGB8,
+    GColorGreenARGB8,
+    GColorMalachiteARGB8,
+    GColorMediumSpringGreenARGB8,
+    GColorCyanARGB8,
+    GColorBulgarianRoseARGB8,
+    GColorImperialPurpleARGB8,
+    GColorIndigoARGB8,
+    GColorElectricUltramarineARGB8,
+    GColorArmyGreenARGB8,
+    GColorDarkGrayARGB8,
+    GColorLibertyARGB8,
+    GColorVeryLightBlueARGB8,
+    GColorKellyGreenARGB8,
+    GColorMayGreenARGB8,
+    GColorCadetBlueARGB8,
+    GColorPictonBlueARGB8,
+    GColorBrightGreenARGB8,
+    GColorScreaminGreenARGB8,
+    GColorMediumAquamarineARGB8,
+    GColorElectricBlueARGB8,
+    GColorDarkCandyAppleRedARGB8,
+    GColorJazzberryJamARGB8,
+    GColorPurpleARGB8,
+    GColorVividVioletARGB8,
+    GColorWindsorTanARGB8,
+    GColorRoseValeARGB8,
+    GColorPurpureusARGB8,
+    GColorLavenderIndigoARGB8,
+    GColorLimerickARGB8,
+    GColorBrassARGB8,
+    GColorLightGrayARGB8,
+    GColorBabyBlueEyesARGB8,
+    GColorSpringBudARGB8,
+    GColorInchwormARGB8,
+    GColorMintGreenARGB8,
+    GColorCelesteARGB8,
+    GColorRedARGB8,
+    GColorFollyARGB8,
+    GColorFashionMagentaARGB8,
+    GColorMagentaARGB8,
+    GColorOrangeARGB8,
+    GColorSunsetOrangeARGB8,
+    GColorBrilliantRoseARGB8,
+    GColorShockingPinkARGB8,
+    GColorChromeYellowARGB8,
+    GColorRajahARGB8,
+    GColorMelonARGB8,
+    GColorRichBrilliantLavenderARGB8,
     GColorYellowARGB8,
-    GColorIcterine,
-    GColorPastelYellow,
-    GColorWhite
+    GColorIcterineARGB8,
+    GColorPastelYellowARGB8,
+    GColorWhiteARGB8
 };
 
 /*
@@ -110,10 +110,10 @@ void frontable_delete(Frontable* frontable) {
 static void copy_smaller_str(char* dest, const char* src, uint16_t dest_len) {
     for (uint16_t i = 0; i < dest_len; i++) {
         if (i < dest_len - 1) {
-            char* c = src[i];
-            dest[i] = *c;
+            char c = src[i];
+            dest[i] = c;
 
-            if (*c == '\0') {
+            if (c == '\0') {
                 break;
             }
         } else {
@@ -141,7 +141,7 @@ uint8_t frontable_make_packed_data(bool fronting, bool is_custom, GColor color) 
 
     uint8_t index = 0;
     for (uint8_t i = 0; i < NUM_COLORS; i++) {
-        if (color.argb == colors[i].argb) {
+        if (color.argb == colors[i]) {
             index = i;
             break;
         }
@@ -167,5 +167,5 @@ void frontable_set_is_fronting(Frontable* frontable, bool fronting) {
 
 GColor frontable_get_color(const Frontable* frontable) {
     uint8_t index = (frontable->packed_data & 0b00111111);
-    return colors[index];
+    return (GColor) {.argb = colors[index]};
 }

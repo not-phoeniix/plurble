@@ -4,7 +4,7 @@
 #include "../menus/all_members_menu.h"
 #include "../menus/custom_fronts_menu.h"
 #include "../menus/fronters_menu.h"
-#include "../members/member_collections.h"
+#include "../data/frontable_cache.h"
 #include "../menus/setup_prompt_menu.h"
 
 #define SETTINGS_KEY 1
@@ -43,10 +43,10 @@ static void apply() {
 }
 
 GColor settings_get_global_accent() {
-    Frontable* first_fronter = members_get_first_fronter();
+    Frontable* first_fronter = cache_get_first_fronter();
 
     if (settings.global_fronter_accent && first_fronter != NULL) {
-        return first_fronter->color;
+        return frontable_get_color(first_fronter);
     } else {
         return settings.accent_color;
     }
@@ -66,6 +66,3 @@ void settings_save() {
     persist_write_data(SETTINGS_KEY, &settings, sizeof(ClaySettings));
     apply();
 }
-
-// Frontable* settings_make_member_from_cache(uint32_t id) {
-// }

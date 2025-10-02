@@ -1,3 +1,5 @@
+#pragma once
+
 #include <pebble.h>
 #include "frontable.h"
 
@@ -11,7 +13,7 @@ typedef struct {
 /// @brief Adds a frontable to the end of a frontable list
 /// @param to_add Frontable to add
 /// @param list List to add to
-void frontable_list_add(const Frontable* to_add, FrontableList* list);
+void frontable_list_add(Frontable* to_add, FrontableList* list);
 
 /// @brief Clears a frontable list, does not free memory of contained frontables
 /// @param list List to clear

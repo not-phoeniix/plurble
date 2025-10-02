@@ -1,7 +1,7 @@
-#include "member_menu.h"
+#include "frontable_menu.h"
 #include "../messaging/messaging.h"
 
-struct MemberMenu {
+struct FrontableMenu {
     Window* window;
     MemberMenuCallbacks callbacks;
 
@@ -14,16 +14,17 @@ struct MemberMenu {
     TextLayer* status_bar_text;
     Layer* status_bar_layer;
 
-    Frontable* selected_member;
-    FrontableList* members;
+    Frontable* selected_frontable;
+    FrontableList* frontables;
     GColor highlight_color;
 };
 
 // ~~~ HELPER FUNCTIONS ~~~
 
-static void update_selected_highlight(MemberMenu* menu, uint16_t index) {
-    if (settings_get()->member_color_highlight && menu->members->members != NULL) {
-        menu->highlight_color = menu->members->members[index]->color;
+static void update_selected_highlight(FrontableMenu* menu, uint16_t index) {
+    if (settings_get()->member_color_highlight && menu->frontables->frontables != NULL) {
+        GColor color = frontable_get_color(menu->frontables->frontables[index]);
+        menu->highlight_color = color;
     } else {
         menu->highlight_color = settings_get()->accent_color;
     }
@@ -32,9 +33,9 @@ static void update_selected_highlight(MemberMenu* menu, uint16_t index) {
 // ~~~ MENU LAYER SETUP ~~~
 
 static uint16_t get_num_rows(MenuLayer* layer, uint16_t section_index, void* context) {
-    MemberMenu* menu = (MemberMenu*)context;
-    if (menu != NULL && menu->members != NULL) {
-        return menu->members->num_stored;
+    FrontableMenu* menu = (FrontableMenu*)context;
+    if (menu != NULL && menu->frontables != NULL) {
+        return menu->frontables->num_stored;
     } else {
         return 0;
     }
@@ -59,8 +60,8 @@ static uint16_t get_num_sections(MenuLayer* menu_layer, void* context) {
 }
 
 static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex old_index, void* context) {
-    MemberMenu* menu = (MemberMenu*)context;
-    menu->selected_member = menu->members->members[new_index.row];
+    FrontableMenu* menu = (FrontableMenu*)context;
+    menu->selected_frontable = menu->frontables->frontables[new_index.row];
     update_selected_highlight(menu, new_index.row);
 }
 
@@ -69,7 +70,7 @@ static void status_bar_update_proc(Layer* layer, GContext* ctx) {
     graphics_fill_rect(ctx, layer_get_bounds(layer), 0, GCornerNone);
 }
 
-static void menu_layer_setup(MemberMenu* menu) {
+static void menu_layer_setup(FrontableMenu* menu) {
     Layer* root_layer = window_get_root_layer(menu->window);
     GRect bounds = layer_get_bounds(root_layer);
 
@@ -99,7 +100,7 @@ static void menu_layer_setup(MemberMenu* menu) {
     menu_layer_set_click_config_onto_window(menu->menu_layer, menu->window);
     layer_add_child(root_layer, menu_layer_get_layer(menu->menu_layer));
     update_selected_highlight(menu, 0);
-    member_menu_update_colors(menu);
+    frontable_menu_update_colors(menu);
 
     // ~~~ create status bar layers ~~~
 
@@ -130,28 +131,28 @@ static void menu_layer_setup(MemberMenu* menu) {
 // ~~~ ACTION MENU SETUP ~~~
 
 static void action_set_as_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
-    MemberMenu* menu = (MemberMenu*)context;
-    if (menu->selected_member != NULL) {
-        messaging_set_as_front(menu->selected_member);
+    FrontableMenu* menu = (FrontableMenu*)context;
+    if (menu->selected_frontable != NULL) {
+        messaging_set_as_front(menu->selected_frontable->hash);
         window_stack_remove(menu->window, true);
     }
 }
 
 static void action_add_to_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
-    MemberMenu* menu = (MemberMenu*)context;
-    if (menu->selected_member != NULL) {
-        messaging_add_to_front(menu->selected_member);
+    FrontableMenu* menu = (FrontableMenu*)context;
+    if (menu->selected_frontable != NULL) {
+        messaging_add_to_front(menu->selected_frontable->hash);
     }
 }
 
 static void action_remove_from_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
-    MemberMenu* menu = (MemberMenu*)context;
-    if (menu->selected_member != NULL) {
-        messaging_remove_from_front(menu->selected_member);
+    FrontableMenu* menu = (FrontableMenu*)context;
+    if (menu->selected_frontable != NULL) {
+        messaging_remove_from_front(menu->selected_frontable->hash);
     }
 }
 
-static void action_menu_setup(MemberMenu* menu) {
+static void action_menu_setup(FrontableMenu* menu) {
     menu->non_fronting_action_level = action_menu_level_create(2);
 
     action_menu_level_add_action(menu->non_fronting_action_level, "Set as front", action_set_as_front, NULL);
@@ -174,12 +175,12 @@ static void action_menu_setup(MemberMenu* menu) {
 // ~~~ LOAD & UNLOAD ~~~
 
 static void window_load(Window* window) {
-    MemberMenu* menu = (MemberMenu*)window_get_user_data(window);
+    FrontableMenu* menu = (FrontableMenu*)window_get_user_data(window);
 
     menu_layer_setup(menu);
     action_menu_setup(menu);
 
-    member_menu_update_colors(menu);
+    frontable_menu_update_colors(menu);
 
     if (menu->callbacks.window_load != NULL) {
         menu->callbacks.window_load(window);
@@ -187,7 +188,7 @@ static void window_load(Window* window) {
 }
 
 static void window_unload(Window* window) {
-    MemberMenu* menu = (MemberMenu*)window_get_user_data(window);
+    FrontableMenu* menu = (FrontableMenu*)window_get_user_data(window);
 
     menu_layer_destroy(menu->menu_layer);
     menu->menu_layer = NULL;
@@ -207,14 +208,14 @@ static void window_unload(Window* window) {
 
 // ~~~ PUBLIC HELPERS ~~~
 
-void member_menu_draw_cell(MemberMenu* menu, GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index) {
+void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index) {
     GRect bounds = layer_get_bounds(cell_layer);
     bool compact = settings_get()->compact_member_list;
-    Frontable* member = menu->members->members[cell_index->row];
+    Frontable* frontable = menu->frontables->frontables[cell_index->row];
 
     if (settings_get()->member_color_tag) {
-        // small color label on member
-        graphics_context_set_fill_color(ctx, member->color);
+        // small color label on frontable
+        graphics_context_set_fill_color(ctx, frontable_get_color(frontable));
         GRect color_tag_bounds = bounds;
         color_tag_bounds.size.w = 3;
         graphics_fill_rect(ctx, color_tag_bounds, 0, GCornerNone);
@@ -231,24 +232,24 @@ void member_menu_draw_cell(MemberMenu* menu, GContext* ctx, const Layer* cell_la
     menu_cell_basic_draw(
         ctx,
         cell_layer,
-        member->name,
-        compact || member->custom ? NULL : member->pronouns,
+        frontable->name,
+        compact || frontable_get_is_custom(frontable) ? NULL : frontable->pronouns,
         NULL
     );
 }
 
-void member_menu_select_member(MemberMenu* menu, MenuIndex* cell_index) {
-    // do not select anything if no members are stored!
-    if (menu->members->num_stored <= 0) {
+void frontable_menu_select_frontable(FrontableMenu* menu, MenuIndex* cell_index) {
+    // do not select anything if no fronters are stored!
+    if (menu->frontables->num_stored <= 0) {
         return;
     }
 
-    Frontable* member = menu->members->members[cell_index->row];
+    Frontable* frontable = menu->frontables->frontables[cell_index->row];
 
-    // set background/bar color of action menu to either member
+    // set background/bar color of action menu to either frontable
     //   color or global accent depending on prefs
     if (settings_get()->member_color_highlight) {
-        menu->action_menu_config.colors.background = member->color;
+        menu->action_menu_config.colors.background = frontable_get_color(frontable);
     } else {
         menu->action_menu_config.colors.background = settings_get_global_accent();
     }
@@ -258,19 +259,19 @@ void member_menu_select_member(MemberMenu* menu, MenuIndex* cell_index) {
         menu->action_menu_config.colors.background
     );
 
-    // change popup root level depending on if member is fronting or not
-    if (member->fronting) {
+    // change popup root level depending on if frontable is fronting or not
+    if (frontable_get_is_fronting(frontable)) {
         menu->action_menu_config.root_level = menu->fronting_action_level;
     } else {
         menu->action_menu_config.root_level = menu->non_fronting_action_level;
     }
 
-    // change selected member and open menu itself
-    menu->selected_member = member;
+    // change selected frontable and open menu itself
+    menu->selected_frontable = frontable;
     action_menu_open(&menu->action_menu_config);
 }
 
-void member_menu_update_colors(MemberMenu* menu) {
+void frontable_menu_update_colors(FrontableMenu* menu) {
     ClaySettings* settings = settings_get();
 
     if (menu->menu_layer != NULL) {
@@ -296,7 +297,7 @@ void member_menu_update_colors(MemberMenu* menu) {
     }
 }
 
-MemberMenu* member_menu_create(MemberMenuCallbacks callbacks, FrontableList* members, const char* name) {
+FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, FrontableList* frontables, const char* name) {
     // create window and set up handlers
     Window* window = window_create();
     window_set_window_handlers(
@@ -308,41 +309,41 @@ MemberMenu* member_menu_create(MemberMenuCallbacks callbacks, FrontableList* mem
     );
 
     // malloc new menu and assign values
-    MemberMenu* menu = (MemberMenu*)malloc(sizeof(MemberMenu));
-    *menu = (MemberMenu) {
+    FrontableMenu* menu = (FrontableMenu*)malloc(sizeof(FrontableMenu));
+    *menu = (FrontableMenu) {
         .window = window,
         .callbacks = callbacks,
-        .members = members,
+        .frontables = frontables,
         .name = name
     };
 
-    // set user data of windows to be the related member menu pointer
+    // set user data of windows to be the related frontable menu pointer
     window_set_user_data(window, menu);
 
     return menu;
 }
 
-void member_menu_destroy(MemberMenu* menu) {
+void frontable_menu_destroy(FrontableMenu* menu) {
     window_destroy(menu->window);
     free(menu);
 }
 
-void member_menu_window_push(MemberMenu* menu) {
+void frontable_menu_window_push(FrontableMenu* menu) {
     window_stack_push(menu->window, true);
 }
 
-void member_menu_window_remove(MemberMenu* menu) {
+void frontable_menu_window_remove(FrontableMenu* menu) {
     window_stack_remove(menu->window, true);
 }
 
-FrontableList* member_menu_get_members(MemberMenu* menu) {
-    return menu->members;
+FrontableList* frontable_menu_get_frontables(FrontableMenu* menu) {
+    return menu->frontables;
 }
 
-void member_menu_set_members(MemberMenu* menu, FrontableList* members) {
-    menu->members = members;
+void frontable_menu_set_frontables(FrontableMenu* menu, FrontableList* frontables) {
+    menu->frontables = frontables;
 }
 
-Window* member_menu_get_window(MemberMenu* menu) {
+Window* frontable_menu_get_window(FrontableMenu* menu) {
     return menu->window;
 }

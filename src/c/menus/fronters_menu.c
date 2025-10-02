@@ -1,17 +1,17 @@
 #include "fronters_menu.h"
-#include "member_menu.h"
+#include "frontable_menu.h"
 #include "../data/frontable_cache.h"
 
-static MemberMenu* menu = NULL;
+static FrontableMenu* menu = NULL;
 static TextLayer* text_layer = NULL;
 static bool empty = false;
 
 static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
-    member_menu_draw_cell(menu, ctx, cell_layer, cell_index);
+    frontable_menu_draw_cell(menu, ctx, cell_layer, cell_index);
 }
 
 static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
-    member_menu_select_member(menu, cell_index);
+    frontable_menu_select_frontable(menu, cell_index);
 }
 
 static void window_load(Window* window) {
@@ -56,22 +56,22 @@ void fronters_menu_push() {
             .window_unload = window_unload
         };
 
-        menu = member_menu_create(callbacks, cache_get_current_fronters(), "Fronters");
+        menu = frontable_menu_create(callbacks, cache_get_current_fronters(), "Fronters");
     }
 
-    member_menu_window_push(menu);
+    frontable_menu_window_push(menu);
 }
 
 void fronters_menu_deinit() {
     if (menu != NULL) {
-        member_menu_destroy(menu);
+        frontable_menu_destroy(menu);
         menu = NULL;
     }
 }
 
 void fronters_menu_update_colors() {
     if (menu != NULL) {
-        member_menu_update_colors(menu);
+        frontable_menu_update_colors(menu);
     }
 
     if (text_layer != NULL) {
@@ -93,7 +93,7 @@ void fronters_menu_set_is_empty(bool p_empty) {
     }
 
     // get layer pointers
-    Window* window = member_menu_get_window(menu);
+    Window* window = frontable_menu_get_window(menu);
     Layer* root_layer = window_get_root_layer(window);
     Layer* layer = text_layer_get_layer(text_layer);
 

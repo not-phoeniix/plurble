@@ -1,5 +1,4 @@
 #include "frontable_cache.h"
-#include "../tools/string_tools.h"
 #include "../menus/main_menu.h"
 #include "../menus/fronters_menu.h"
 
@@ -14,7 +13,7 @@ FrontableList* cache_get_custom_fronts() { return &custom_fronts; }
 FrontableList* cache_get_current_fronters() { return &current_fronters; }
 Frontable* cache_get_first_fronter() { return current_fronters.frontables[0]; }
 
-void cache_add_frontable(const Frontable* frontable) {
+void cache_add_frontable(Frontable* frontable) {
     if (frontable_get_is_custom(frontable)) {
         frontable_list_add(frontable, &custom_fronts);
     } else {

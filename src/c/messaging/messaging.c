@@ -93,7 +93,7 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
         frontable_counter++;
     }
 
-    if (frontable_counter >= num_total_frontables) {
+    if (frontable_counter >= total_frontables) {
         APP_LOG(APP_LOG_LEVEL_INFO, "All frontables recieved!");
     }
 
