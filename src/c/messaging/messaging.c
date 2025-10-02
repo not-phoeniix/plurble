@@ -1,7 +1,7 @@
 #include "messaging.h"
 #include <pebble.h>
-#include "../config/config.h"
-#include "../members/member_collections.h"
+#include "../data/config.h"
+#include "../data/frontable_cache.h"
 
 //! NOTE: all the MESSAGE_KEY_WhateverKey defines are added
 //!   later via the compiler.... these will look like errors
@@ -9,6 +9,8 @@
 
 static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
     ClaySettings* settings = settings_get();
+
+    // ~~~ app settings ~~~
 
     Tuple* accent_color = dict_find(iter, MESSAGE_KEY_AccentColor);
     if (accent_color != NULL) {
@@ -49,19 +51,21 @@ static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
         );
     }
 
+    // ~~~ API data ~~~
+
     Tuple* members = dict_find(iter, MESSAGE_KEY_Members);
     if (members != NULL) {
-        members_set_members(members->value->cstring);
+        // members_set_members(members->value->cstring);
     }
 
     Tuple* custom_fronts = dict_find(iter, MESSAGE_KEY_CustomFronts);
     if (custom_fronts != NULL) {
-        members_set_custom_fronts(custom_fronts->value->cstring);
+        // members_set_custom_fronts(custom_fronts->value->cstring);
     }
 
     Tuple* fronters = dict_find(iter, MESSAGE_KEY_Fronters);
     if (fronters != NULL) {
-        members_set_fronters(fronters->value->cstring);
+        // members_set_fronters(fronters->value->cstring);
     }
 
     Tuple* api_key_valid = dict_find(iter, MESSAGE_KEY_ApiKeyValid);
@@ -90,21 +94,18 @@ void messaging_init() {
     app_message_register_outbox_sent(outbox_sent_handler);
     app_message_register_outbox_failed(outbox_failed_callback);
 
-    app_message_open(4092, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
-    // app_message_open(1024, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
+    app_message_open(512, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
 }
 
-static void front_message(Member* member, const uint32_t message_key) {
+static void front_message(uint32_t frontable_hash, const uint32_t message_key) {
     // dictionary to send!
     DictionaryIterator* iter;
 
     // begin outbox app message
     AppMessageResult result = app_message_outbox_begin(&iter);
     if (result == APP_MSG_OK) {
-        // write member name as the request string data value
-        dict_write_cstring(iter, message_key, member->name);
+        dict_write_uint32(iter, message_key, frontable_hash);
 
-        // send outbox message itself
         result = app_message_outbox_send();
 
         if (result != APP_MSG_OK) {
@@ -116,14 +117,14 @@ static void front_message(Member* member, const uint32_t message_key) {
     }
 }
 
-void messaging_add_to_front(Member* member) {
-    front_message(member, MESSAGE_KEY_AddFrontRequest);
+void messaging_add_to_front(uint32_t frontable_hash) {
+    front_message(frontable_hash, MESSAGE_KEY_AddFrontRequest);
 }
 
-void messaging_set_as_front(Member* member) {
-    front_message(member, MESSAGE_KEY_SetFrontRequest);
+void messaging_set_as_front(uint32_t frontable_hash) {
+    front_message(frontable_hash, MESSAGE_KEY_SetFrontRequest);
 }
 
-void messaging_remove_from_front(Member* member) {
-    front_message(member, MESSAGE_KEY_RemoveFrontRequest);
+void messaging_remove_from_front(uint32_t frontable_hash) {
+    front_message(frontable_hash, MESSAGE_KEY_RemoveFrontRequest);
 }

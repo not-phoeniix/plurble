@@ -1,7 +1,6 @@
 #include "all_members_menu.h"
 #include <pebble.h>
 #include "member_menu.h"
-#include "../members/member_collections.h"
 
 static MemberMenu* menu = NULL;
 

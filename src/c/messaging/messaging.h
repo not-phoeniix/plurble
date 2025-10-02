@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../members/member.h"
+#include "../frontables/frontable.h"
 
 void messaging_init();
-void messaging_add_to_front(Member* member);
-void messaging_set_as_front(Member* member);
-void messaging_remove_from_front(Member* member);
+void messaging_add_to_front(uint32_t frontable_hash);
+void messaging_set_as_front(uint32_t frontable_hash);
+void messaging_remove_from_front(uint32_t frontable_hash);

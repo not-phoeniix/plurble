@@ -1,8 +1,8 @@
 #include <pebble.h>
-#include "config/config.h"
+#include "data/config.h"
 #include "messaging/messaging.h"
+#include "data/frontable_cache.h"
 #include "menus/main_menu.h"
-#include "members/member_collections.h"
 #include "menus/all_members_menu.h"
 #include "menus/custom_fronts_menu.h"
 #include "menus/fronters_menu.h"
@@ -24,7 +24,7 @@ static void deinit() {
     custom_fronts_menu_deinit();
     fronters_menu_deinit();
     main_menu_deinit();
-    member_collections_deinit();
+    frontable_cache_deinit();
     setup_prompt_menu_remove();
 }
 

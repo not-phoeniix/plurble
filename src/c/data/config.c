@@ -43,7 +43,7 @@ static void apply() {
 }
 
 GColor settings_get_global_accent() {
-    Member* first_fronter = members_get_first_fronter();
+    Frontable* first_fronter = members_get_first_fronter();
 
     if (settings.global_fronter_accent && first_fronter != NULL) {
         return first_fronter->color;
@@ -67,5 +67,5 @@ void settings_save() {
     apply();
 }
 
-// Member* settings_make_member_from_cache(uint32_t id) {
+// Frontable* settings_make_member_from_cache(uint32_t id) {
 // }

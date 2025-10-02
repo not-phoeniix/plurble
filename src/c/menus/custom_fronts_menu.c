@@ -1,7 +1,7 @@
 #include "custom_fronts_menu.h"
 #include <pebble.h>
 #include "member_menu.h"
-#include "../members/member_collections.h"
+#include "../data/frontable_cache.h"
 
 static MemberMenu* menu = NULL;
 

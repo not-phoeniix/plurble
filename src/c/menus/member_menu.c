@@ -14,8 +14,8 @@ struct MemberMenu {
     TextLayer* status_bar_text;
     Layer* status_bar_layer;
 
-    Member* selected_member;
-    MemberList* members;
+    Frontable* selected_member;
+    FrontableList* members;
     GColor highlight_color;
 };
 
@@ -210,7 +210,7 @@ static void window_unload(Window* window) {
 void member_menu_draw_cell(MemberMenu* menu, GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index) {
     GRect bounds = layer_get_bounds(cell_layer);
     bool compact = settings_get()->compact_member_list;
-    Member* member = menu->members->members[cell_index->row];
+    Frontable* member = menu->members->members[cell_index->row];
 
     if (settings_get()->member_color_tag) {
         // small color label on member
@@ -243,7 +243,7 @@ void member_menu_select_member(MemberMenu* menu, MenuIndex* cell_index) {
         return;
     }
 
-    Member* member = menu->members->members[cell_index->row];
+    Frontable* member = menu->members->members[cell_index->row];
 
     // set background/bar color of action menu to either member
     //   color or global accent depending on prefs
@@ -296,7 +296,7 @@ void member_menu_update_colors(MemberMenu* menu) {
     }
 }
 
-MemberMenu* member_menu_create(MemberMenuCallbacks callbacks, MemberList* members, const char* name) {
+MemberMenu* member_menu_create(MemberMenuCallbacks callbacks, FrontableList* members, const char* name) {
     // create window and set up handlers
     Window* window = window_create();
     window_set_window_handlers(
@@ -335,11 +335,11 @@ void member_menu_window_remove(MemberMenu* menu) {
     window_stack_remove(menu->window, true);
 }
 
-MemberList* member_menu_get_members(MemberMenu* menu) {
+FrontableList* member_menu_get_members(MemberMenu* menu) {
     return menu->members;
 }
 
-void member_menu_set_members(MemberMenu* menu, MemberList* members) {
+void member_menu_set_members(MemberMenu* menu, FrontableList* members) {
     menu->members = members;
 }
 
