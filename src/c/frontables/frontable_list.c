@@ -9,7 +9,7 @@ static void double_size(FrontableList* list) {
         list->frontables = realloc(list->frontables, sizeof(Frontable*) * list->size);
 
         if (list->frontables == NULL) {
-            printf("ERROR!!! FRONTABLE LIST REALLOC FAILED!!!");
+            APP_LOG(APP_LOG_LEVEL_ERROR, "ERROR!!!!, Frontable list realloc failed!!!");
         }
     }
 }

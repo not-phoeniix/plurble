@@ -37,7 +37,7 @@ static void member_select(int index, void* context) {
 }
 
 static void extra_select(int index, void* context) {
-    printf("polls! ");
+    APP_LOG(APP_LOG_LEVEL_INFO, "polls !!");
 }
 
 static void status_bar_update_proc(Layer* layer, GContext* ctx) {
