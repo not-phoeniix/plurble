@@ -67,8 +67,6 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
         total_frontables = num_total_frontables->value->int32;
         frontable_counter = 0;
     }
-    
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "got an app message :3");
 
     Tuple* frontable_hash = dict_find(iter, MESSAGE_KEY_FrontableHash);
     Tuple* frontable_name = dict_find(iter, MESSAGE_KEY_FrontableName);
@@ -108,7 +106,7 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
         );
     }
 
-    if (frontable_counter >= total_frontables && total_frontables != 0) {
+    if (frontable_counter >= total_frontables) {
         APP_LOG(APP_LOG_LEVEL_INFO, "All frontables recieved!");
         main_menu_mark_custom_fronts_loaded();
         main_menu_mark_members_loaded();
@@ -132,7 +130,7 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
         cache_add_current_fronter(current_fronter->value->uint32);
     }
 
-    if (current_front_counter >= total_current_fronters && total_current_fronters != 0) {
+    if (current_front_counter >= total_current_fronters) {
         if (total_current_fronters != 0) {
             APP_LOG(APP_LOG_LEVEL_INFO, "All current fronters recieved!");
         }
@@ -168,7 +166,7 @@ void messaging_init() {
     app_message_register_outbox_sent(outbox_sent_handler);
     app_message_register_outbox_failed(outbox_failed_callback);
 
-    app_message_open(512, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
+    app_message_open(256, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
 }
 
 static void front_message(uint32_t frontable_hash, const uint32_t message_key) {

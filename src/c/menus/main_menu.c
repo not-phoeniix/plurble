@@ -19,7 +19,7 @@ static bool current_fronters_loaded = false;
 static void member_select(int index, void* context) {
     switch (index) {
         case 0:
-            if (members_loaded && custom_fronts_loaded) {
+            if (current_fronters_loaded) {
                 fronters_menu_push();
             }
             break;

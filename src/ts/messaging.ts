@@ -4,9 +4,7 @@ import * as utils from "./utils";
 export async function sendFrontablesToWatch(frontables: FrontableCollection): Promise<void> {
     let i = 0;
 
-    for (const hash of Object.keys(frontables).map(k => Number(k))) {
-        const frontable = frontables[hash];
-
+    for (const [hash, frontable] of Object.entries(frontables)) {
         //* apparently strtol doesn't exist on pebble 
         //*   lol so i need to use atoi using base 
         //*   10 numbers <3
@@ -27,11 +25,8 @@ export async function sendFrontablesToWatch(frontables: FrontableCollection): Pr
 
         if (i === 0) {
             msg["NumTotalFrontables"] = Object.keys(frontables).length;
-            console.log("sending a total frontables number message.... this should reset cache ://");
         }
 
-        console.log(`sending frontable "${frontable.name}"...`);
-        console.log(`msg: ${JSON.stringify(msg)}`);
         await PebbleTS.sendAppMessage(msg)
             .then(
                 () => console.log("front message successfully sent !!"),

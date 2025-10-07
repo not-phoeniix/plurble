@@ -46,7 +46,10 @@ function onOpen(e: Event) {
 }
 
 function onMessage(e: MessageEvent) {
-    // console.log(e.data);
+    if (e.data == "pong") {
+        console.log("pong");
+        return;
+    }
 
     if (e.data) {
         const data: SocketMessage = JSON.parse(e.data);

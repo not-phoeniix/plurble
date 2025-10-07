@@ -44,10 +44,16 @@ async function fetchAndSendFrontables(uid: string) {
             let frontableArr: Frontable[] = [];
 
             // fetch data from api
-            (await pluralApi.getAllMembers(uid))
-                .forEach(m => frontableArr.push(Member.create(m)));
-            (await pluralApi.getAllCustomFronts(uid))
-                .forEach(c => frontableArr.push(CustomFront.create(c)));
+            await Promise.all([
+                pluralApi.getAllMembers(uid)
+                    .then(members => members.forEach(
+                        m => frontableArr.push(Member.create(m))
+                    )),
+                pluralApi.getAllCustomFronts(uid)
+                    .then(customFronts => customFronts.forEach(
+                        c => frontableArr.push(CustomFront.create(c))
+                    ))
+            ]);
 
             // assemble and convert, then cache
             frontables = utils.toFrontableCollection(frontableArr);
