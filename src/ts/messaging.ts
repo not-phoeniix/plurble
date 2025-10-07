@@ -39,8 +39,6 @@ export async function sendFrontablesToWatch(frontables: Frontable[]): Promise<vo
             "FrontableColor": Number(`0x${frontable.color.replace("#", "")}`),
         };
 
-        console.log(JSON.stringify(msg));
-
         const member = frontable as Member;
         if (member.pronouns) {
             msg["FrontablePronouns"] = member.pronouns;
@@ -55,8 +53,8 @@ export async function sendFrontablesToWatch(frontables: Frontable[]): Promise<vo
 
         await PebbleTS.sendAppMessage(msg)
             .then(
-                () => console.log("front message successfully sent !!"),
-                (reason) => console.log("front message failed or smth !! reason: " + reason)
+                () => console.log("Frontable data successfully sent !!"),
+                (reason) => console.log("Frontable data sending failed !! reason: " + reason)
             );
         i++;
     }
