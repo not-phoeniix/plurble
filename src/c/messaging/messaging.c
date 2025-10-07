@@ -123,20 +123,39 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
 
         // start the counting process :]
         total_current_fronters = num_current_fronters->value->int32;
+        APP_LOG(APP_LOG_LEVEL_INFO, "current fronters expected to transfer: %d", total_current_fronters);
         current_front_counter = 0;
     }
 
     Tuple* current_fronter = dict_find(iter, MESSAGE_KEY_CurrentFronter);
     if (current_fronter != NULL) {
-        cache_add_current_fronter(current_fronter->value->uint32);
+        uint32_t hash = current_fronter->value->int32 + (0xFFFFFFFF / 2);
+
+        cache_add_current_fronter(hash);
+
+        current_front_counter++;
+        APP_LOG(
+            APP_LOG_LEVEL_INFO,
+            "Recieved current front '%lu'! Index: %d/%d",
+            hash,
+            current_front_counter,
+            total_current_fronters
+        );
     }
 
-    if (current_front_counter >= total_current_fronters) {
-        if (total_current_fronters != 0) {
-            APP_LOG(APP_LOG_LEVEL_INFO, "All current fronters recieved!");
-        }
-
+    if (
+        (current_front_counter >= total_current_fronters && total_current_fronters != 0) ||
+        (num_current_fronters != NULL && total_current_fronters == 0)
+    ) {
+        APP_LOG(APP_LOG_LEVEL_INFO, "All current fronters recieved!");
         main_menu_mark_fronters_loaded();
+
+        Frontable* first_fronter = cache_get_first_fronter();
+        if (first_fronter != NULL) {
+            main_menu_set_fronters_subtitle(first_fronter->name);
+        } else {
+            main_menu_set_fronters_subtitle("No current fronters!");
+        }
     }
 }
 
@@ -177,7 +196,7 @@ static void front_message(uint32_t frontable_hash, const uint32_t message_key) {
     // begin outbox app message
     AppMessageResult result = app_message_outbox_begin(&iter);
     if (result == APP_MSG_OK) {
-        dict_write_uint32(iter, message_key, frontable_hash);
+        dict_write_int32(iter, message_key, (frontable_hash - (0xFFFFFFFF / 2)));
 
         result = app_message_outbox_send();
 

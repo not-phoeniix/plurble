@@ -4,7 +4,7 @@ import * as pluralSocket from "./pluralSocket";
 import * as cache from "./cache";
 import * as messaging from "./messaging";
 import * as utils from "./utils";
-import { Frontable, Member, CustomFront, CustomFrontMessage, MemberMessage } from "./types";
+import { Frontable, Member, CustomFront, AppMessageDesc } from "./types";
 
 // i gotta use node CommonJS requires unfortunately, it's not a TS module
 const Clay = require("pebble-clay");
@@ -15,29 +15,32 @@ const clay = new Clay(config);
 async function setupApi(token: string) {
     console.log("setting up API and socket...");
 
-    pluralApi.init(token);
-    pluralSocket.init(token);
+    try {
+        pluralApi.init(token);
+        pluralSocket.init(token);
 
-    console.log("API and socket set up!");
+        console.log("API and socket set up!");
 
-    let uid = cache.getSystemId();
-    if (!uid) {
-        console.log("system ID not cached, fetching from API...");
-        uid = await pluralApi.getSystemId();
-        console.log(`system id ${uid} fetched! caching now...`);
-        cache.cacheSystemId(uid);
-    } else {
-        console.log("system id cached, continuing but fetching up-to-date id asynchronously anyways...");
-        pluralApi.getSystemId().then(cache.cacheSystemId);
+        let uid = cache.getSystemId();
+        if (!uid) {
+            console.log("system ID not cached, fetching from API...");
+            uid = await pluralApi.getSystemId();
+            console.log(`system id ${uid} fetched! caching now...`);
+            cache.cacheSystemId(uid);
+        } else {
+            console.log("system id cached, continuing but fetching up-to-date id asynchronously anyways...");
+            pluralApi.getSystemId().then(cache.cacheSystemId);
+        }
+
+        console.log("api set up!!");
+    } catch (err) {
+        console.log(err);
     }
-
-    console.log("api set up!!");
 }
 
 async function fetchAndSendFrontables(uid: string) {
     // assemble cached fronters to send to watch, fetch if missing
-    // let frontables = cache.getAllFrontables();
-    let frontables: Frontable[] | null = null;
+    let frontables = cache.getAllFrontables();
     if (!frontables) {
         if (uid) {
             console.log("Frontables not cached, fetching from API...");
@@ -77,12 +80,11 @@ async function fetchAndSendCurrentFronts() {
     // always fetch and send current fronters to 
     //   watch, don't rely on cache
     const currentFronters = await pluralApi.getCurrentFronts();
+    cache.cacheCurrentFronts(currentFronters);
     await messaging.sendCurrentFrontersToWatch(currentFronters);
 }
 
 Pebble.addEventListener("ready", async (e) => {
-    // cache.clearAllCache();
-
     // try to get cached api token
     const token = cache.getApiToken();
     if (token) {
@@ -107,32 +109,55 @@ Pebble.addEventListener("ready", async (e) => {
 Pebble.addEventListener("appmessage", async (e) => {
     console.log("received app message !!! payload: " + JSON.stringify(e.payload));
 
-    const dict = e.payload;
+    const msg: AppMessageDesc = e.payload;
 
-    if (dict.AddFrontRequest) {
-        const frontable = cache.getFrontable(dict.AddFrontRequest);
+    const convertHash = (msgHash: number) => msgHash + Math.floor(0xFFFFFFFF / 2);
+
+    if (msg.AddFrontRequest) {
+        // re-offset hash to ensure full unsigned range
+        const hash = convertHash(msg.AddFrontRequest);
+
+        console.log(`add front request identified! hash to add: ${hash}`);
+
+        const frontable = cache.getFrontable(hash);
         if (frontable) {
-            pluralApi.addToFront(frontable);
+            console.log(`Adding frontable ${frontable.name} to front...`);
+            pluralApi.addToFront(frontable)
+                .then(null, console.log);
         } else {
-            throw new Error(`Cannot add member to front! Member hash ${dict.AddFrontRequest} was not cached!`);
+            console.error(`Cannot add member to front! Member hash ${hash} was not cached!`);
         }
     }
 
-    if (dict.SetFrontRequest) {
-        const frontable = cache.getFrontable(dict.SetFrontRequest);
+    if (msg.SetFrontRequest) {
+        // re-offset hash to ensure full unsigned range
+        const hash = convertHash(msg.SetFrontRequest);
+
+        console.log(`set front request identified! hash to set: ${hash}`);
+
+        const frontable = cache.getFrontable(hash);
         if (frontable) {
-            pluralApi.setAsFront(frontable);
+            console.log(`Setting frontable ${frontable.name} as front...`);
+            pluralApi.setAsFront(frontable)
+                .then(null, console.log);
         } else {
-            throw new Error(`Cannot set member as front! Member hash ${dict.AddFrontRequest} was not cached!`);
+            console.error(`Cannot set member as front! Member hash ${hash} was not cached!`);
         }
     }
 
-    if (dict.RemoveFrontRequest) {
-        const frontable = cache.getFrontable(dict.RemoveFrontRequest);
+    if (msg.RemoveFrontRequest) {
+        // re-offset hash to ensure full unsigned range
+        const hash = convertHash(msg.RemoveFrontRequest);
+
+        console.log(`remove front request identified! hash to remove: ${hash}`);
+
+        const frontable = cache.getFrontable(hash);
         if (frontable) {
-            pluralApi.removeFromFront(frontable);
+            console.log(`Removing frontable ${frontable.name} from front...`);
+            pluralApi.removeFromFront(frontable)
+                .then(null, console.log);
         } else {
-            throw new Error(`Cannot remove member from front! Member hash ${dict.AddFrontRequest} was not cached!`);
+            console.error(`Cannot remove member from front! Member hash ${hash} was not cached!`);
         }
     }
 });
@@ -145,12 +170,16 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
     if (e.response) {
         // update api key cache
         const settingsDict = clay.getSettings(e.response, false);
-        const dictApiKey: string = settingsDict.PluralApiKey.value;
-        if (dictApiKey) {
-            cache.cacheApiToken(dictApiKey);
+        const grabbedToken: string = settingsDict.PluralApiKey.value;
+        if (grabbedToken) {
+            console.log(`API token "${grabbedToken}" grabbed from webviewclosed event!`);
+            cache.cacheApiToken(grabbedToken);
             messaging.sendApiKeyIsValid(true);
-            await setupApi(dictApiKey);
 
+            console.log("Setting up API and socket again after grabbing new token!");
+            await setupApi(grabbedToken);
+
+            console.log("okay the api should have been set up by now, did it go well? okay..");
             const uid = cache.getSystemId();
             if (uid) {
                 await fetchAndSendFrontables(uid);

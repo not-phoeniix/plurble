@@ -60,11 +60,16 @@ void cache_add_current_fronter(uint32_t frontable_hash) {
     }
 
     if (frontable != NULL) {
+        frontable_set_is_fronting(frontable, true);
         frontable_list_add(frontable, &current_fronters);
     }
 }
 
 void cache_clear_current_fronters() {
+    for (uint16_t i = 0; i < current_fronters.num_stored; i++) {
+        frontable_set_is_fronting(current_fronters.frontables[i], false);
+    }
+
     frontable_list_clear(&current_fronters);
 }
 

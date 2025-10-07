@@ -1,6 +1,6 @@
 import { FrontEntrySocketMessage, SocketMessage, AuthSocketMessage } from "./types";
 import * as cache from "./cache";
-import * as utils from "./utils";
+import * as messaging from "./messaging";
 
 const SOCKET_URL = "wss://devapi.apparyllis.com/v1/socket";
 
@@ -30,16 +30,26 @@ export function startSocket() {
 
 function onOpen(e: Event) {
     console.log("Plural API WebSocket opened! Sending auth payload...");
-    socket.send(JSON.stringify({
-        op: "authenticate",
-        token: token
-    }));
+    if (token) {
+        socket.send(JSON.stringify({
+            op: "authenticate",
+            token: token
+        }));
+    } else {
+        throw new Error("Cannot authenticate web socket, token was never set up!");
+    }
 
     clearInterval(interval);
     interval = setInterval(
         () => {
-            console.log("socket ping...");
-            socket.send("ping");
+            if (socket.readyState === WebSocket.CLOSED) {
+                // restart socket if it somehow closed
+                console.log("web socket closed, attempting to restart it...")
+                startSocket();
+            } else {
+                console.log("socket ping...");
+                socket.send("ping");
+            }
         },
         9_000
     );
@@ -81,5 +91,14 @@ function handleFrontHistory(data: FrontEntrySocketMessage) {
         } else {
             cache.removeFrontFromCache(result);
         }
+    }
+
+    console.log("Socket indicates front history changed, sending updated fronts to watch...");
+    const currentFronts = cache.getCurrentFronts();
+    if (currentFronts) {
+        console.log(`sending list of ${currentFronts.length} to watch...`);
+        messaging.sendCurrentFrontersToWatch(currentFronts);
+    } else {
+        console.warn("Warning: no cached current fronts were found ? not like an issue with no members in an array. like. theres no array in the first place. wuh oh!");
     }
 }

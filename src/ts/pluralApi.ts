@@ -36,7 +36,7 @@ async function pluralMessage(routeDesc: RouteDescription): Promise<any> {
         xhr.setRequestHeader("Authorization", token);
         xhr.setRequestHeader("Content-Type", "application/json");
 
-        xhr.send(routeDesc ? JSON.stringify(routeDesc.body) : null);
+        xhr.send(routeDesc.body ? JSON.stringify(routeDesc.body) : null);
 
     }).then(xhr => JSON.parse(xhr.responseText));
 }
@@ -79,14 +79,23 @@ export async function removeFromFront(frontable: Frontable): Promise<void> {
 async function removeFromFrontViaId(frontableId: string): Promise<void> {
     const removedMessage = cache.removeFrontFromCacheViaId(frontableId);
     if (removedMessage) {
+        // sometimes UID is stored in here, manually copy 
+        //   data over instead of the expand expression thingy
+        //   to make sure the API isn't mad at extra data <3
         const entry: FrontEntry = {
-            ...removedMessage.content,
+            live: false,
+            member: removedMessage.content.member,
+            custom: removedMessage.content.custom,
+            customStatus: removedMessage.content.customStatus,
+            startTime: removedMessage.content.startTime,
             endTime: Date.now()
         };
 
+        console.log(JSON.stringify(entry, null, 4));
+
         return pluralMessage({
             route: `frontHistory/${removedMessage.id}`,
-            method: "POST",
+            method: "PATCH",
             body: entry
         }).catch(err => console.log(err));
     }

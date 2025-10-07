@@ -80,3 +80,19 @@ export type AuthSocketMessage = SocketMessage<undefined> & {
         jwt: false;
     };
 };
+
+// describes all the message keys defined in package.json
+export type AppMessageDesc = {
+    PluralApiKey?: string;
+    NumCurrentFronters?: number;
+    CurrentFronter?: number;
+    NumTotalFrontables?: number;
+    FrontableHash?: number;
+    FrontableName?: string;
+    FrontableColor?: number;
+    FrontablePronouns?: string;
+    FrontableIsCustom?: boolean;
+    AddFrontRequest?: number;
+    SetFrontRequest?: number;
+    RemoveFrontRequest?: number;
+};

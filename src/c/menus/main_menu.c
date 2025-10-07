@@ -200,6 +200,17 @@ void main_menu_deinit() {
     }
 }
 
+void main_menu_mark_fronters_loaded() {
+    APP_LOG(APP_LOG_LEVEL_INFO, "marking fronters as loaded :]");
+
+    member_items[0].subtitle = NULL;
+    if (simple_menu_layer != NULL) {
+        layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    }
+
+    current_fronters_loaded = true;
+}
+
 void main_menu_mark_members_loaded() {
     member_items[1].subtitle = NULL;
     if (simple_menu_layer != NULL) {
@@ -216,15 +227,6 @@ void main_menu_mark_custom_fronts_loaded() {
     }
 
     custom_fronts_loaded = true;
-}
-
-void main_menu_mark_fronters_loaded() {
-    member_items[0].subtitle = NULL;
-    if (simple_menu_layer != NULL) {
-        layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
-    }
-
-    current_fronters_loaded = true;
 }
 
 void main_menu_set_members_subtitle(const char* subtitle) {

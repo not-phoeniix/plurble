@@ -1,4 +1,4 @@
-import { Frontable, FrontEntryMessage, Member } from "./types";
+import { AppMessageDesc, Frontable, FrontEntryMessage, Member } from "./types";
 import * as utils from "./utils";
 
 export async function sendFrontablesToWatch(frontables: Frontable[]): Promise<void> {
@@ -31,24 +31,24 @@ export async function sendFrontablesToWatch(frontables: Frontable[]): Promise<vo
         //*   lol so i need to use atoi using base 
         //*   10 numbers <3
 
-        const msg: Record<string, any> = {
+        const msg: AppMessageDesc = {
             // offset hash by half the max to make it 
             //   within signed bounds for messaging
-            "FrontableHash": frontable.hash - Math.floor(0xFFFFFFFF / 2),
-            "FrontableName": frontable.name,
-            "FrontableColor": Number(`0x${frontable.color.replace("#", "")}`),
+            FrontableHash: frontable.hash - Math.floor(0xFFFFFFFF / 2),
+            FrontableName: frontable.name,
+            FrontableColor: Number(`0x${frontable.color.replace("#", "")}`),
         };
 
         const member = frontable as Member;
         if (member.pronouns) {
-            msg["FrontablePronouns"] = member.pronouns;
-            msg["FrontableIsCustom"] = false;
+            msg.FrontablePronouns = member.pronouns;
+            msg.FrontableIsCustom = false;
         } else {
-            msg["FrontableIsCustom"] = true;
+            msg.FrontableIsCustom = true;
         }
 
         if (i === 0) {
-            msg["NumTotalFrontables"] = frontables.length;
+            msg.NumTotalFrontables = frontables.length;
         }
 
         await PebbleTS.sendAppMessage(msg)
@@ -64,20 +64,26 @@ export async function sendCurrentFrontersToWatch(currentFronters: FrontEntryMess
     for (let i = 0; i < currentFronters.length; i++) {
         const fronter = currentFronters[i];
 
-        const msg: Record<string, any> = {
-            "CurrentFronter": utils.genHash(fronter.content.member)
+        const msg: AppMessageDesc = {
+            CurrentFronter: utils.genHash(fronter.content.member) - Math.floor(0xFFFFFFFF / 2)
         };
 
         if (i === 0) {
-            msg["NumCurrentFronters"] = currentFronters.length;
+            msg.NumCurrentFronters = currentFronters.length;
         }
 
         await PebbleTS.sendAppMessage(msg);
     }
+
+    if (currentFronters.length === 0) {
+        await PebbleTS.sendAppMessage(<AppMessageDesc>{
+            NumCurrentFronters: 0
+        });
+    }
 }
 
 export async function sendApiKeyIsValid(valid: boolean): Promise<void> {
-    return PebbleTS.sendAppMessage({
-        "ApiKeyValid": valid
+    return PebbleTS.sendAppMessage(<AppMessageDesc>{
+        ApiKeyValid: valid,
     });
 }

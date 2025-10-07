@@ -23,11 +23,7 @@ export function getAllFrontables(): Frontable[] | null {
 
 export function getFrontable(hash: number): Frontable | null {
     const frontables = getAllFrontables();
-    if (frontables) {
-        return frontables[hash];
-    }
-
-    return null;
+    return frontables?.find(f => f.hash === hash) ?? null;
 }
 
 export function getApiToken(): string | null {
