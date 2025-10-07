@@ -126,10 +126,13 @@ Frontable* frontable_create(uint32_t hash, const char* name, const char* pronoun
     Frontable* f = malloc(sizeof(Frontable));
     *f = (Frontable) {
         .hash = hash,
-        .packed_data = frontable_make_packed_data(false, is_custom, color)
+        .packed_data = frontable_make_packed_data(false, is_custom, color),
+        .pronouns = {'\0'}
     };
     copy_smaller_str(f->name, name, FRONTABLE_STRING_SIZE);
-    copy_smaller_str(f->pronouns, pronouns, FRONTABLE_STRING_SIZE);
+    if (pronouns != NULL) {
+        copy_smaller_str(f->pronouns, pronouns, FRONTABLE_STRING_SIZE);
+    }
 
     return f;
 }

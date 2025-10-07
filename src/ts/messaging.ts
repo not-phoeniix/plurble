@@ -15,20 +15,28 @@ export async function sendFrontablesToWatch(frontables: FrontableCollection): Pr
             "FrontableHash": hash,
             "FrontableName": frontable.name,
             "FrontableColor": Number(`0x${frontable.color.replace("#", "")}`),
-            "FrontableIsCustom": false
         };
 
         const member = frontable as Member;
         if (member.pronouns) {
             msg["FrontablePronouns"] = member.pronouns;
+            msg["FrontableIsCustom"] = false;
+        } else {
             msg["FrontableIsCustom"] = true;
         }
 
-        if (i == 0) {
+        if (i === 0) {
             msg["NumTotalFrontables"] = Object.keys(frontables).length;
+            console.log("sending a total frontables number message.... this should reset cache ://");
         }
 
-        await PebbleTS.sendAppMessage(msg);
+        console.log(`sending frontable "${frontable.name}"...`);
+        console.log(`msg: ${JSON.stringify(msg)}`);
+        await PebbleTS.sendAppMessage(msg)
+            .then(
+                () => console.log("front message successfully sent !!"),
+                (reason) => console.log("front message failed or smth !! reason: " + reason)
+            );
         i++;
     }
 }
@@ -41,7 +49,7 @@ export async function sendCurrentFrontersToWatch(currentFronters: FrontEntryMess
             "CurrentFronter": utils.genHash(fronter.content.member)
         };
 
-        if (i == 0) {
+        if (i === 0) {
             msg["NumCurrentFronters"] = currentFronters.length;
         }
 

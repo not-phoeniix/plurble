@@ -7,7 +7,7 @@ import { FrontableCollection, Frontable } from "./types";
 //! NOTE: this may result in hash collisions, as far as I've tested 
 //!   there have been none but be aware in case of future issues
 export function genHash(str: string) {
-    var hash = 0;
+    let hash = 0;
     for (var i = 0; i < str.length; i++) {
         hash += str.charCodeAt(i);
         hash += hash << 10;
@@ -18,10 +18,9 @@ export function genHash(str: string) {
     hash ^= hash << 11;
     hash += hash << 15;
 
-    // bitwise AND and zero-fill right shift to convert to uint32
-    return ((hash & 0xFFFFFFFF) >>> 0);
+    // zero-fill right shift to ensure unsigned
+    return (hash >>> 0) % 0xFFFFFFFF;
 }
-
 
 export function toFrontableCollection(frontableArr: Frontable[]): FrontableCollection {
     const collection: FrontableCollection = {};

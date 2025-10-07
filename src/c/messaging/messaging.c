@@ -67,6 +67,8 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
         total_frontables = num_total_frontables->value->int32;
         frontable_counter = 0;
     }
+    
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "got an app message :3");
 
     Tuple* frontable_hash = dict_find(iter, MESSAGE_KEY_FrontableHash);
     Tuple* frontable_name = dict_find(iter, MESSAGE_KEY_FrontableName);
@@ -78,13 +80,18 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
         frontable_hash != NULL &&
         frontable_name != NULL &&
         frontable_color != NULL &&
-        frontable_pronouns != NULL &&
         frontable_is_custom != NULL
     ) {
+        APP_LOG(
+            APP_LOG_LEVEL_INFO,
+            "adding a new frontable ! name: %s",
+            frontable_name->value->cstring
+        );
+
         Frontable* f = frontable_create(
             frontable_hash->value->uint32,
             frontable_name->value->cstring,
-            frontable_pronouns->value->cstring,
+            frontable_pronouns != NULL ? frontable_pronouns->value->cstring : NULL,
             frontable_is_custom->value->int16,
             GColorFromHEX(frontable_color->value->int32)
         );
@@ -92,7 +99,13 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
         cache_add_frontable(f);
 
         frontable_counter++;
-        APP_LOG(APP_LOG_LEVEL_INFO, "Recieved frontable '%s'!", f->name);
+        APP_LOG(
+            APP_LOG_LEVEL_INFO,
+            "Recieved frontable '%s'! Index: %d/%d",
+            f->name,
+            frontable_counter,
+            total_frontables
+        );
     }
 
     if (frontable_counter >= total_frontables && total_frontables != 0) {

@@ -46,7 +46,7 @@ function onOpen(e: Event) {
 }
 
 function onMessage(e: MessageEvent) {
-    console.log(e.data);
+    // console.log(e.data);
 
     if (e.data) {
         const data: SocketMessage = JSON.parse(e.data);
@@ -55,6 +55,7 @@ function onMessage(e: MessageEvent) {
             case "Successfully authenticated":
                 const authMessage = data as AuthSocketMessage;
                 cache.cacheSystemId(authMessage.resolvedToken.uid)
+                console.log("Socket successfully authenticated :D");
                 break;
             case "update":
                 switch (data.target) {

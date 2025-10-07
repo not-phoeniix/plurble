@@ -20,24 +20,25 @@ async function pluralMessage(routeDesc: RouteDescription): Promise<any> {
         throw new Error("Cannot send a plural API message when API token hasn't been set!");
     }
 
-    const response = await fetch(
-        FETCH_URL + routeDesc.route,
-        {
-            method: routeDesc.method,
-            headers: {
-                "Authorization": token,
-                "Content-Type": "application/json"
-            },
-            body: routeDesc.body ? JSON.stringify(routeDesc.body) : null
-        }
-    );
+    return new Promise((resolve: (xhr: XMLHttpRequest) => void, reject) => {
+        const xhr = new XMLHttpRequest();
 
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Network response not ok... text: ${text}`);
-    }
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                resolve(xhr);
+            } else {
+                reject(new Error(`Request failed with status ${xhr.status}!`));
+            }
+        };
+        xhr.onerror = () => reject(new Error("Network error!"));
 
-    return response.json();
+        xhr.open(routeDesc.method, FETCH_URL + routeDesc.route, true);
+        xhr.setRequestHeader("Authorization", token);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.send(routeDesc ? JSON.stringify(routeDesc.body) : null);
+
+    }).then(xhr => JSON.parse(xhr.responseText));
 }
 
 export async function addToFront(frontable: Frontable): Promise<void> {
@@ -99,7 +100,7 @@ export async function setAsFront(frontable: Frontable): Promise<void> {
         // wait for all promises to finish before moving on to cache clearing
         await Promise.all(currentFrontMessages.map(
             message => removeFromFrontViaId(message.content.member)
-        ));
+        )).catch(err => console.log(err));
     }
 
     // clear cache for current fronters

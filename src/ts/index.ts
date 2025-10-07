@@ -13,7 +13,7 @@ const Clay = require("pebble-clay");
 const clay = new Clay(config);
 
 async function setupApi(token: string) {
-    console.log("setting up API in index...");
+    console.log("setting up API and socket...");
 
     pluralApi.init(token);
     pluralSocket.init(token);
@@ -34,7 +34,50 @@ async function setupApi(token: string) {
     console.log("api set up!!");
 }
 
+async function fetchAndSendFrontables(uid: string) {
+    // assemble cached fronters to send to watch, fetch if missing
+    let frontables = cache.getAllFrontables();
+    if (!frontables) {
+        if (uid) {
+            console.log("Frontables not cached, fetching from API...");
+
+            let frontableArr: Frontable[] = [];
+
+            // fetch data from api
+            (await pluralApi.getAllMembers(uid))
+                .forEach(m => frontableArr.push(Member.create(m)));
+            (await pluralApi.getAllCustomFronts(uid))
+                .forEach(c => frontableArr.push(CustomFront.create(c)));
+
+            // assemble and convert, then cache
+            frontables = utils.toFrontableCollection(frontableArr);
+            cache.cacheFrontables(frontables);
+
+            console.log("Frontables fetched, assembled, and cached!");
+
+        } else {
+            console.error("Cannot fetch members from API, UID was never cached!");
+        }
+    } else {
+        console.log("Frontables found in cache!");
+    }
+
+    if (frontables) {
+        console.log("Frontables found! sending to watch...");
+        await messaging.sendFrontablesToWatch(frontables);
+    }
+}
+
+async function fetchAndSendCurrentFronts() {
+    // always fetch and send current fronters to 
+    //   watch, don't rely on cache
+    let currentFronters = await pluralApi.getCurrentFronts();
+    await messaging.sendCurrentFrontersToWatch(currentFronters);
+}
+
 Pebble.addEventListener("ready", async (e) => {
+    cache.clearAllCache();
+
     // try to get cached api token
     const token = cache.getApiToken();
     if (token) {
@@ -47,35 +90,11 @@ Pebble.addEventListener("ready", async (e) => {
     const uid = cache.getSystemId();
     if (!uid) {
         console.error("UID not cached! Cannot run fetching operations...");
+        return;
     }
 
-    // assemble cached fronters to send to watch, fetch if missing
-    let frontables = cache.getAllFrontables();
-    if (!frontables) {
-        if (uid) {
-            let frontableArr: Frontable[] = [];
-
-            // fetch data from api
-            (await pluralApi.getAllMembers(uid))
-                .forEach(m => frontableArr.push(Member.create(m)));
-            (await pluralApi.getAllCustomFronts(uid))
-                .forEach(c => frontableArr.push(CustomFront.create(c)));
-
-            // assemble and convert
-            frontables = utils.toFrontableCollection(frontableArr);
-        } else {
-            console.error("Cannot fetch members from API, UID was never cached!");
-        }
-    }
-
-    if (frontables) {
-        await messaging.sendFrontablesToWatch(frontables);
-    }
-
-    // always fetch and send current fronters to 
-    //   watch, don't rely on cache
-    let currentFronters = await pluralApi.getCurrentFronts();
-    await messaging.sendCurrentFrontersToWatch(currentFronters);
+    await fetchAndSendFrontables(uid);
+    await fetchAndSendCurrentFronts();
 
     console.log("hey! app finished fetching and sending things! :)");
 });
@@ -126,6 +145,14 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
             cache.cacheApiToken(dictApiKey);
             messaging.sendApiKeyIsValid(true);
             await setupApi(dictApiKey);
+
+            const uid = cache.getSystemId();
+            if (uid) {
+                await fetchAndSendFrontables(uid);
+                await fetchAndSendCurrentFronts();
+            } else {
+                console.error(`Error, cannot fetch frontables, UID is not cached!`);
+            }
         }
 
     } else {

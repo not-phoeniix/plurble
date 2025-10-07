@@ -65,7 +65,7 @@ export function addFrontToCache(message: FrontEntryMessage) {
     let currentFronts = getCurrentFronts();
     if (currentFronts) {
         // only add fronts if they don't already exist
-        if (!currentFronts.find(f => f.id == message.id)) {
+        if (!currentFronts.find(f => f.id === message.id)) {
             currentFronts.push(message);
         }
     } else {
@@ -81,7 +81,7 @@ export function removeFrontFromCache(message: FrontEntryMessage) {
     let currentFronts = getCurrentFronts();
     if (currentFronts) {
         // only remove fronts if they exist
-        const idx = currentFronts.findIndex(f => f.id == message.id);
+        const idx = currentFronts.findIndex(f => f.id === message.id);
         if (idx >= 0) {
             currentFronts.splice(idx, 1);
         }
@@ -97,7 +97,7 @@ export function removeFrontFromCacheViaId(frontableId: string): FrontEntryMessag
     let message: FrontEntryMessage | null = null;
     if (currentFronts) {
         // only remove fronts if they exist
-        const idx = currentFronts.findIndex(f => f.content.member == frontableId);
+        const idx = currentFronts.findIndex(f => f.content.member === frontableId);
         if (idx >= 0) {
             [message] = currentFronts.splice(idx, 1);
         }
@@ -121,5 +121,8 @@ export function isFronting(frontable: Frontable): boolean {
 }
 
 export function clearAllCache() {
-    localStorage.clear();
+    // localStorage.clear();
+    localStorage.removeItem(CacheKeys.CurrentFronts);
+    localStorage.removeItem(CacheKeys.Frontables);
+    localStorage.removeItem(CacheKeys.SystemId);
 }
