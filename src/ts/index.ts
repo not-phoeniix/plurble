@@ -36,27 +36,26 @@ async function setupApi(token: string) {
 
 async function fetchAndSendFrontables(uid: string) {
     // assemble cached fronters to send to watch, fetch if missing
-    let frontables = cache.getAllFrontables();
+    // let frontables = cache.getAllFrontables();
+    let frontables: Frontable[] | null = null;
     if (!frontables) {
         if (uid) {
             console.log("Frontables not cached, fetching from API...");
 
-            let frontableArr: Frontable[] = [];
+            frontables = [];
 
             // fetch data from api
             await Promise.all([
                 pluralApi.getAllMembers(uid)
                     .then(members => members.forEach(
-                        m => frontableArr.push(Member.create(m))
+                        m => frontables!.push(Member.create(m))
                     )),
                 pluralApi.getAllCustomFronts(uid)
                     .then(customFronts => customFronts.forEach(
-                        c => frontableArr.push(CustomFront.create(c))
+                        c => frontables!.push(CustomFront.create(c))
                     ))
             ]);
 
-            // assemble and convert, then cache
-            frontables = utils.toFrontableCollection(frontableArr);
             cache.cacheFrontables(frontables);
 
             console.log("Frontables fetched, assembled, and cached!");
@@ -77,12 +76,12 @@ async function fetchAndSendFrontables(uid: string) {
 async function fetchAndSendCurrentFronts() {
     // always fetch and send current fronters to 
     //   watch, don't rely on cache
-    let currentFronters = await pluralApi.getCurrentFronts();
+    const currentFronters = await pluralApi.getCurrentFronts();
     await messaging.sendCurrentFrontersToWatch(currentFronters);
 }
 
 Pebble.addEventListener("ready", async (e) => {
-    cache.clearAllCache();
+    // cache.clearAllCache();
 
     // try to get cached api token
     const token = cache.getApiToken();

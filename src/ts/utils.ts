@@ -1,4 +1,3 @@
-import { FrontableCollection, Frontable } from "./types";
 
 // utils file, holds a handful of utility functions
 
@@ -20,15 +19,4 @@ export function genHash(str: string) {
 
     // zero-fill right shift to ensure unsigned
     return (hash >>> 0) % 0xFFFFFFFF;
-}
-
-export function toFrontableCollection(frontableArr: Frontable[]): FrontableCollection {
-    const collection: FrontableCollection = {};
-
-    for (const frontable of frontableArr) {
-        const hash = genHash(frontable.id);
-        collection[hash] = frontable;
-    }
-
-    return collection;
 }

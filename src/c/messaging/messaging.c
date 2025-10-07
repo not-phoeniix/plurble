@@ -87,7 +87,8 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
         );
 
         Frontable* f = frontable_create(
-            frontable_hash->value->uint32,
+            // re-offset hash after being recieved to make it unsigned
+            frontable_hash->value->int32 + (0xFFFFFFFF / 2),
             frontable_name->value->cstring,
             frontable_pronouns != NULL ? frontable_pronouns->value->cstring : NULL,
             frontable_is_custom->value->int16,

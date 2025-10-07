@@ -1,4 +1,4 @@
-import { Frontable, FrontableCollection, FrontEntryMessage } from "./types";
+import { Frontable, FrontEntryMessage } from "./types";
 
 enum CacheKeys {
     Frontables = "cachedFrontables",
@@ -7,14 +7,14 @@ enum CacheKeys {
     CurrentFronts = "cachedCurrentFrontMessages",
 }
 
-export function cacheFrontables(frontables: FrontableCollection) {
+export function cacheFrontables(frontables: Frontable[]) {
     localStorage.setItem(CacheKeys.Frontables, JSON.stringify(frontables));
 }
 
-export function getAllFrontables(): FrontableCollection | null {
+export function getAllFrontables(): Frontable[] | null {
     const cachedFrontablesStr = localStorage.getItem(CacheKeys.Frontables);
     if (cachedFrontablesStr) {
-        const frontables = JSON.parse(cachedFrontablesStr) as FrontableCollection;
+        const frontables = JSON.parse(cachedFrontablesStr) as Frontable[];
         return frontables;
     }
 
@@ -121,8 +121,5 @@ export function isFronting(frontable: Frontable): boolean {
 }
 
 export function clearAllCache() {
-    // localStorage.clear();
-    localStorage.removeItem(CacheKeys.CurrentFronts);
-    localStorage.removeItem(CacheKeys.Frontables);
-    localStorage.removeItem(CacheKeys.SystemId);
+    localStorage.clear();
 }

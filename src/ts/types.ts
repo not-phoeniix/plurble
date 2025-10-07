@@ -1,3 +1,5 @@
+import * as utils from "./utils";
+
 export interface ApiMessage<T = any> {
     exists: boolean;
     id: string;
@@ -24,12 +26,14 @@ export interface Member {
     color: string;
     pronouns: string;
     archived: boolean;
+    hash: number;
 };
 
 export namespace Member {
     export function create(jsonData: MemberMessage): Member {
         const member: Member = jsonData.content;
         member.id = jsonData.id;
+        member.hash = utils.genHash(member.id);
         return member;
     }
 }
@@ -41,12 +45,14 @@ export interface CustomFront {
     avatarUrl: string;
     desc: string;
     color: string;
+    hash: number;
 };
 
 export namespace CustomFront {
     export function create(jsonData: CustomFrontMessage): CustomFront {
         const customFront: CustomFront = jsonData.content;
         customFront.id = jsonData.id;
+        customFront.hash = utils.genHash(customFront.id);
         return customFront;
     }
 }
@@ -61,8 +67,6 @@ export interface FrontEntry {
 }
 
 export type Frontable = Member | CustomFront;
-
-export type FrontableCollection = Record<number, Frontable>;
 
 // message types
 export type FrontEntryMessage = ApiMessage<FrontEntry>;
