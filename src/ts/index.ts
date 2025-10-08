@@ -4,11 +4,10 @@ import * as pluralSocket from "./pluralSocket";
 import * as cache from "./cache";
 import * as messaging from "./messaging";
 import { Member, CustomFront, AppMessageDesc } from "./types";
+import { version } from "../../package.json";
 
 // i gotta use node CommonJS requires unfortunately, it's not a TS module
 const Clay = require("pebble-clay");
-
-const appVersion = require("../../packagejson").version;
 
 // create clay config
 const clay = new Clay(config);
@@ -43,6 +42,7 @@ async function setupApi(token: string) {
 async function fetchAndSendFrontables(uid: string) {
     // assemble cached fronters to send to watch, fetch if missing
     let frontables = cache.getAllFrontables();
+    frontables = null;  // TODO: manual frontables re-fetching on the watch
     if (!frontables) {
         if (uid) {
             console.log("Frontables not cached, fetching from API...");
@@ -89,10 +89,10 @@ async function fetchAndSendCurrentFronts() {
 Pebble.addEventListener("ready", async (e) => {
     // check app version, clear cache across versions!
     const cachedVersion = cache.getAppVersion();
-    if (!cachedVersion || cachedVersion !== appVersion) {
-        console.log(`New version "${appVersion}" detected! Clearing all app cache...`);
+    if (!cachedVersion || cachedVersion !== version) {
+        console.log(`New version "${version}" detected! Clearing all app cache...`);
         cache.clearAllCache();
-        cache.cacheAppVersion(appVersion);
+        cache.cacheAppVersion(version);
         messaging.sendApiKeyIsValid(false);
     }
 
