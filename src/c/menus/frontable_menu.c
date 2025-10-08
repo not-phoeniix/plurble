@@ -50,6 +50,8 @@ static int16_t get_cell_height(MenuLayer* menu_layer, MenuIndex* cell_index, voi
     } else {
         return compact ? 28 : 32;
     }
+#elif defined(PBL_PLATFORM_EMERY)
+    return compact ? 32 : 56;
 #else
     return compact ? 28 : 44;
 #endif

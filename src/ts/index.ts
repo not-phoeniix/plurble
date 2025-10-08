@@ -10,7 +10,7 @@ import { version } from "../../package.json";
 const Clay = require("pebble-clay");
 const clay = new Clay(config);
 
-const USE_DEV_SERVER = false;
+const USE_DEV_SERVER = true;
 
 async function setupApi(token: string) {
     console.log("setting up API and socket...");
