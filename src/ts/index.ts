@@ -8,17 +8,16 @@ import { version } from "../../package.json";
 
 // i gotta use node CommonJS requires unfortunately, it's not a TS module
 const Clay = require("pebble-clay");
-
-// create clay config
 const clay = new Clay(config);
+
+const USE_DEV_SERVER = false;
 
 async function setupApi(token: string) {
     console.log("setting up API and socket...");
 
     try {
-        const useDevServer = false;
-        pluralApi.init(token, useDevServer);
-        pluralSocket.init(token, useDevServer);
+        pluralApi.init(token, USE_DEV_SERVER);
+        pluralSocket.init(token, USE_DEV_SERVER);
 
         console.log("API and socket set up!");
 
