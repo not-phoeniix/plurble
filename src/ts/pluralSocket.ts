@@ -4,9 +4,14 @@ import * as messaging from "./messaging";
 
 const SOCKET_URL = "wss://devapi.apparyllis.com/v1/socket";
 
+// how many milliseconds to wait for no messages 
+//   before sending data to the watch
+const SOCKET_BATCH_TIME = 200;
+
 let token: string;
 let socket: WebSocket;
-let interval: NodeJS.Timeout | undefined = undefined;
+let closeInterval: NodeJS.Timeout | undefined = undefined;
+let frontHistoryBatchTimeout: NodeJS.Timeout | undefined = undefined;
 
 export function init(apiToken: string) {
     console.log(`initializing plural socket with token ${apiToken}...`);
@@ -39,8 +44,8 @@ function onOpen(e: Event) {
         throw new Error("Cannot authenticate web socket, token was never set up!");
     }
 
-    clearInterval(interval);
-    interval = setInterval(
+    clearInterval(closeInterval);
+    closeInterval = setInterval(
         () => {
             if (socket.readyState === WebSocket.CLOSED) {
                 // restart socket if it somehow closed
@@ -91,12 +96,18 @@ function handleFrontHistory(data: FrontEntrySocketMessage) {
         }
     }
 
-    console.log("Socket indicates front history changed, sending updated fronts to watch...");
-    const currentFronts = cache.getCurrentFronts();
-    if (currentFronts) {
-        console.log(`sending list of fronters size ${currentFronts.length} to watch...`);
-        messaging.sendCurrentFrontersToWatch(currentFronts);
-    } else {
-        console.warn("Warning: no cached current fronts were found ? not like an issue with no members in an array. like. theres no array in the first place. wuh oh!");
-    }
+    clearTimeout(frontHistoryBatchTimeout);
+    frontHistoryBatchTimeout = setTimeout(
+        () => {
+            console.log("Socket indicates front history changed, sending updated fronts to watch...");
+            const currentFronts = cache.getCurrentFronts();
+            if (currentFronts) {
+                console.log(`sending list of fronters size ${currentFronts.length} to watch...`);
+                messaging.sendCurrentFrontersToWatch(currentFronts);
+            } else {
+                console.warn("Warning: no cached current fronts were found ? not like an issue with the array being empty. like. theres no array in the first place. oh no !!");
+            }
+        },
+        SOCKET_BATCH_TIME
+    );
 }

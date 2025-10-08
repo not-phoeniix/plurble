@@ -179,7 +179,6 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
             console.log("Setting up API and socket again after grabbing new token!");
             await setupApi(grabbedToken);
 
-            console.log("okay the api should have been set up by now, did it go well? okay..");
             const uid = cache.getSystemId();
             if (uid) {
                 await fetchAndSendFrontables(uid);

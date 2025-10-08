@@ -91,8 +91,6 @@ async function removeFromFrontViaId(frontableId: string): Promise<void> {
             endTime: Date.now()
         };
 
-        console.log(JSON.stringify(entry, null, 4));
-
         return pluralMessage({
             route: `frontHistory/${removedMessage.id}`,
             method: "PATCH",
