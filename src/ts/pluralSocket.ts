@@ -2,20 +2,23 @@ import { FrontEntrySocketMessage, SocketMessage, AuthSocketMessage } from "./typ
 import * as cache from "./cache";
 import * as messaging from "./messaging";
 
-const SOCKET_URL = "wss://devapi.apparyllis.com/v1/socket";
+const DEV_SOCKET_URL = "wss://devapi.apparyllis.com/v1/socket";
+const NORMAL_SOCKET_URL = "wss://api.apparyllis.com/v1/socket";
 
 // how many milliseconds to wait for no messages 
 //   before sending data to the watch
 const SOCKET_BATCH_TIME = 200;
 
+let socketUrl: string;
 let token: string;
 let socket: WebSocket;
 let closeInterval: NodeJS.Timeout | undefined = undefined;
 let frontHistoryBatchTimeout: NodeJS.Timeout | undefined = undefined;
 
-export function init(apiToken: string) {
+export function init(apiToken: string, useDevServer: boolean) {
     console.log(`initializing plural socket with token ${apiToken}...`);
     token = apiToken;
+    socketUrl = useDevServer ? DEV_SOCKET_URL : NORMAL_SOCKET_URL;
     startSocket();
 }
 
@@ -28,7 +31,7 @@ export function startSocket() {
         socket.close();
     }
 
-    socket = new WebSocket(SOCKET_URL);
+    socket = new WebSocket(socketUrl);
     socket.onopen = onOpen;
     socket.onmessage = onMessage;
 }

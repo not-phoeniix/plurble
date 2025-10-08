@@ -1,7 +1,9 @@
 import { FrontEntry, FrontEntryMessage, Frontable, MemberMessage, CustomFrontMessage } from "./types";
 import * as cache from "./cache";
 
-const FETCH_URL = "https://devapi.apparyllis.com/v1/";
+const NORMAL_FETCH_URL = "https://api.apparyllis.com/v1/";
+const DEV_FETCH_URL = "https://devapi.apparyllis.com/v1/";
+let fetchUrl: string;
 let token: string;
 
 interface RouteDescription {
@@ -10,9 +12,10 @@ interface RouteDescription {
     body?: any;
 }
 
-export function init(apiToken: string) {
+export function init(apiToken: string, useDevServer: boolean) {
     console.log(`initializing plural API with token ${apiToken}...`);
     token = apiToken;
+    fetchUrl = useDevServer ? DEV_FETCH_URL : NORMAL_FETCH_URL;
 }
 
 async function pluralMessage(routeDesc: RouteDescription): Promise<any> {
@@ -32,7 +35,7 @@ async function pluralMessage(routeDesc: RouteDescription): Promise<any> {
         };
         xhr.onerror = () => reject(new Error("Network error!"));
 
-        xhr.open(routeDesc.method, FETCH_URL + routeDesc.route, true);
+        xhr.open(routeDesc.method, fetchUrl + routeDesc.route, true);
         xhr.setRequestHeader("Authorization", token);
         xhr.setRequestHeader("Content-Type", "application/json");
 

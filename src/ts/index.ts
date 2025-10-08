@@ -3,8 +3,7 @@ import * as pluralApi from "./pluralApi";
 import * as pluralSocket from "./pluralSocket";
 import * as cache from "./cache";
 import * as messaging from "./messaging";
-import * as utils from "./utils";
-import { Frontable, Member, CustomFront, AppMessageDesc } from "./types";
+import { Member, CustomFront, AppMessageDesc } from "./types";
 
 // i gotta use node CommonJS requires unfortunately, it's not a TS module
 const Clay = require("pebble-clay");
@@ -16,8 +15,9 @@ async function setupApi(token: string) {
     console.log("setting up API and socket...");
 
     try {
-        pluralApi.init(token);
-        pluralSocket.init(token);
+        const useDevServer = false;
+        pluralApi.init(token, useDevServer);
+        pluralSocket.init(token, useDevServer);
 
         console.log("API and socket set up!");
 

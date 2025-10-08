@@ -1,4 +1,3 @@
-
 // utils file, holds a handful of utility functions
 
 // this is the Jenkins one-at-a-time hash function!
