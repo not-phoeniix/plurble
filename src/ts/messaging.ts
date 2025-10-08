@@ -24,9 +24,9 @@ export async function sendFrontablesToWatch(frontables: Frontable[]): Promise<vo
         }
 
         // sort alphabetically
-        if (a.name > b.name) {
+        if (a.name.toLowerCase() > b.name.toLowerCase()) {
             value += 1;
-        } else if (a.name < b.name) {
+        } else if (a.name.toLocaleLowerCase() < b.name.toLowerCase()) {
             value -= 1;
         }
 
