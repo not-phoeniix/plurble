@@ -47,7 +47,9 @@
       "FrontableIsCustom",
       "AddFrontRequest",
       "SetFrontRequest",
-      "RemoveFrontRequest"
+      "RemoveFrontRequest",
+      "FetchFrontersRequest",
+      "ClearCacheRequest"
     ],
     "resources": {
       "media": [

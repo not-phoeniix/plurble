@@ -97,4 +97,6 @@ export type AppMessageDesc = {
     AddFrontRequest?: number;
     SetFrontRequest?: number;
     RemoveFrontRequest?: number;
+    FetchFrontersRequest?: boolean;
+    ClearCacheRequest?: boolean;
 };

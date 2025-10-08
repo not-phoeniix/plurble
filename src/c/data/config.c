@@ -33,6 +33,7 @@ static void apply() {
         main_menu_push();
         setup_prompt_menu_remove();
     } else if (!settings.api_key_valid && !setup_prompt_menu_shown()) {
+        window_stack_pop_all(false);
         setup_prompt_menu_push();
     }
 

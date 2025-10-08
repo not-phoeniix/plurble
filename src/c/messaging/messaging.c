@@ -200,7 +200,7 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
             main_menu_set_fronters_subtitle(first_fronter->name);
             fronters_menu_set_is_empty(false);
         } else {
-            main_menu_set_fronters_subtitle("No current fronters!");
+            main_menu_set_fronters_subtitle("no one is fronting");
             fronters_menu_set_is_empty(true);
         }
     }
@@ -237,10 +237,8 @@ void messaging_init() {
 }
 
 static void front_message(uint32_t frontable_hash, const uint32_t message_key) {
-    // dictionary to send!
     DictionaryIterator* iter;
 
-    // begin outbox app message
     AppMessageResult result = app_message_outbox_begin(&iter);
     if (result == APP_MSG_OK) {
         dict_write_int32(iter, message_key, (frontable_hash - (0xFFFFFFFF / 2)));
@@ -256,6 +254,24 @@ static void front_message(uint32_t frontable_hash, const uint32_t message_key) {
     }
 }
 
+static void bool_message(const uint32_t key, bool value) {
+    DictionaryIterator* iter;
+
+    AppMessageResult result = app_message_outbox_begin(&iter);
+    if (result == APP_MSG_OK) {
+        dict_write_int16(iter, key, value);
+
+        result = app_message_outbox_send();
+
+        if (result != APP_MSG_OK) {
+            APP_LOG(APP_LOG_LEVEL_ERROR, "Error outbox message: %d", (int)result);
+        }
+
+    } else {
+        APP_LOG(APP_LOG_LEVEL_ERROR, "Error preparing message outbox: %d", (int)result);
+    }
+}
+
 void messaging_add_to_front(uint32_t frontable_hash) {
     front_message(frontable_hash, MESSAGE_KEY_AddFrontRequest);
 }
@@ -266,4 +282,12 @@ void messaging_set_as_front(uint32_t frontable_hash) {
 
 void messaging_remove_from_front(uint32_t frontable_hash) {
     front_message(frontable_hash, MESSAGE_KEY_RemoveFrontRequest);
+}
+
+void messaging_fetch_fronters() {
+    bool_message(MESSAGE_KEY_FetchFrontersRequest, true);
+}
+
+void messaging_clear_cache() {
+    bool_message(MESSAGE_KEY_ClearCacheRequest, true);
 }

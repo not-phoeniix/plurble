@@ -4,17 +4,22 @@
 #include "all_members_menu.h"
 #include "fronters_menu.h"
 #include "custom_fronts_menu.h"
+#include "../messaging/messaging.h"
 
 static Window* window = NULL;
 static SimpleMenuLayer* simple_menu_layer = NULL;
 static SimpleMenuItem member_items[3];
 static SimpleMenuItem extra_items[2];
+static SimpleMenuItem config_items[2];
 static SimpleMenuSection sections[2];
 static TextLayer* status_bar_text = NULL;
 static Layer* status_bar_layer = NULL;
 static bool members_loaded = false;
 static bool custom_fronts_loaded = false;
 static bool current_fronters_loaded = false;
+static bool can_fetch_members = true;
+static bool confirm_clear_cache = false;
+static AppTimer* confirm_clear_cache_timer = NULL;
 
 static void member_select(int index, void* context) {
     switch (index) {
@@ -40,6 +45,52 @@ static void extra_select(int index, void* context) {
     APP_LOG(APP_LOG_LEVEL_INFO, "polls !!");
 }
 
+static void reset_fetch_name(void* data) {
+    config_items[0].subtitle = "Re-fetch frontables...";
+    can_fetch_members = true;
+
+    layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+}
+
+static void reset_cache_confirm(void* data) {
+    confirm_clear_cache = false;
+    config_items[1].subtitle = "Will reset app...";
+    config_items[1].title = "Clear Cache";
+
+    if (confirm_clear_cache_timer != NULL) {
+        app_timer_cancel(confirm_clear_cache_timer);
+        confirm_clear_cache_timer = NULL;
+    }
+
+    layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+}
+
+static void config_select(int index, void* context) {
+    switch (index) {
+        case 0:
+            if (can_fetch_members) {
+                messaging_fetch_fronters();
+                config_items[0].subtitle = "Fetched :D";
+                can_fetch_members = false;
+                app_timer_register(4000, reset_fetch_name, NULL);
+            }
+            break;
+        case 1:
+            if (!confirm_clear_cache) {
+                config_items[1].subtitle = "Click to confirm";
+                config_items[1].title = "U SURE?";
+                confirm_clear_cache = true;
+                app_timer_register(2000, reset_cache_confirm, NULL);
+            } else {
+                reset_cache_confirm(NULL);
+                messaging_clear_cache();
+            }
+            break;
+    }
+
+    layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+}
+
 static void status_bar_update_proc(Layer* layer, GContext* ctx) {
     graphics_context_set_fill_color(ctx, settings_get()->background_color);
     graphics_fill_rect(ctx, layer_get_bounds(layer), 0, GCornerNone);
@@ -58,14 +109,14 @@ static void window_load() {
     };
 
     member_items[1] = (SimpleMenuItem) {
-        .title = "Member List",
+        .title = "Members",
         .subtitle = members_loaded ? NULL : "loading members...",
         .icon = NULL,
         .callback = member_select
     };
 
     member_items[2] = (SimpleMenuItem) {
-        .title = "Custom Front",
+        .title = "Custom Fronts",
         .subtitle = custom_fronts_loaded ? NULL : "loading custom fronts...",
         .icon = NULL,
         .callback = member_select
@@ -74,27 +125,47 @@ static void window_load() {
     sections[0] = (SimpleMenuSection) {
         .items = member_items,
         .num_items = 3,
-        // .title = "Member Management"
+        .title = "Member Management"
     };
 
-    extra_items[0] = (SimpleMenuItem) {
-        .title = "Polls",
-        .subtitle = NULL,
+    // extra_items[0] = (SimpleMenuItem) {
+    //     .title = "Polls",
+    //     .subtitle = NULL,
+    //     .icon = NULL,
+    //     .callback = extra_select
+    // };
+    //
+    // extra_items[1] = (SimpleMenuItem) {
+    //     .title = "Chat",
+    //     .subtitle = NULL,
+    //     .icon = NULL,
+    //     .callback = extra_select
+    // };
+    //
+    // sections[1] = (SimpleMenuSection) {
+    //     .items = extra_items,
+    //     .num_items = 2,
+    //     .title = "Extra"
+    // };
+
+    config_items[0] = (SimpleMenuItem) {
+        .title = "Refresh Data",
+        .subtitle = "Re-fetch frontables...",
         .icon = NULL,
-        .callback = extra_select
+        .callback = config_select,
     };
 
-    extra_items[1] = (SimpleMenuItem) {
-        .title = "Chat",
-        .subtitle = NULL,
+    config_items[1] = (SimpleMenuItem) {
+        .title = "Clear Cache",
+        .subtitle = "Will reset app...",
         .icon = NULL,
-        .callback = extra_select
+        .callback = config_select,
     };
 
     sections[1] = (SimpleMenuSection) {
-        .items = extra_items,
+        .items = config_items,
         .num_items = 2,
-        .title = "Extra"
+        .title = "Config"
     };
 
     GRect menu_bounds = layer_get_bounds(root_layer);
@@ -110,8 +181,7 @@ static void window_load() {
         menu_bounds,
         window,
         sections,
-        1,
-        // 2,
+        2,
         NULL
     );
 

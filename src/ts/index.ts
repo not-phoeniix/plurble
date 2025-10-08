@@ -3,7 +3,7 @@ import * as pluralApi from "./pluralApi";
 import * as pluralSocket from "./pluralSocket";
 import * as cache from "./cache";
 import * as messaging from "./messaging";
-import { Member, CustomFront, AppMessageDesc } from "./types";
+import { Member, CustomFront, AppMessageDesc, Frontable } from "./types";
 import { version } from "../../package.json";
 
 // i gotta use node CommonJS requires unfortunately, it's not a TS module
@@ -38,10 +38,17 @@ async function setupApi(token: string) {
     }
 }
 
-async function fetchAndSendFrontables(uid: string) {
+async function fetchAndSendFrontables(uid: string, useCache: boolean) {
     // assemble cached fronters to send to watch, fetch if missing
-    let frontables = cache.getAllFrontables();
-    frontables = null;  // TODO: manual frontables re-fetching on the watch
+    let frontables: Frontable[] | null = null;
+    if (useCache) {
+        frontables = cache.getAllFrontables();
+    } else {
+        // clear frontables before fetching things again
+        await messaging.sendCurrentFrontersToWatch([]);
+        await messaging.sendFrontablesToWatch([]);
+    }
+
     if (!frontables) {
         if (uid) {
             console.log("Frontables not cached, fetching from API...");
@@ -110,7 +117,7 @@ Pebble.addEventListener("ready", async (e) => {
         return;
     }
 
-    await fetchAndSendFrontables(uid);
+    await fetchAndSendFrontables(uid, true);
     await fetchAndSendCurrentFronts();
 
     console.log("hey! app finished fetching and sending things! :)");
@@ -170,6 +177,21 @@ Pebble.addEventListener("appmessage", async (e) => {
             console.error(`Cannot remove member from front! Member hash ${hash} was not cached!`);
         }
     }
+
+    if (msg.FetchFrontersRequest) {
+        const uid = cache.getSystemId();
+        if (uid) {
+            fetchAndSendFrontables(uid, false)
+                .then(() => fetchAndSendCurrentFronts());
+        } else {
+            console.error("Cannot re-fetch fronters, system ID is not cached!");
+        }
+    }
+
+    if (msg.ClearCacheRequest) {
+        cache.clearAllCache();
+        messaging.sendApiKeyIsValid(false);
+    }
 });
 
 // ignore this error, pebble kit TS doesn't support this event 
@@ -191,7 +213,7 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
 
             const uid = cache.getSystemId();
             if (uid) {
-                await fetchAndSendFrontables(uid);
+                await fetchAndSendFrontables(uid, true);
                 await fetchAndSendCurrentFronts();
             } else {
                 console.error(`Error, cannot fetch frontables, UID is not cached!`);
