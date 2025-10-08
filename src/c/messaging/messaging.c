@@ -10,9 +10,9 @@
 #define CURRENT_FRONTS_PER_MESSAGE 16
 #define DELIMETER ';'
 
-//! NOTE: all the MESSAGE_KEY_WhateverKey defines are added
-//!   later via the compiler.... these will look like errors
-//!   in vscode but there's nothing wrong with em dw <3
+//! NOTE: add "${workspaceFolder}/build/include/" to your
+//!   include paths folder to get rid of the warnings about
+//!   MESSAGE_KEY_WhateverKeys being undefined !!!!
 
 static void handle_settings_inbox(DictionaryIterator* iter, ClaySettings* settings) {
     Tuple* accent_color = dict_find(iter, MESSAGE_KEY_AccentColor);

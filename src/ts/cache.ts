@@ -5,6 +5,7 @@ enum CacheKeys {
     ApiToken = "cachedApiToken",
     SystemId = "cachedSystemId",
     CurrentFronts = "cachedCurrentFrontMessages",
+    AppVersion = "cachedAppVersion"
 }
 
 export function cacheFrontables(frontables: Frontable[]) {
@@ -114,6 +115,14 @@ export function isFronting(frontable: Frontable): boolean {
     }
 
     return false;
+}
+
+export function getAppVersion(): string | null {
+    return localStorage.getItem(CacheKeys.AppVersion);
+}
+
+export function cacheAppVersion(version: string) {
+    localStorage.setItem(CacheKeys.AppVersion, version);
 }
 
 export function clearAllCache() {

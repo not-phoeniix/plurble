@@ -32,6 +32,8 @@ static void apply() {
     if (settings.api_key_valid && setup_prompt_menu_shown()) {
         main_menu_push();
         setup_prompt_menu_remove();
+    } else if (!settings.api_key_valid && !setup_prompt_menu_shown()) {
+        setup_prompt_menu_push();
     }
 
     // mark current window layer for redraw on settings application
