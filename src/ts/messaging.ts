@@ -50,7 +50,6 @@ export async function sendFrontablesToWatch(frontables: Frontable[]): Promise<vo
             // store pronouns
             const member = frontable as Member;
             if (member.pronouns) {
-                member.pronouns = "0000000000000000000000";
                 let pronouns = member.pronouns;
                 if (pronouns.length > PRONOUNS_LENGTH) {
                     pronouns = pronouns.slice(0, PRONOUNS_LENGTH);
@@ -62,7 +61,6 @@ export async function sendFrontablesToWatch(frontables: Frontable[]): Promise<vo
 
             // store name
             let name = frontable.name;
-            name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
             if (name.length > NAME_LENGTH) {
                 name = name.slice(0, NAME_LENGTH);
             }
