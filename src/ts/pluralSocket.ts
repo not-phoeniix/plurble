@@ -47,7 +47,6 @@ function onOpen(e: Event) {
                 console.log("web socket closed, attempting to restart it...")
                 startSocket();
             } else {
-                console.log("socket ping...");
                 socket.send("ping");
             }
         },
@@ -57,7 +56,6 @@ function onOpen(e: Event) {
 
 function onMessage(e: MessageEvent) {
     if (e.data == "pong") {
-        console.log("pong");
         return;
     }
 
@@ -96,7 +94,7 @@ function handleFrontHistory(data: FrontEntrySocketMessage) {
     console.log("Socket indicates front history changed, sending updated fronts to watch...");
     const currentFronts = cache.getCurrentFronts();
     if (currentFronts) {
-        console.log(`sending list of ${currentFronts.length} to watch...`);
+        console.log(`sending list of fronters size ${currentFronts.length} to watch...`);
         messaging.sendCurrentFrontersToWatch(currentFronts);
     } else {
         console.warn("Warning: no cached current fronts were found ? not like an issue with no members in an array. like. theres no array in the first place. wuh oh!");

@@ -69,47 +69,9 @@ static uint8_t colors[NUM_COLORS] = {
     GColorWhiteARGB8
 };
 
-/*
-
-Frontable* frontable_create(uint32_t hash, const char* name, const char* pronouns, GColor color, bool is_custom) {
-    Frontable* frontable = malloc(sizeof(Frontable));
-    *frontable = (Frontable) {
-        .hash = hash,
-        .name = {'\0'},
-        .pronouns = {'\0'},
-        .color = color,
-        .fronting = false,
-        .custom = is_custom
-    };
-
-    const char* c = name[0];
-    uint16_t i = 0;
-    while (*c != '\0' && i < FRONTABLE_STRING_SIZE - 1) {
-        frontable->name[i] = *c;
-        c++;
-        i++;
-    }
-
-    c = pronouns[0];
-    i = 0;
-    while (*c != '\0' && i < FRONTABLE_STRING_SIZE - 1) {
-        frontable->pronouns[i] = *c;
-        c++;
-        i++;
-    }
-
-    return frontable;
-}
-
-void frontable_delete(Frontable* frontable) {
-    free(frontable);
-}
-
-*/
-
 static void copy_smaller_str(char* dest, const char* src, uint16_t dest_len) {
-    for (uint16_t i = 0; i < dest_len; i++) {
-        if (i < dest_len - 1) {
+    for (uint16_t i = 0; i < dest_len + 1; i++) {
+        if (i < dest_len) {
             char c = src[i];
             dest[i] = c;
 
@@ -129,9 +91,9 @@ Frontable* frontable_create(uint32_t hash, const char* name, const char* pronoun
         .packed_data = frontable_make_packed_data(false, is_custom, color),
         .pronouns = {'\0'}
     };
-    copy_smaller_str(f->name, name, FRONTABLE_STRING_SIZE);
+    copy_smaller_str(f->name, name, FRONTABLE_NAME_LENGTH);
     if (pronouns != NULL) {
-        copy_smaller_str(f->pronouns, pronouns, FRONTABLE_STRING_SIZE);
+        copy_smaller_str(f->pronouns, pronouns, FRONTABLE_PRONOUNS_LENGTH);
     }
 
     return f;

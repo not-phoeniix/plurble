@@ -2,12 +2,13 @@
 
 #include <pebble.h>
 
-#define FRONTABLE_STRING_SIZE 32
+#define FRONTABLE_NAME_LENGTH 32
+#define FRONTABLE_PRONOUNS_LENGTH 16
 
 /// @brief A struct that describes a frontable in a plural system, either a member or a custom front
 typedef struct {
-    char name[FRONTABLE_STRING_SIZE];
-    char pronouns[FRONTABLE_STRING_SIZE];
+    char name[FRONTABLE_NAME_LENGTH + 1];
+    char pronouns[FRONTABLE_PRONOUNS_LENGTH + 1];
     uint32_t hash;
 
     // bits are as follows (left to right):

@@ -3,6 +3,12 @@
 #include "../data/config.h"
 #include "../data/frontable_cache.h"
 #include "../menus/main_menu.h"
+#include "../menus/fronters_menu.h"
+#include "../tools/string_tools.h"
+
+#define FRONTABLES_PER_MESSAGE 32
+#define CURRENT_FRONTS_PER_MESSAGE 16
+#define DELIMETER ';'
 
 //! NOTE: all the MESSAGE_KEY_WhateverKey defines are added
 //!   later via the compiler.... these will look like errors
@@ -49,6 +55,15 @@ static void handle_settings_inbox(DictionaryIterator* iter, ClaySettings* settin
     }
 }
 
+uint32_t uint32_from_byte_arr(uint8_t* start) {
+    uint32_t num = 0;
+    num |= (start[0] & 0xFF) << 24;
+    num |= (start[1] & 0xFF) << 16;
+    num |= (start[2] & 0xFF) << 8;
+    num |= (start[3] & 0xFF) << 0;
+    return num;
+}
+
 static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
     Tuple* api_key_valid = dict_find(iter, MESSAGE_KEY_ApiKeyValid);
     if (api_key_valid != NULL) {
@@ -59,13 +74,16 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
     static int total_frontables = 0;
     Tuple* num_total_frontables = dict_find(iter, MESSAGE_KEY_NumTotalFrontables);
     if (num_total_frontables != NULL) {
-        APP_LOG(APP_LOG_LEVEL_INFO, "Identified start of frontable message sequence, clearing cached frontables!");
-
-        cache_clear_frontables();
-
-        // start the counting process!!!!!!!!
         total_frontables = num_total_frontables->value->int32;
         frontable_counter = 0;
+
+        APP_LOG(
+            APP_LOG_LEVEL_INFO,
+            "Identified start of frontable message sequence, expected total transfer count: %d",
+            total_frontables
+        );
+
+        cache_clear_frontables();
     }
 
     Tuple* frontable_hash = dict_find(iter, MESSAGE_KEY_FrontableHash);
@@ -73,38 +91,56 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
     Tuple* frontable_color = dict_find(iter, MESSAGE_KEY_FrontableColor);
     Tuple* frontable_pronouns = dict_find(iter, MESSAGE_KEY_FrontablePronouns);
     Tuple* frontable_is_custom = dict_find(iter, MESSAGE_KEY_FrontableIsCustom);
+    Tuple* frontable_batch_size = dict_find(iter, MESSAGE_KEY_NumFrontablesInBatch);
 
+    // handle frontable byte data being sent
     if (
         frontable_hash != NULL &&
         frontable_name != NULL &&
         frontable_color != NULL &&
-        frontable_is_custom != NULL
+        frontable_pronouns != NULL &&
+        frontable_is_custom != NULL &&
+        frontable_batch_size != NULL
     ) {
-        APP_LOG(
-            APP_LOG_LEVEL_INFO,
-            "adding a new frontable ! name: %s",
-            frontable_name->value->cstring
-        );
+        int32_t batch_size = frontable_batch_size->value->int32;
+        uint8_t* hash_byte_arr = frontable_hash->value->data;
+        uint8_t* color_byte_arr = frontable_color->value->data;
+        uint8_t* is_custom_byte_arr = frontable_is_custom->value->data;
+        char* names_combined = frontable_name->value->cstring;
+        char* pronouns_combined = frontable_pronouns->value->cstring;
 
-        Frontable* f = frontable_create(
-            // re-offset hash after being recieved to make it unsigned
-            frontable_hash->value->int32 + (0xFFFFFFFF / 2),
-            frontable_name->value->cstring,
-            frontable_pronouns != NULL ? frontable_pronouns->value->cstring : NULL,
-            frontable_is_custom->value->int16,
-            GColorFromHEX(frontable_color->value->int32)
-        );
+        uint16_t names_length = 0;
+        char** names = string_split(names_combined, DELIMETER, &names_length);
+        uint16_t pronouns_length = 0;
+        char** pronouns = string_split(pronouns_combined, DELIMETER, &pronouns_length);
 
-        cache_add_frontable(f);
+        for (int32_t i = 0; i < batch_size; i++) {
+            uint32_t hash = uint32_from_byte_arr(hash_byte_arr + (i * sizeof(uint32_t)));
+            uint8_t is_custom = is_custom_byte_arr[i];
+            uint8_t color = color_byte_arr[i];
 
-        frontable_counter++;
-        APP_LOG(
-            APP_LOG_LEVEL_INFO,
-            "Recieved frontable '%s'! Index: %d/%d",
-            f->name,
-            frontable_counter,
-            total_frontables
-        );
+            Frontable* f = frontable_create(
+                hash,
+                names[i],
+                pronouns[i],
+                is_custom,
+                (GColor) {.argb = color}
+            );
+
+            cache_add_frontable(f);
+
+            frontable_counter++;
+            APP_LOG(
+                APP_LOG_LEVEL_INFO,
+                "Recieved frontable '%s'! Index: %d/%d",
+                f->name,
+                frontable_counter,
+                total_frontables
+            );
+        }
+
+        string_array_free(names, names_length);
+        string_array_free(pronouns, pronouns_length);
     }
 
     if (frontable_counter >= total_frontables) {
@@ -117,30 +153,39 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
     static int total_current_fronters = 0;
     Tuple* num_current_fronters = dict_find(iter, MESSAGE_KEY_NumCurrentFronters);
     if (num_current_fronters != NULL) {
-        APP_LOG(APP_LOG_LEVEL_INFO, "Identified start of current fronter message sequence, clearing cached current fronters!");
-
-        cache_clear_current_fronters();
-
-        // start the counting process :]
         total_current_fronters = num_current_fronters->value->int32;
-        APP_LOG(APP_LOG_LEVEL_INFO, "current fronters expected to transfer: %d", total_current_fronters);
         current_front_counter = 0;
-    }
 
-    Tuple* current_fronter = dict_find(iter, MESSAGE_KEY_CurrentFronter);
-    if (current_fronter != NULL) {
-        uint32_t hash = current_fronter->value->int32 + (0xFFFFFFFF / 2);
-
-        cache_add_current_fronter(hash);
-
-        current_front_counter++;
         APP_LOG(
             APP_LOG_LEVEL_INFO,
-            "Recieved current front '%lu'! Index: %d/%d",
-            hash,
-            current_front_counter,
+            "Identified start of current fronter message sequence, expected total transfer count: %d",
             total_current_fronters
         );
+
+        cache_clear_current_fronters();
+    }
+
+    // handle current fronters byte data being sent
+    Tuple* current_fronter = dict_find(iter, MESSAGE_KEY_CurrentFronter);
+    Tuple* current_fronter_batch_size = dict_find(iter, MESSAGE_KEY_NumCurrentFrontersInBatch);
+    if (current_fronter != NULL && current_fronter_batch_size != NULL) {
+        int32_t batch_size = current_fronter_batch_size->value->int32;
+
+        uint8_t* hash_byte_arr = current_fronter->value->data;
+
+        for (int32_t i = 0; i < batch_size; i++) {
+            uint32_t hash = uint32_from_byte_arr(hash_byte_arr + (i * sizeof(uint32_t)));
+            cache_add_current_fronter(hash);
+
+            current_front_counter++;
+            APP_LOG(
+                APP_LOG_LEVEL_INFO,
+                "Recieved current front '%lu'! Index: %d/%d",
+                hash,
+                current_front_counter,
+                total_current_fronters
+            );
+        }
     }
 
     if (
@@ -153,8 +198,10 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
         Frontable* first_fronter = cache_get_first_fronter();
         if (first_fronter != NULL) {
             main_menu_set_fronters_subtitle(first_fronter->name);
+            fronters_menu_set_is_empty(false);
         } else {
             main_menu_set_fronters_subtitle("No current fronters!");
+            fronters_menu_set_is_empty(true);
         }
     }
 }
@@ -186,7 +233,7 @@ void messaging_init() {
     app_message_register_outbox_sent(outbox_sent_handler);
     app_message_register_outbox_failed(outbox_failed_callback);
 
-    app_message_open(256, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
+    app_message_open(2048, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
 }
 
 static void front_message(uint32_t frontable_hash, const uint32_t message_key) {

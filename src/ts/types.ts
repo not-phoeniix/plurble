@@ -85,13 +85,15 @@ export type AuthSocketMessage = SocketMessage<undefined> & {
 export type AppMessageDesc = {
     PluralApiKey?: string;
     NumCurrentFronters?: number;
-    CurrentFronter?: number;
+    NumCurrentFrontersInBatch?: number;
+    CurrentFronter?: number[];
     NumTotalFrontables?: number;
-    FrontableHash?: number;
+    NumFrontablesInBatch?: number;
+    FrontableHash?: number[];
     FrontableName?: string;
-    FrontableColor?: number;
+    FrontableColor?: number[];
     FrontablePronouns?: string;
-    FrontableIsCustom?: boolean;
+    FrontableIsCustom?: number[];
     AddFrontRequest?: number;
     SetFrontRequest?: number;
     RemoveFrontRequest?: number;
