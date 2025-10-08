@@ -1,15 +1,20 @@
 #include "messaging.h"
 #include <pebble.h>
-#include "../config/config.h"
-#include "../members/member_collections.h"
+#include "../data/config.h"
+#include "../data/frontable_cache.h"
+#include "../menus/main_menu.h"
+#include "../menus/fronters_menu.h"
+#include "../tools/string_tools.h"
 
-//! NOTE: all the MESSAGE_KEY_WhateverKey defines are added
-//!   later via the compiler.... these will look like errors
-//!   in vscode but there's nothing wrong with em dw <3
+#define FRONTABLES_PER_MESSAGE 32
+#define CURRENT_FRONTS_PER_MESSAGE 16
+#define DELIMETER ';'
 
-static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
-    ClaySettings* settings = settings_get();
+//! NOTE: add "${workspaceFolder}/build/include/" to your
+//!   include paths folder to get rid of the warnings about
+//!   MESSAGE_KEY_WhateverKeys being undefined !!!!
 
+static void handle_settings_inbox(DictionaryIterator* iter, ClaySettings* settings) {
     Tuple* accent_color = dict_find(iter, MESSAGE_KEY_AccentColor);
     if (accent_color != NULL) {
         settings->accent_color = GColorFromHEX(accent_color->value->int32);
@@ -48,26 +53,164 @@ static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
             false
         );
     }
+}
 
-    Tuple* members = dict_find(iter, MESSAGE_KEY_Members);
-    if (members != NULL) {
-        members_set_members(members->value->cstring);
-    }
+uint32_t uint32_from_byte_arr(uint8_t* start) {
+    uint32_t num = 0;
+    num |= (start[0] & 0xFF) << 24;
+    num |= (start[1] & 0xFF) << 16;
+    num |= (start[2] & 0xFF) << 8;
+    num |= (start[3] & 0xFF) << 0;
+    return num;
+}
 
-    Tuple* custom_fronts = dict_find(iter, MESSAGE_KEY_CustomFronts);
-    if (custom_fronts != NULL) {
-        members_set_custom_fronts(custom_fronts->value->cstring);
-    }
-
-    Tuple* fronters = dict_find(iter, MESSAGE_KEY_Fronters);
-    if (fronters != NULL) {
-        members_set_fronters(fronters->value->cstring);
-    }
-
+static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
     Tuple* api_key_valid = dict_find(iter, MESSAGE_KEY_ApiKeyValid);
     if (api_key_valid != NULL) {
         settings->api_key_valid = api_key_valid->value->int16;
     }
+
+    static int frontable_counter = 0;
+    static int total_frontables = 0;
+    Tuple* num_total_frontables = dict_find(iter, MESSAGE_KEY_NumTotalFrontables);
+    if (num_total_frontables != NULL) {
+        total_frontables = num_total_frontables->value->int32;
+        frontable_counter = 0;
+
+        APP_LOG(
+            APP_LOG_LEVEL_INFO,
+            "Identified start of frontable message sequence, expected total transfer count: %d",
+            total_frontables
+        );
+
+        cache_clear_frontables();
+    }
+
+    Tuple* frontable_hash = dict_find(iter, MESSAGE_KEY_FrontableHash);
+    Tuple* frontable_name = dict_find(iter, MESSAGE_KEY_FrontableName);
+    Tuple* frontable_color = dict_find(iter, MESSAGE_KEY_FrontableColor);
+    Tuple* frontable_pronouns = dict_find(iter, MESSAGE_KEY_FrontablePronouns);
+    Tuple* frontable_is_custom = dict_find(iter, MESSAGE_KEY_FrontableIsCustom);
+    Tuple* frontable_batch_size = dict_find(iter, MESSAGE_KEY_NumFrontablesInBatch);
+
+    // handle frontable byte data being sent
+    if (
+        frontable_hash != NULL &&
+        frontable_name != NULL &&
+        frontable_color != NULL &&
+        frontable_pronouns != NULL &&
+        frontable_is_custom != NULL &&
+        frontable_batch_size != NULL
+    ) {
+        int32_t batch_size = frontable_batch_size->value->int32;
+        uint8_t* hash_byte_arr = frontable_hash->value->data;
+        uint8_t* color_byte_arr = frontable_color->value->data;
+        uint8_t* is_custom_byte_arr = frontable_is_custom->value->data;
+        char* names_combined = frontable_name->value->cstring;
+        char* pronouns_combined = frontable_pronouns->value->cstring;
+
+        uint16_t names_length = 0;
+        char** names = string_split(names_combined, DELIMETER, &names_length);
+        uint16_t pronouns_length = 0;
+        char** pronouns = string_split(pronouns_combined, DELIMETER, &pronouns_length);
+
+        for (int32_t i = 0; i < batch_size; i++) {
+            uint32_t hash = uint32_from_byte_arr(hash_byte_arr + (i * sizeof(uint32_t)));
+            uint8_t is_custom = is_custom_byte_arr[i];
+            uint8_t color = color_byte_arr[i];
+
+            Frontable* f = frontable_create(
+                hash,
+                names[i],
+                pronouns[i],
+                is_custom,
+                (GColor) {.argb = color}
+            );
+
+            cache_add_frontable(f);
+
+            frontable_counter++;
+            APP_LOG(
+                APP_LOG_LEVEL_INFO,
+                "Recieved frontable '%s'! Index: %d/%d",
+                f->name,
+                frontable_counter,
+                total_frontables
+            );
+        }
+
+        string_array_free(names, names_length);
+        string_array_free(pronouns, pronouns_length);
+    }
+
+    if (frontable_counter >= total_frontables) {
+        APP_LOG(APP_LOG_LEVEL_INFO, "All frontables recieved!");
+        main_menu_mark_custom_fronts_loaded();
+        main_menu_mark_members_loaded();
+    }
+
+    static int current_front_counter = 0;
+    static int total_current_fronters = 0;
+    Tuple* num_current_fronters = dict_find(iter, MESSAGE_KEY_NumCurrentFronters);
+    if (num_current_fronters != NULL) {
+        total_current_fronters = num_current_fronters->value->int32;
+        current_front_counter = 0;
+
+        APP_LOG(
+            APP_LOG_LEVEL_INFO,
+            "Identified start of current fronter message sequence, expected total transfer count: %d",
+            total_current_fronters
+        );
+
+        cache_clear_current_fronters();
+    }
+
+    // handle current fronters byte data being sent
+    Tuple* current_fronter = dict_find(iter, MESSAGE_KEY_CurrentFronter);
+    Tuple* current_fronter_batch_size = dict_find(iter, MESSAGE_KEY_NumCurrentFrontersInBatch);
+    if (current_fronter != NULL && current_fronter_batch_size != NULL) {
+        int32_t batch_size = current_fronter_batch_size->value->int32;
+
+        uint8_t* hash_byte_arr = current_fronter->value->data;
+
+        for (int32_t i = 0; i < batch_size; i++) {
+            uint32_t hash = uint32_from_byte_arr(hash_byte_arr + (i * sizeof(uint32_t)));
+            cache_add_current_fronter(hash);
+
+            current_front_counter++;
+            APP_LOG(
+                APP_LOG_LEVEL_INFO,
+                "Recieved current front '%lu'! Index: %d/%d",
+                hash,
+                current_front_counter,
+                total_current_fronters
+            );
+        }
+    }
+
+    if (
+        (current_front_counter >= total_current_fronters && total_current_fronters != 0) ||
+        (num_current_fronters != NULL && total_current_fronters == 0)
+    ) {
+        APP_LOG(APP_LOG_LEVEL_INFO, "All current fronters recieved!");
+        main_menu_mark_fronters_loaded();
+
+        Frontable* first_fronter = cache_get_first_fronter();
+        if (first_fronter != NULL) {
+            main_menu_set_fronters_subtitle(first_fronter->name);
+            fronters_menu_set_is_empty(false);
+        } else {
+            main_menu_set_fronters_subtitle("No current fronters!");
+            fronters_menu_set_is_empty(true);
+        }
+    }
+}
+
+static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
+    ClaySettings* settings = settings_get();
+
+    handle_settings_inbox(iter, settings);
+    handle_api_inbox(iter, settings);
 
     settings_save();
 }
@@ -77,7 +220,7 @@ static void inbox_dropped_callback(AppMessageResult reason, void* context) {
 }
 
 static void outbox_sent_handler(DictionaryIterator* iter, void* context) {
-    printf("outbox sent !!");
+    APP_LOG(APP_LOG_LEVEL_INFO, "outbox sent!");
 }
 
 static void outbox_failed_callback(DictionaryIterator* iter, AppMessageResult reason, void* context) {
@@ -90,21 +233,18 @@ void messaging_init() {
     app_message_register_outbox_sent(outbox_sent_handler);
     app_message_register_outbox_failed(outbox_failed_callback);
 
-    app_message_open(4092, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
-    // app_message_open(1024, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
+    app_message_open(2048, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
 }
 
-static void front_message(Member* member, const uint32_t message_key) {
+static void front_message(uint32_t frontable_hash, const uint32_t message_key) {
     // dictionary to send!
     DictionaryIterator* iter;
 
     // begin outbox app message
     AppMessageResult result = app_message_outbox_begin(&iter);
     if (result == APP_MSG_OK) {
-        // write member name as the request string data value
-        dict_write_cstring(iter, message_key, member->name);
+        dict_write_int32(iter, message_key, (frontable_hash - (0xFFFFFFFF / 2)));
 
-        // send outbox message itself
         result = app_message_outbox_send();
 
         if (result != APP_MSG_OK) {
@@ -116,14 +256,14 @@ static void front_message(Member* member, const uint32_t message_key) {
     }
 }
 
-void messaging_add_to_front(Member* member) {
-    front_message(member, MESSAGE_KEY_AddFrontRequest);
+void messaging_add_to_front(uint32_t frontable_hash) {
+    front_message(frontable_hash, MESSAGE_KEY_AddFrontRequest);
 }
 
-void messaging_set_as_front(Member* member) {
-    front_message(member, MESSAGE_KEY_SetFrontRequest);
+void messaging_set_as_front(uint32_t frontable_hash) {
+    front_message(frontable_hash, MESSAGE_KEY_SetFrontRequest);
 }
 
-void messaging_remove_from_front(Member* member) {
-    front_message(member, MESSAGE_KEY_RemoveFrontRequest);
+void messaging_remove_from_front(uint32_t frontable_hash) {
+    front_message(frontable_hash, MESSAGE_KEY_RemoveFrontRequest);
 }

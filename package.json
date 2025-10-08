@@ -1,62 +1,74 @@
 {
-    "name": "plurble",
-    "author": "Nikki",
-    "version": "0.2",
-    "keywords": [
-        "pebble-app"
+  "name": "plurble",
+  "author": "Nikki",
+  "version": "0.2",
+  "keywords": [
+    "pebble-app"
+  ],
+  "private": true,
+  "dependencies": {
+    "pebble-clay": "^1.0.4"
+  },
+  "pebble": {
+    "displayName": "Plurble",
+    "uuid": "ce4767cb-43af-4b3b-b7ac-fcc4dfe84e9b",
+    "sdkVersion": "3",
+    "capabilities": [
+      "configurable"
     ],
-    "private": true,
-    "dependencies": {
-        "pebble-clay": "^1.0.4"
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk",
+      "diorite"
+    ],
+    "watchapp": {
+      "watchface": false
     },
-    "pebble": {
-        "displayName": "Plurble",
-        "uuid": "ce4767cb-43af-4b3b-b7ac-fcc4dfe84e9b",
-        "sdkVersion": "3",
-        "capabilities": [
-            "configurable"
-        ],
-        "enableMultiJS": true,
-        "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-        ],
-        "watchapp": {
-            "watchface": false
+    "messageKeys": [
+      "CompactMemberList",
+      "MemberColorHighlight",
+      "MemberColorTag",
+      "GlobalFronterAccent",
+      "PluralApiKey",
+      "ApiKeyValid",
+      "AccentColor",
+      "BackgroundColor",
+      "NumCurrentFronters",
+      "NumCurrentFrontersInBatch",
+      "CurrentFronter",
+      "NumTotalFrontables",
+      "NumFrontablesInBatch",
+      "FrontableHash",
+      "FrontableName",
+      "FrontableColor",
+      "FrontablePronouns",
+      "FrontableIsCustom",
+      "AddFrontRequest",
+      "SetFrontRequest",
+      "RemoveFrontRequest"
+    ],
+    "resources": {
+      "media": [
+        {
+          "type": "bitmap",
+          "name": "ConfigRequired",
+          "file": "config-required.png"
         },
-        "messageKeys": [
-            "CompactMemberList",
-            "MemberColorHighlight",
-            "MemberColorTag",
-            "GlobalFronterAccent",
-            "PluralApiKey",
-            "ApiKeyValid",
-            "AccentColor",
-            "BackgroundColor",
-            "Members",
-            "CustomFronts",
-            "Fronters",
-            "CustomFronts",
-            "AddFrontRequest",
-            "SetFrontRequest",
-            "RemoveFrontRequest"
-        ],
-        "resources": {
-            "media": [
-                {
-                    "type": "bitmap",
-                    "name": "ConfigRequired",
-                    "file": "config-required.png"
-                },
-                {
-                    "type": "bitmap",
-                    "name": "MenuIcon",
-                    "menuIcon": "true",
-                    "file": "icon.png"
-                }
-            ]
+        {
+          "type": "bitmap",
+          "name": "MenuIcon",
+          "menuIcon": "true",
+          "file": "icon.png"
         }
+      ]
     }
+  },
+  "devDependencies": {
+    "pkts": "^0.2.1"
+  },
+  "scripts": {
+    "build": "pkts build"
+  }
 }

@@ -1,7 +1,6 @@
 #include "main_menu.h"
-#include "../tools/string_tools.h"
-#include "../config/config.h"
-#include "../members/member_collections.h"
+#include "../data/config.h"
+#include "../frontables/frontable_list.h"
 #include "all_members_menu.h"
 #include "fronters_menu.h"
 #include "custom_fronts_menu.h"
@@ -15,11 +14,12 @@ static TextLayer* status_bar_text = NULL;
 static Layer* status_bar_layer = NULL;
 static bool members_loaded = false;
 static bool custom_fronts_loaded = false;
+static bool current_fronters_loaded = false;
 
 static void member_select(int index, void* context) {
     switch (index) {
         case 0:
-            if (members_loaded && custom_fronts_loaded) {
+            if (current_fronters_loaded) {
                 fronters_menu_push();
             }
             break;
@@ -37,7 +37,7 @@ static void member_select(int index, void* context) {
 }
 
 static void extra_select(int index, void* context) {
-    printf("polls! ");
+    APP_LOG(APP_LOG_LEVEL_INFO, "polls !!");
 }
 
 static void status_bar_update_proc(Layer* layer, GContext* ctx) {
@@ -50,10 +50,9 @@ static void window_load() {
 
     // ~~~ create menu items ~~~
 
-    bool fronters_loaded = members_loaded && custom_fronts_loaded;
     member_items[0] = (SimpleMenuItem) {
         .title = "Fronters",
-        .subtitle = fronters_loaded ? "no one is fronting" : "loading fronters...",
+        .subtitle = current_fronters_loaded ? "no one is fronting" : "loading fronters...",
         .icon = NULL,
         .callback = member_select
     };
@@ -201,6 +200,17 @@ void main_menu_deinit() {
     }
 }
 
+void main_menu_mark_fronters_loaded() {
+    APP_LOG(APP_LOG_LEVEL_INFO, "marking fronters as loaded :]");
+
+    member_items[0].subtitle = NULL;
+    if (simple_menu_layer != NULL) {
+        layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    }
+
+    current_fronters_loaded = true;
+}
+
 void main_menu_mark_members_loaded() {
     member_items[1].subtitle = NULL;
     if (simple_menu_layer != NULL) {
@@ -217,6 +227,14 @@ void main_menu_mark_custom_fronts_loaded() {
     }
 
     custom_fronts_loaded = true;
+}
+
+void main_menu_set_members_subtitle(const char* subtitle) {
+    member_items[1].subtitle = subtitle;
+}
+
+void main_menu_set_custom_fronts_subtitle(const char* subtitle) {
+    member_items[2].subtitle = subtitle;
 }
 
 void main_menu_set_fronters_subtitle(const char* subtitle) {

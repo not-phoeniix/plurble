@@ -1,5 +1,5 @@
 #include "setup_prompt_menu.h"
-#include "../config/config.h"
+#include "../data/config.h"
 
 static Window* window = NULL;
 static Layer* layer;
