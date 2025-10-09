@@ -24,6 +24,10 @@ struct FrontableMenu {
 static void update_selected_highlight(FrontableMenu* menu, uint16_t index) {
     if (settings_get()->member_color_highlight && menu->frontables->frontables != NULL) {
         GColor color = frontable_get_color(menu->frontables->frontables[index]);
+        if (color.argb == settings_get()->background_color.argb) {
+            color = gcolor_legible_over(settings_get()->background_color);
+        }
+
         menu->highlight_color = color;
     } else {
         menu->highlight_color = settings_get()->accent_color;

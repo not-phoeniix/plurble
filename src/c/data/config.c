@@ -48,11 +48,19 @@ static void apply() {
 GColor settings_get_global_accent() {
     Frontable* first_fronter = cache_get_first_fronter();
 
+    GColor color;
+
     if (settings.global_fronter_accent && first_fronter != NULL) {
-        return frontable_get_color(first_fronter);
+        color = frontable_get_color(first_fronter);
     } else {
-        return settings.accent_color;
+        color = settings.accent_color;
     }
+
+    if (color.argb == settings.background_color.argb) {
+        color = gcolor_legible_over(settings.background_color);
+    }
+
+    return color;
 }
 
 ClaySettings* settings_get() {
