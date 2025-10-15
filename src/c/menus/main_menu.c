@@ -6,6 +6,7 @@
 #include "custom_fronts_menu.h"
 #include "../messaging/messaging.h"
 #include "../tools/string_tools.h"
+#include "data/frontable_cache.h"
 
 static Window* window = NULL;
 static SimpleMenuLayer* simple_menu_layer = NULL;
@@ -84,6 +85,7 @@ static void config_select(int index, void* context) {
                 app_timer_register(2000, reset_cache_confirm, NULL);
             } else {
                 reset_cache_confirm(NULL);
+                cache_persist_delete();
                 messaging_clear_cache();
             }
             break;
