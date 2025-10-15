@@ -3,35 +3,11 @@
 
 char* string_substr(char* str, uint16_t start_index, uint16_t length) {
     char* output = (char*)malloc(sizeof(char) * (length + 1));
-    for (uint16_t i = 0; i < length; i++) {
-        output[i] = str[start_index + i];
-    }
+    memcpy(output, str + start_index, sizeof(char) * length);
 
     output[length] = '\0';
 
     return output;
-}
-
-char* string_copy(char* source) {
-    // loop through string, counting until null character is reached
-    uint16_t length = 0;
-    while (source[length] != '\0') {
-        length++;
-    }
-
-    // allocate memory for new string
-    char* copy = (char*)malloc(sizeof(char) * length);
-
-    // re-iterate, copying all characters over
-    uint16_t i = 0;
-    while (source[i] != '\0') {
-        copy[i] = source[i];
-        i++;
-    }
-    copy[i] = '\0';
-
-    // give back pointer to newly allocated string
-    return copy;
 }
 
 char** string_split(char* input, char delimiter, uint16_t* output_length) {
@@ -96,4 +72,31 @@ void string_array_free(char** string_array, uint16_t length) {
     }
 
     free(string_array);
+}
+
+bool string_start_same(const char* a, const char* b) {
+    do {
+        if (*a != *b) return false;
+        if (*a == '\0' && *b == '\0') break;
+
+        a++;
+        b++;
+    } while (*a != '\0' && *b != '\0');
+
+    return true;
+}
+
+void string_copy_smaller(char* dest, const char* src, uint16_t dest_len) {
+    for (uint16_t i = 0; i <= dest_len; i++) {
+        if (i < dest_len) {
+            char c = src[i];
+            dest[i] = c;
+
+            if (c == '\0') {
+                break;
+            }
+        } else {
+            dest[i] = '\0';
+        }
+    }
 }

@@ -5,6 +5,7 @@
 #include "fronters_menu.h"
 #include "custom_fronts_menu.h"
 #include "../messaging/messaging.h"
+#include "../tools/string_tools.h"
 
 static Window* window = NULL;
 static SimpleMenuLayer* simple_menu_layer = NULL;
@@ -271,8 +272,6 @@ void main_menu_deinit() {
 }
 
 void main_menu_mark_fronters_loaded() {
-    APP_LOG(APP_LOG_LEVEL_INFO, "marking fronters as loaded :]");
-
     member_items[0].subtitle = NULL;
     if (simple_menu_layer != NULL) {
         layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
@@ -300,13 +299,19 @@ void main_menu_mark_custom_fronts_loaded() {
 }
 
 void main_menu_set_members_subtitle(const char* subtitle) {
-    member_items[1].subtitle = subtitle;
+    static char s_subtitle[33];
+    string_copy_smaller(s_subtitle, subtitle, 32);
+    member_items[1].subtitle = s_subtitle;
 }
 
 void main_menu_set_custom_fronts_subtitle(const char* subtitle) {
-    member_items[2].subtitle = subtitle;
+    static char s_subtitle[33];
+    string_copy_smaller(s_subtitle, subtitle, 32);
+    member_items[2].subtitle = s_subtitle;
 }
 
 void main_menu_set_fronters_subtitle(const char* subtitle) {
-    member_items[0].subtitle = subtitle;
+    static char s_subtitle[33];
+    string_copy_smaller(s_subtitle, subtitle, 32);
+    member_items[0].subtitle = s_subtitle;
 }

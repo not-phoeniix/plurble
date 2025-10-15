@@ -1,4 +1,5 @@
 #include "frontable.h"
+#include "../tools/string_tools.h"
 
 #define NUM_COLORS 64
 
@@ -69,21 +70,6 @@ static uint8_t colors[NUM_COLORS] = {
     GColorWhiteARGB8
 };
 
-static void copy_smaller_str(char* dest, const char* src, uint16_t dest_len) {
-    for (uint16_t i = 0; i < dest_len + 1; i++) {
-        if (i < dest_len) {
-            char c = src[i];
-            dest[i] = c;
-
-            if (c == '\0') {
-                break;
-            }
-        } else {
-            dest[i] = '\0';
-        }
-    }
-}
-
 Frontable* frontable_create(uint32_t hash, const char* name, const char* pronouns, bool is_custom, GColor color) {
     Frontable* f = malloc(sizeof(Frontable));
     *f = (Frontable) {
@@ -91,9 +77,9 @@ Frontable* frontable_create(uint32_t hash, const char* name, const char* pronoun
         .packed_data = frontable_make_packed_data(false, is_custom, color),
         .pronouns = {'\0'}
     };
-    copy_smaller_str(f->name, name, FRONTABLE_NAME_LENGTH);
+    string_copy_smaller(f->name, name, FRONTABLE_NAME_LENGTH);
     if (pronouns != NULL) {
-        copy_smaller_str(f->pronouns, pronouns, FRONTABLE_PRONOUNS_LENGTH);
+        string_copy_smaller(f->pronouns, pronouns, FRONTABLE_PRONOUNS_LENGTH);
     }
 
     return f;

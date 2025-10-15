@@ -59,6 +59,7 @@ void fronters_menu_push() {
         menu = frontable_menu_create(callbacks, cache_get_current_fronters(), "Fronters");
     }
 
+    fronters_menu_set_is_empty(cache_get_first_fronter() == NULL);
     frontable_menu_window_push(menu);
 }
 

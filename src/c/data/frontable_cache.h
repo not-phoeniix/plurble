@@ -13,4 +13,8 @@ void cache_clear_frontables();
 void cache_add_current_fronter(uint32_t frontable_hash);
 void cache_clear_current_fronters();
 
+void cache_persist_store();
+bool cache_persist_load();
+void cache_persist_delete();
+
 void frontable_cache_deinit();
