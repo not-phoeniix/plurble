@@ -52,12 +52,17 @@ static void reset_fetch_name_callback(void* data) {
     config_items[0].subtitle = "Re-fetch frontables...";
     can_fetch_members = true;
 
-    layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    if (simple_menu_layer != NULL) {
+        layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    }
 }
 
 static void fetch_timeout_name_callback(void* data) {
     config_items[0].subtitle = "Fetch timed out :(";
-    layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    if (simple_menu_layer != NULL) {
+        layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    }
+
     fetch_timeout_timer = NULL;
 
     app_timer_register(4000, reset_fetch_name_callback, NULL);
@@ -83,7 +88,9 @@ static void reset_cache_confirm(void* data) {
         confirm_clear_cache_timer = NULL;
     }
 
-    layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    if (simple_menu_layer != NULL) {
+        layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    }
 }
 
 static void config_select(int index, void* context) {

@@ -22,6 +22,9 @@ static void init() {
         } else {
             main_menu_set_fronters_subtitle(front->name);
         }
+    } else {
+        // fetch when cache isn't found
+        messaging_fetch_fronters();
     }
 
     if (settings_get()->api_key_valid) {
