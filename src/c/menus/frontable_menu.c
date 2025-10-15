@@ -252,13 +252,13 @@ void frontable_menu_select_frontable(FrontableMenu* menu, MenuIndex* cell_index)
 
     Frontable* frontable = menu->frontables->frontables[cell_index->row];
 
-    // set background/bar color of action menu to either frontable
-    //   color or global accent depending on prefs
-    if (settings_get()->member_color_highlight) {
-        menu->action_menu_config.colors.background = frontable_get_color(frontable);
-    } else {
-        menu->action_menu_config.colors.background = settings_get_global_accent();
+    // make accent be the color of the frontable, and change it
+    //   if it matches the color of the background
+    GColor action_menu_accent = frontable_get_color(frontable);
+    if ((action_menu_accent.argb & 0b00111111) == 0) {
+        action_menu_accent = GColorDarkGray;
     }
+    menu->action_menu_config.colors.background = action_menu_accent;
 
     // set little dots colors to whatever is legible for new bg color
     menu->action_menu_config.colors.foreground = gcolor_legible_over(
