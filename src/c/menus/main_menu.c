@@ -22,6 +22,7 @@ static bool current_fronters_loaded = false;
 static bool can_fetch_members = true;
 static bool confirm_clear_cache = false;
 static AppTimer* confirm_clear_cache_timer = NULL;
+static AppTimer* fetch_timeout_timer = NULL;
 
 static void member_select(int index, void* context) {
     switch (index) {
@@ -47,11 +48,29 @@ static void extra_select(int index, void* context) {
     APP_LOG(APP_LOG_LEVEL_INFO, "polls !!");
 }
 
-static void reset_fetch_name(void* data) {
+static void reset_fetch_name_callback(void* data) {
     config_items[0].subtitle = "Re-fetch frontables...";
     can_fetch_members = true;
 
     layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+}
+
+static void fetch_timeout_name_callback(void* data) {
+    config_items[0].subtitle = "Fetch timed out :(";
+    layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    fetch_timeout_timer = NULL;
+
+    app_timer_register(4000, reset_fetch_name_callback, NULL);
+}
+
+void main_menu_confirm_frontable_fetch() {
+    if (fetch_timeout_timer != NULL) {
+        app_timer_cancel(fetch_timeout_timer);
+        fetch_timeout_timer = NULL;
+    }
+
+    config_items[0].subtitle = "Fetched :D";
+    app_timer_register(3000, reset_fetch_name_callback, NULL);
 }
 
 static void reset_cache_confirm(void* data) {
@@ -72,9 +91,9 @@ static void config_select(int index, void* context) {
         case 0:
             if (can_fetch_members) {
                 messaging_fetch_fronters();
-                config_items[0].subtitle = "Fetched :D";
+                config_items[0].subtitle = "Fetching...";
                 can_fetch_members = false;
-                app_timer_register(4000, reset_fetch_name, NULL);
+                fetch_timeout_timer = app_timer_register(10000, fetch_timeout_name_callback, NULL);
             }
             break;
         case 1:

@@ -147,6 +147,7 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
         APP_LOG(APP_LOG_LEVEL_INFO, "All frontables recieved!");
         main_menu_mark_custom_fronts_loaded();
         main_menu_mark_members_loaded();
+        main_menu_confirm_frontable_fetch();
     }
 
     static int current_front_counter = 0;

@@ -12,7 +12,7 @@ const clay = new Clay(config);
 
 // set to true to use the SimplyPlural pretesting server 
 //   when debugging/testing new functionality <3
-const USE_DEV_SERVER = false;
+const USE_DEV_SERVER = true;
 
 async function setupApi(token: string) {
     console.log("setting up API and socket...");
@@ -120,7 +120,7 @@ Pebble.addEventListener("ready", async (e) => {
     }
 
     // await fetchAndSendFrontables(uid, true);
-    // await fetchAndSendCurrentFronts();
+    await fetchAndSendCurrentFronts();
 
     console.log("hey! app finished fetching and sending things! :)");
 });
