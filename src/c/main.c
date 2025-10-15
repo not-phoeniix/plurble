@@ -3,9 +3,9 @@
 #include "messaging/messaging.h"
 #include "data/frontable_cache.h"
 #include "menus/main_menu.h"
-#include "menus/all_members_menu.h"
+#include "menus/members_menu.h"
 #include "menus/custom_fronts_menu.h"
-#include "menus/fronters_menu.h"
+#include "menus/current_fronters_menu.h"
 #include "menus/setup_prompt_menu.h"
 
 static void init() {
@@ -34,9 +34,9 @@ static void init() {
 static void deinit() {
     cache_persist_store();
 
-    all_members_menu_deinit();
+    members_menu_deinit();
     custom_fronts_menu_deinit();
-    fronters_menu_deinit();
+    current_fronters_menu_deinit();
     main_menu_deinit();
     frontable_cache_deinit();
 

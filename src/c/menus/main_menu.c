@@ -1,12 +1,12 @@
 #include "main_menu.h"
 #include "../data/config.h"
+#include "../data/frontable_cache.h"
 #include "../frontables/frontable_list.h"
-#include "all_members_menu.h"
-#include "fronters_menu.h"
+#include "members_menu.h"
+#include "current_fronters_menu.h"
 #include "custom_fronts_menu.h"
 #include "../messaging/messaging.h"
 #include "../tools/string_tools.h"
-#include "data/frontable_cache.h"
 
 static Window* window = NULL;
 static SimpleMenuLayer* simple_menu_layer = NULL;
@@ -27,12 +27,12 @@ static void member_select(int index, void* context) {
     switch (index) {
         case 0:
             if (current_fronters_loaded) {
-                fronters_menu_push();
+                current_fronters_menu_push();
             }
             break;
         case 1:
             if (members_loaded) {
-                all_members_menu_push();
+                members_menu_push();
             }
             break;
         case 2:

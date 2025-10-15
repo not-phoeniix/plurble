@@ -1,4 +1,4 @@
-#include "fronters_menu.h"
+#include "current_fronters_menu.h"
 #include "frontable_menu.h"
 #include "../data/frontable_cache.h"
 
@@ -47,7 +47,7 @@ static void window_unload(Window* window) {
     text_layer = NULL;
 }
 
-void fronters_menu_push() {
+void current_fronters_menu_push() {
     if (menu == NULL) {
         MemberMenuCallbacks callbacks = {
             .draw_row = draw_row,
@@ -59,18 +59,18 @@ void fronters_menu_push() {
         menu = frontable_menu_create(callbacks, cache_get_current_fronters(), "Fronters");
     }
 
-    fronters_menu_set_is_empty(cache_get_first_fronter() == NULL);
+    current_fronters_menu_set_is_empty(cache_get_first_fronter() == NULL);
     frontable_menu_window_push(menu);
 }
 
-void fronters_menu_deinit() {
+void current_fronters_menu_deinit() {
     if (menu != NULL) {
         frontable_menu_destroy(menu);
         menu = NULL;
     }
 }
 
-void fronters_menu_update_colors() {
+void current_fronters_menu_update_colors() {
     if (menu != NULL) {
         frontable_menu_update_colors(menu);
     }
@@ -81,7 +81,7 @@ void fronters_menu_update_colors() {
     }
 }
 
-void fronters_menu_set_is_empty(bool p_empty) {
+void current_fronters_menu_set_is_empty(bool p_empty) {
     // don't update anything if text layer doesn't exist lol
     if (text_layer == NULL) {
         return;

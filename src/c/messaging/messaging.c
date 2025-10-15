@@ -3,7 +3,7 @@
 #include "../data/config.h"
 #include "../data/frontable_cache.h"
 #include "../menus/main_menu.h"
-#include "../menus/fronters_menu.h"
+#include "../menus/current_fronters_menu.h"
 #include "../tools/string_tools.h"
 
 #define FRONTABLES_PER_MESSAGE 32
@@ -198,10 +198,10 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
         Frontable* first_fronter = cache_get_first_fronter();
         if (first_fronter != NULL) {
             main_menu_set_fronters_subtitle(first_fronter->name);
-            fronters_menu_set_is_empty(false);
+            current_fronters_menu_set_is_empty(false);
         } else {
             main_menu_set_fronters_subtitle("no one is fronting");
-            fronters_menu_set_is_empty(true);
+            current_fronters_menu_set_is_empty(true);
         }
     }
 }

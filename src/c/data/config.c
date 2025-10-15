@@ -1,9 +1,9 @@
 #include "config.h"
 #include "../messaging/messaging.h"
 #include "../menus/main_menu.h"
-#include "../menus/all_members_menu.h"
+#include "../menus/members_menu.h"
 #include "../menus/custom_fronts_menu.h"
-#include "../menus/fronters_menu.h"
+#include "../menus/current_fronters_menu.h"
 #include "../data/frontable_cache.h"
 #include "../menus/setup_prompt_menu.h"
 
@@ -23,9 +23,9 @@ static void set_defaults() {
 
 static void apply() {
     main_menu_update_colors();
-    all_members_menu_update_colors();
+    members_menu_update_colors();
     custom_fronts_menu_update_colors();
-    fronters_menu_update_colors();
+    current_fronters_menu_update_colors();
 
     // only push main menu and remove prompt if
     //   the prompt is shown in the first place!

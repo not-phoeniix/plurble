@@ -1,4 +1,4 @@
-#include "all_members_menu.h"
+#include "members_menu.h"
 #include <pebble.h>
 #include "frontable_menu.h"
 #include "../data/frontable_cache.h"
@@ -13,7 +13,7 @@ static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) 
     frontable_menu_select_frontable(menu, cell_index);
 }
 
-void all_members_menu_push() {
+void members_menu_push() {
     if (menu == NULL) {
         MemberMenuCallbacks callbacks = {
             .draw_row = draw_row,
@@ -28,14 +28,14 @@ void all_members_menu_push() {
     frontable_menu_window_push(menu);
 }
 
-void all_members_menu_deinit() {
+void members_menu_deinit() {
     if (menu != NULL) {
         frontable_menu_destroy(menu);
         menu = NULL;
     }
 }
 
-void all_members_menu_update_colors() {
+void members_menu_update_colors() {
     if (menu != NULL) {
         frontable_menu_update_colors(menu);
     }
