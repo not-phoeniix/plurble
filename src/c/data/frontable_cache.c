@@ -5,12 +5,24 @@
 #define PRONOUNS_KEY 2
 #define FRONTABLES_NUM_KEY 3
 #define FRONTABLES_KEY_MIN 4
-#define FRONTABLES_KEY_MAX 14
+#define FRONTABLES_KEY_MAX 20
 
-#define MAX_CACHED_FRONTABLES 150
+// tweak these to adjust how much memory is allocated
+#define MAX_CACHED_FRONTABLES 128
 #define MAX_CACHED_PRONOUNS 22
-#define COMPRESSED_NAME_LENGTH 18
+#define COMPRESSED_NAME_LENGTH 19
 #define COMPRESSED_PRONOUNS_LENGTH 10
+
+// ~~~ current memory footprint ~~~
+//
+// max memory taken up by pronoun map:
+//   MAX_CACHED_PRONOUNS * (COMPRESSED_PRONOUNS_LENGTH + 1) == 242 bytes
+//
+// max memory taken up by frontables:
+//   sizeof(CompressedFrontable) * MAX_CACHED_FRONTABLES == 3584 bytes
+//   ^ this should equate to 14 chunks stored
+//
+// total memory footprint: 3826 bytes
 
 typedef struct {
     char name[COMPRESSED_NAME_LENGTH + 1];
