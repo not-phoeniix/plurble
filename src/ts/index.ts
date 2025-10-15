@@ -109,11 +109,17 @@ Pebble.addEventListener("ready", async (e) => {
     if (token) {
         await setupApi(token);
     } else {
-        console.warn("Warning: API Token not cached! api can't be set up!");
+        console.warn("Warning: API Token not cached! api can't be set up! running off cache...");
+    }
+
+    // try to get cached uid
+    const uid = cache.getSystemId();
+    if (!uid) {
+        console.error("UID not cached! Cannot run fetching operations...");
         return;
     }
 
-    // always fetch current fronts upon startup
+    await fetchAndSendFrontables(uid, true);
     await fetchAndSendCurrentFronts();
 
     console.log("hey! app finished fetching and sending things! :)");
