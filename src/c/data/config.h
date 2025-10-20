@@ -17,4 +17,4 @@ ClaySettings* settings_get();
 GColor settings_get_global_accent();
 
 void settings_load();
-void settings_save();
+void settings_save(bool update_colors);

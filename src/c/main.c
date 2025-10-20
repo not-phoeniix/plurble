@@ -10,24 +10,24 @@
 
 static void init() {
     messaging_init();
-    settings_load();
     if (cache_persist_load()) {
         main_menu_mark_members_loaded();
         main_menu_mark_custom_fronts_loaded();
         main_menu_mark_fronters_loaded();
-
-        Frontable* front = cache_get_first_fronter();
-        if (front == NULL) {
-            main_menu_set_fronters_subtitle("no one is fronting");
-        } else {
-            main_menu_set_fronters_subtitle(front->name);
-        }
     }
+    settings_load();
 
     if (settings_get()->api_key_valid) {
         main_menu_push();
     } else {
         setup_prompt_menu_push();
+    }
+
+    Frontable* front = cache_get_first_fronter();
+    if (front == NULL) {
+        main_menu_set_fronters_subtitle("no one is fronting");
+    } else {
+        main_menu_set_fronters_subtitle(front->name);
     }
 }
 

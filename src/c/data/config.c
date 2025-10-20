@@ -21,23 +21,24 @@ static void set_defaults() {
     settings.api_key_valid = false;
 }
 
-static void apply() {
-    main_menu_update_colors();
-    members_menu_update_colors();
-    custom_fronts_menu_update_colors();
-    current_fronters_menu_update_colors();
+static void apply(bool update_colors) {
+    if (update_colors) {
+        main_menu_update_colors();
+        members_menu_update_colors();
+        custom_fronts_menu_update_colors();
+        current_fronters_menu_update_colors();
+    }
 
-    // only push main menu and remove prompt if
-    //   the prompt is shown in the first place!
     if (settings.api_key_valid && setup_prompt_menu_shown()) {
-        main_menu_push();
         setup_prompt_menu_remove();
+        window_stack_pop_all(false);
+        main_menu_push();
     } else if (!settings.api_key_valid && !setup_prompt_menu_shown()) {
         window_stack_pop_all(false);
         setup_prompt_menu_push();
     }
 
-    // mark current window layer for redraw on settings application
+    // always redraw currently shown window when applying config
     Window* top_window = window_stack_get_top_window();
     if (top_window != NULL) {
         Layer* window_layer = window_get_root_layer(top_window);
@@ -70,10 +71,10 @@ ClaySettings* settings_get() {
 void settings_load() {
     set_defaults();
     persist_read_data(SETTINGS_KEY, &settings, sizeof(ClaySettings));
-    apply();
+    apply(true);
 }
 
-void settings_save() {
+void settings_save(bool update_colors) {
     persist_write_data(SETTINGS_KEY, &settings, sizeof(ClaySettings));
-    apply();
+    apply(update_colors);
 }

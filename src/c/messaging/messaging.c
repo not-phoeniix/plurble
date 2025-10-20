@@ -14,20 +14,23 @@
 //!   include paths folder to get rid of the warnings about
 //!   MESSAGE_KEY_WhateverKeys being undefined !!!!
 
-static void handle_settings_inbox(DictionaryIterator* iter, ClaySettings* settings) {
+static void handle_settings_inbox(DictionaryIterator* iter, ClaySettings* settings, bool* update_colors) {
     Tuple* accent_color = dict_find(iter, MESSAGE_KEY_AccentColor);
     if (accent_color != NULL) {
         settings->accent_color = GColorFromHEX(accent_color->value->int32);
+        *update_colors = true;
     }
 
     Tuple* background_color = dict_find(iter, MESSAGE_KEY_BackgroundColor);
     if (background_color != NULL) {
         settings->background_color = GColorFromHEX(background_color->value->int32);
+        *update_colors = true;
     }
 
     Tuple* compact_member_list = dict_find(iter, MESSAGE_KEY_CompactMemberList);
     if (compact_member_list != NULL) {
         settings->compact_member_list = compact_member_list->value->int16;
+        *update_colors = true;
     }
 
     Tuple* member_color_highlight = dict_find(iter, MESSAGE_KEY_MemberColorHighlight);
@@ -36,6 +39,7 @@ static void handle_settings_inbox(DictionaryIterator* iter, ClaySettings* settin
             member_color_highlight->value->int16,
             false
         );
+        *update_colors = true;
     }
 
     Tuple* member_color_tag = dict_find(iter, MESSAGE_KEY_MemberColorTag);
@@ -44,6 +48,7 @@ static void handle_settings_inbox(DictionaryIterator* iter, ClaySettings* settin
             member_color_tag->value->int16,
             false
         );
+        *update_colors = true;
     }
 
     Tuple* global_fronter_accent = dict_find(iter, MESSAGE_KEY_GlobalFronterAccent);
@@ -52,10 +57,11 @@ static void handle_settings_inbox(DictionaryIterator* iter, ClaySettings* settin
             global_fronter_accent->value->int16,
             false
         );
+        *update_colors = true;
     }
 }
 
-uint32_t uint32_from_byte_arr(uint8_t* start) {
+static uint32_t uint32_from_byte_arr(uint8_t* start) {
     uint32_t num = 0;
     num |= (start[0] & 0xFF) << 24;
     num |= (start[1] & 0xFF) << 16;
@@ -64,7 +70,7 @@ uint32_t uint32_from_byte_arr(uint8_t* start) {
     return num;
 }
 
-static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
+static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, bool* update_colors) {
     Tuple* api_key_valid = dict_find(iter, MESSAGE_KEY_ApiKeyValid);
     if (api_key_valid != NULL) {
         settings->api_key_valid = api_key_valid->value->int16;
@@ -196,6 +202,8 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
         APP_LOG(APP_LOG_LEVEL_INFO, "All current fronters recieved!");
         main_menu_mark_fronters_loaded();
 
+        *update_colors = true;
+
         Frontable* first_fronter = cache_get_first_fronter();
         if (first_fronter != NULL) {
             main_menu_set_fronters_subtitle(first_fronter->name);
@@ -210,10 +218,12 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings) {
 static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
     ClaySettings* settings = settings_get();
 
-    handle_settings_inbox(iter, settings);
-    handle_api_inbox(iter, settings);
+    bool should_update_menu_colors = false;
 
-    settings_save();
+    handle_settings_inbox(iter, settings, &should_update_menu_colors);
+    handle_api_inbox(iter, settings, &should_update_menu_colors);
+
+    settings_save(should_update_menu_colors);
 }
 
 static void inbox_dropped_callback(AppMessageResult reason, void* context) {
