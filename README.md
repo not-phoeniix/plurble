@@ -23,8 +23,12 @@ This was an app originally made for the Rebble Hackathon #002!
   - [x] Customizable colors
   - [x] Per-member accent colors
 
-### Planned features
+### Future features
 - [ ] Groups in member list
 - [ ] Poll viewing/voting
 - [ ] Basic front history viewing
-- [ ] Chat features using dictation
+- [ ] Enhanced member info
+  - [ ] Card info view with descriptions
+- [ ] Friend view
+  - [ ] View friend fronting statuses
+- [ ] Chat features using dictation (far stretch goal)
