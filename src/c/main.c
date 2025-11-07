@@ -7,6 +7,7 @@
 #include "menus/custom_fronts_menu.h"
 #include "menus/current_fronters_menu.h"
 #include "menus/setup_prompt_menu.h"
+#include "menus/settings_menu.h"
 
 static void init() {
     messaging_init();
@@ -39,6 +40,7 @@ static void deinit() {
     current_fronters_menu_deinit();
     main_menu_deinit();
     frontable_cache_deinit();
+    settings_menu_deinit();
 
     setup_prompt_menu_remove();
 }

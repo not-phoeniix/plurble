@@ -1,88 +1,117 @@
-#include "main_menu.h"
-#include "../data/config.h"
-#include "../data/frontable_cache.h"
-#include "../frontables/frontable_list.h"
-#include "members_menu.h"
-#include "current_fronters_menu.h"
-#include "custom_fronts_menu.h"
-#include "../messaging/messaging.h"
-#include "../tools/string_tools.h"
 #include "settings_menu.h"
+#include <pebble.h>
+#include "../data/config.h"
+#include "../messaging/messaging.h"
+#include "../data/frontable_cache.h"
 
 static Window* window = NULL;
 static SimpleMenuLayer* simple_menu_layer = NULL;
-static SimpleMenuItem items[4];
+static SimpleMenuItem items[2];
 static SimpleMenuSection sections[1];
 static TextLayer* status_bar_text = NULL;
 static Layer* status_bar_layer = NULL;
-static bool members_loaded = false;
-static bool custom_fronts_loaded = false;
-static bool current_fronters_loaded = false;
-
-static void select(int index, void* context) {
-    switch (index) {
-        case 0:
-            if (current_fronters_loaded) {
-                current_fronters_menu_push();
-            }
-            break;
-        case 1:
-            if (members_loaded) {
-                members_menu_push();
-            }
-            break;
-        case 2:
-            if (custom_fronts_loaded) {
-                custom_fronts_menu_push();
-            }
-            break;
-        case 3:
-            settings_menu_push();
-            break;
-    }
-}
+static bool can_fetch_members = true;
+static bool confirm_clear_cache = false;
+static AppTimer* confirm_clear_cache_timer = NULL;
+static AppTimer* fetch_timeout_timer = NULL;
 
 static void status_bar_update_proc(Layer* layer, GContext* ctx) {
     graphics_context_set_fill_color(ctx, settings_get()->background_color);
     graphics_fill_rect(ctx, layer_get_bounds(layer), 0, GCornerNone);
 }
 
+static void reset_fetch_name_callback(void* data) {
+    items[0].subtitle = "Re-fetch frontables...";
+    can_fetch_members = true;
+
+    if (simple_menu_layer != NULL) {
+        layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    }
+}
+
+static void fetch_timeout_name_callback(void* data) {
+    items[0].subtitle = "Fetch timed out :(";
+    if (simple_menu_layer != NULL) {
+        layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    }
+
+    fetch_timeout_timer = NULL;
+
+    app_timer_register(4000, reset_fetch_name_callback, NULL);
+}
+
+void main_menu_confirm_frontable_fetch() {
+    if (fetch_timeout_timer != NULL) {
+        app_timer_cancel(fetch_timeout_timer);
+        fetch_timeout_timer = NULL;
+    }
+
+    items[0].subtitle = "Fetched :D";
+    app_timer_register(3000, reset_fetch_name_callback, NULL);
+}
+
+static void reset_cache_confirm(void* data) {
+    confirm_clear_cache = false;
+    items[1].subtitle = "Will reset app...";
+    items[1].title = "Clear Cache";
+
+    if (confirm_clear_cache_timer != NULL) {
+        app_timer_cancel(confirm_clear_cache_timer);
+        confirm_clear_cache_timer = NULL;
+    }
+
+    if (simple_menu_layer != NULL) {
+        layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    }
+}
+
+static void select(int index, void* context) {
+    switch (index) {
+        case 0:
+            if (can_fetch_members) {
+                messaging_fetch_fronters();
+                items[0].subtitle = "Fetching...";
+                can_fetch_members = false;
+                fetch_timeout_timer = app_timer_register(10000, fetch_timeout_name_callback, NULL);
+            }
+            break;
+        case 1:
+            if (!confirm_clear_cache) {
+                items[1].subtitle = "Click to confirm";
+                items[1].title = "U SURE?";
+                confirm_clear_cache = true;
+                app_timer_register(2000, reset_cache_confirm, NULL);
+            } else {
+                reset_cache_confirm(NULL);
+                cache_persist_delete();
+                messaging_clear_cache();
+            }
+            break;
+    }
+
+    layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+}
+
 static void window_load() {
     Layer* root_layer = window_get_root_layer(window);
 
-    // ~~~ create menu items ~~~
-
     items[0] = (SimpleMenuItem) {
-        .title = "Fronters",
-        .subtitle = current_fronters_loaded ? "no one is fronting" : "loading fronters...",
+        .title = "Refresh Data",
+        .subtitle = "Re-fetch frontables...",
         .icon = NULL,
-        .callback = select
+        .callback = select,
     };
 
     items[1] = (SimpleMenuItem) {
-        .title = "Members",
-        .subtitle = members_loaded ? NULL : "loading members...",
+        .title = "Clear Cache",
+        .subtitle = "Will reset app...",
         .icon = NULL,
-        .callback = select
-    };
-
-    items[2] = (SimpleMenuItem) {
-        .title = "Custom Fronts",
-        .subtitle = custom_fronts_loaded ? NULL : "loading custom fronts...",
-        .icon = NULL,
-        .callback = select
-    };
-
-    items[3] = (SimpleMenuItem) {
-        .title = "Settings",
-        .subtitle = NULL,
-        .icon = NULL,
-        .callback = select
+        .callback = select,
     };
 
     sections[0] = (SimpleMenuSection) {
-        .items = items,
-        .num_items = 4,
+        .num_items = 2,
+        .items = items
     };
 
     GRect menu_bounds = layer_get_bounds(root_layer);
@@ -98,12 +127,12 @@ static void window_load() {
         menu_bounds,
         window,
         sections,
-        1,
+        2,
         NULL
     );
 
     layer_add_child(root_layer, simple_menu_layer_get_layer(simple_menu_layer));
-    main_menu_update_colors();
+    settings_menu_update_colors();
 
     // ~~~ create status bar layers ~~~
 
@@ -125,7 +154,7 @@ static void window_load() {
     status_bar_text = text_layer_create(status_bar_text_bounds);
     text_layer_set_font(status_bar_text, fonts_get_system_font(FONT_KEY_GOTHIC_14));
     text_layer_set_text_alignment(status_bar_text, GTextAlignmentCenter);
-    text_layer_set_text(status_bar_text, "Plurble");
+    text_layer_set_text(status_bar_text, "Settings");
 
     layer_add_child(status_bar_layer, text_layer_get_layer(status_bar_text));
     layer_add_child(root_layer, status_bar_layer);
@@ -140,7 +169,7 @@ static void window_unload() {
     status_bar_layer = NULL;
 }
 
-void main_menu_push() {
+void settings_menu_push() {
     if (window == NULL) {
         window = window_create();
         window_set_window_handlers(
@@ -155,7 +184,7 @@ void main_menu_push() {
     window_stack_push(window, true);
 }
 
-void main_menu_update_colors() {
+void settings_menu_update_colors() {
     ClaySettings* settings = settings_get();
 
     if (simple_menu_layer != NULL) {
@@ -181,54 +210,9 @@ void main_menu_update_colors() {
     }
 }
 
-void main_menu_deinit() {
+void settings_menu_deinit() {
     if (window != NULL) {
         window_destroy(window);
         window = NULL;
     }
-}
-
-void main_menu_mark_fronters_loaded() {
-    items[0].subtitle = NULL;
-    if (simple_menu_layer != NULL) {
-        layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
-    }
-
-    current_fronters_loaded = true;
-}
-
-void main_menu_mark_members_loaded() {
-    items[1].subtitle = NULL;
-    if (simple_menu_layer != NULL) {
-        layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
-    }
-
-    members_loaded = true;
-}
-
-void main_menu_mark_custom_fronts_loaded() {
-    items[2].subtitle = NULL;
-    if (simple_menu_layer != NULL) {
-        layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
-    }
-
-    custom_fronts_loaded = true;
-}
-
-void main_menu_set_members_subtitle(const char* subtitle) {
-    static char s_subtitle[33];
-    string_copy_smaller(s_subtitle, subtitle, 32);
-    items[1].subtitle = s_subtitle;
-}
-
-void main_menu_set_custom_fronts_subtitle(const char* subtitle) {
-    static char s_subtitle[33];
-    string_copy_smaller(s_subtitle, subtitle, 32);
-    items[2].subtitle = s_subtitle;
-}
-
-void main_menu_set_fronters_subtitle(const char* subtitle) {
-    static char s_subtitle[33];
-    string_copy_smaller(s_subtitle, subtitle, 32);
-    items[0].subtitle = s_subtitle;
 }
