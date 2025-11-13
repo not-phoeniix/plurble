@@ -16,22 +16,30 @@ struct FrontableMenu {
 
     Frontable* selected_frontable;
     FrontableList* frontables;
+    Group* groups;
+    uint16_t num_groups;
     GColor highlight_color;
 };
 
 // ~~~ HELPER FUNCTIONS ~~~
 
 static void update_selected_highlight(FrontableMenu* menu, uint16_t index) {
-    if (settings_get()->member_color_highlight && menu->frontables->frontables != NULL) {
-        GColor color = frontable_get_color(menu->frontables->frontables[index]);
-        if (color.argb == settings_get()->background_color.argb) {
-            color = gcolor_legible_over(settings_get()->background_color);
-        }
+    GColor color = settings_get()->accent_color;
 
-        menu->highlight_color = color;
-    } else {
-        menu->highlight_color = settings_get()->accent_color;
+    if (settings_get()->member_color_highlight) {
+        if (index < menu->num_groups) {
+            color = menu->groups[index].color;
+        } else if (menu->frontables->frontables != NULL) {
+            uint16_t i = index - menu->num_groups;
+            color = frontable_get_color(menu->frontables->frontables[i]);
+        }
     }
+
+    if (color.argb == settings_get()->background_color.argb) {
+        color = gcolor_legible_over(settings_get()->background_color);
+    }
+
+    menu->highlight_color = color;
 }
 
 // ~~~ MENU LAYER SETUP ~~~
@@ -67,8 +75,15 @@ static uint16_t get_num_sections(MenuLayer* menu_layer, void* context) {
 
 static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex old_index, void* context) {
     FrontableMenu* menu = (FrontableMenu*)context;
-    menu->selected_frontable = menu->frontables->frontables[new_index.row];
+
     update_selected_highlight(menu, new_index.row);
+
+    int16_t frontable_idx = new_index.row - menu->num_groups;
+    if (frontable_idx >= 0) {
+        menu->selected_frontable = menu->frontables->frontables[new_index.row];
+    } else {
+        menu->selected_frontable = NULL;
+    }
 }
 
 static void status_bar_update_proc(Layer* layer, GContext* ctx) {
@@ -217,11 +232,29 @@ static void window_unload(Window* window) {
 void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index) {
     GRect bounds = layer_get_bounds(cell_layer);
     bool compact = settings_get()->compact_member_list;
-    Frontable* frontable = menu->frontables->frontables[cell_index->row];
+
+    char* name = NULL;
+    char* pronouns = NULL;
+    GColor color = GColorBlack;
+
+    if (cell_index->row < menu->num_groups) {
+        Group* group = &menu->groups[cell_index->row];
+        name = group->name;
+        color = group->color;
+    } else {
+        uint16_t i = cell_index->row - menu->num_groups;
+        Frontable* frontable = menu->frontables->frontables[i];
+
+        color = frontable_get_color(frontable);
+        name = frontable->name;
+        if (!frontable_get_is_custom(frontable)) {
+            pronouns = frontable->pronouns;
+        }
+    }
 
     if (settings_get()->member_color_tag) {
         // small color label on frontable
-        graphics_context_set_fill_color(ctx, frontable_get_color(frontable));
+        graphics_context_set_fill_color(ctx, color);
         GRect color_tag_bounds = bounds;
         color_tag_bounds.size.w = 3;
         graphics_fill_rect(ctx, color_tag_bounds, 0, GCornerNone);
@@ -238,20 +271,13 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
     menu_cell_basic_draw(
         ctx,
         cell_layer,
-        frontable->name,
-        compact || frontable_get_is_custom(frontable) ? NULL : frontable->pronouns,
+        name,
+        compact ? NULL : pronouns,
         NULL
     );
 }
 
-void frontable_menu_select_frontable(FrontableMenu* menu, MenuIndex* cell_index) {
-    // do not select anything if no fronters are stored!
-    if (menu->frontables->num_stored <= 0) {
-        return;
-    }
-
-    Frontable* frontable = menu->frontables->frontables[cell_index->row];
-
+static void select_frontable(FrontableMenu* menu, Frontable* frontable) {
     // make accent be the color of the frontable, and change it
     //   if it matches the color of the background
     GColor action_menu_accent = frontable_get_color(frontable);
@@ -275,6 +301,26 @@ void frontable_menu_select_frontable(FrontableMenu* menu, MenuIndex* cell_index)
     // change selected frontable and open menu itself
     menu->selected_frontable = frontable;
     action_menu_open(&menu->action_menu_config);
+}
+
+static void select_group(FrontableMenu* menu, Group* group) {
+    printf("SELECTING GROUP %s !!!!!!", group->name);
+}
+
+void frontable_menu_select(FrontableMenu* menu, MenuIndex* cell_index) {
+    // do not select anything if no fronters are stored!
+    if (menu->frontables->num_stored <= 0) {
+        return;
+    }
+
+    if (cell_index->row < menu->num_groups) {
+        Group* group = &menu->groups[cell_index->row];
+        select_group(menu, group);
+    } else {
+        uint16_t i = cell_index->row - menu->num_groups;
+        Frontable* frontable = menu->frontables->frontables[i];
+        select_frontable(menu, frontable);
+    }
 }
 
 void frontable_menu_update_colors(FrontableMenu* menu) {
@@ -303,7 +349,7 @@ void frontable_menu_update_colors(FrontableMenu* menu) {
     }
 }
 
-FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, FrontableList* frontables, const char* name) {
+FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, FrontableList* frontables, Group* groups, uint16_t num_groups, const char* name) {
     // create window and set up handlers
     Window* window = window_create();
     window_set_window_handlers(
@@ -320,8 +366,11 @@ FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, FrontableLis
         .window = window,
         .callbacks = callbacks,
         .frontables = frontables,
+        .groups = (Group*)malloc(sizeof(Group) * num_groups),
+        .num_groups = num_groups,
         .name = name
     };
+    memcpy(menu->groups, groups, sizeof(Group) * num_groups);
 
     // set user data of windows to be the related frontable menu pointer
     window_set_user_data(window, menu);
@@ -331,6 +380,7 @@ FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, FrontableLis
 
 void frontable_menu_destroy(FrontableMenu* menu) {
     window_destroy(menu->window);
+    free(menu->groups);
     free(menu);
 }
 

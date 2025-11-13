@@ -22,25 +22,6 @@ typedef struct {
 /// @param hash Unique hash of this frontable
 /// @param name Name of frontable
 /// @param pronouns Pronouns of frontable
-/// @param color Color of frontable
-/// @param is_custom Whether or not frontable is a custom front
-/// @return A pointer to a new Frontable object allocated on the heap
-// Frontable* frontable_create(
-//     uint32_t hash,
-//     const char* name,
-//     const char* pronouns,
-//     GColor color,
-//     bool is_custom
-// );
-
-/// @brief Deletes a frontable, freeing memory
-/// @param frontable Frontable to delete
-// void frontable_delete(Frontable* frontable);
-
-/// @brief Creates a new Frontable on the heap
-/// @param hash Unique hash of this frontable
-/// @param name Name of frontable
-/// @param pronouns Pronouns of frontable
 /// @param is_custom Whether or not frontable is a custom front
 /// @param color Color of frontable
 /// @return A pointer to a new Frontable allocated on the heap

@@ -10,7 +10,7 @@ static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_ind
 }
 
 static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
-    frontable_menu_select_frontable(menu, cell_index);
+    frontable_menu_select(menu, cell_index);
 }
 
 void members_menu_push() {
@@ -22,7 +22,12 @@ void members_menu_push() {
             .window_unload = NULL
         };
 
-        menu = frontable_menu_create(callbacks, cache_get_members(), "Member List");
+        Group groups[] = {
+            {.color = GColorRed, .name = "RedGroop", .parent = NULL},
+            {.color = GColorShockingPink, .name = "Other :(", .parent = NULL}
+        };
+
+        menu = frontable_menu_create(callbacks, cache_get_members(), groups, 2, "Member List");
     }
 
     frontable_menu_window_push(menu);
