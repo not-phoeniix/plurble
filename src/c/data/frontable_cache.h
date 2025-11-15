@@ -16,7 +16,7 @@ void cache_clear_current_fronters();
 
 Group* cache_get_group(uint32_t index);
 
-uint32_t cache_make_group(GColor color, const char* name, Group* parent);
+uint16_t cache_make_group(GColor color, const char* name, Group* parent);
 void cache_clear_groups();
 
 void cache_persist_store();

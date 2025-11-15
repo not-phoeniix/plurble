@@ -1,6 +1,16 @@
 #include "frontable_menu.h"
 #include "../messaging/messaging.h"
 
+struct GroupTreeNode;
+typedef struct GroupTreeNode {
+    Group* group;
+    struct GroupTreeNode* parent;
+    struct GroupTreeNode** children;
+    uint16_t num_children;
+    uint16_t children_size;
+    FrontableMenu* menu;
+} GroupTreeNode;
+
 struct FrontableMenu {
     Window* window;
     MemberMenuCallbacks callbacks;
@@ -14,10 +24,10 @@ struct FrontableMenu {
     TextLayer* status_bar_text;
     Layer* status_bar_layer;
 
+    GroupTreeNode group_node;
+
     Frontable* selected_frontable;
     FrontableList* frontables;
-    Group* groups;
-    uint16_t num_groups;
     GColor highlight_color;
 };
 
@@ -27,10 +37,10 @@ static void update_selected_highlight(FrontableMenu* menu, uint16_t index) {
     GColor color = settings_get()->accent_color;
 
     if (settings_get()->member_color_highlight) {
-        if (index < menu->num_groups) {
-            color = menu->groups[index].color;
+        if (index < menu->group_node.num_children) {
+            color = menu->group_node.children[index]->group->color;
         } else if (menu->frontables->frontables != NULL) {
-            uint16_t i = index - menu->num_groups;
+            uint16_t i = index - menu->group_node.num_children;
             color = frontable_get_color(menu->frontables->frontables[i]);
         }
     }
@@ -78,7 +88,7 @@ static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex o
 
     update_selected_highlight(menu, new_index.row);
 
-    int16_t frontable_idx = new_index.row - menu->num_groups;
+    int16_t frontable_idx = new_index.row - menu->group_node.num_children;
     if (frontable_idx >= 0) {
         menu->selected_frontable = menu->frontables->frontables[new_index.row];
     } else {
@@ -237,12 +247,12 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
     char* pronouns = NULL;
     GColor color = GColorBlack;
 
-    if (cell_index->row < menu->num_groups) {
-        Group* group = &menu->groups[cell_index->row];
+    if (cell_index->row < menu->group_node.num_children) {
+        Group* group = menu->group_node.children[cell_index->row]->group;
         name = group->name;
         color = group->color;
     } else {
-        uint16_t i = cell_index->row - menu->num_groups;
+        uint16_t i = cell_index->row - menu->group_node.num_children;
         Frontable* frontable = menu->frontables->frontables[i];
 
         color = frontable_get_color(frontable);
@@ -303,21 +313,20 @@ static void select_frontable(FrontableMenu* menu, Frontable* frontable) {
     action_menu_open(&menu->action_menu_config);
 }
 
-static void select_group(FrontableMenu* menu, Group* group) {
-    printf("SELECTING GROUP %s !!!!!!", group->name);
+static void select_group(FrontableMenu* menu, GroupTreeNode* node) {
+    frontable_menu_window_push(node->menu);
 }
 
 void frontable_menu_select(FrontableMenu* menu, MenuIndex* cell_index) {
-    // do not select anything if no fronters are stored!
-    if (menu->frontables->num_stored <= 0) {
+    if (menu->frontables->num_stored <= 0 && menu->group_node.num_children <= 0) {
         return;
     }
 
-    if (cell_index->row < menu->num_groups) {
-        Group* group = &menu->groups[cell_index->row];
-        select_group(menu, group);
+    if (cell_index->row < menu->group_node.num_children) {
+        GroupTreeNode* node = menu->group_node.children[cell_index->row];
+        select_group(menu, node);
     } else {
-        uint16_t i = cell_index->row - menu->num_groups;
+        uint16_t i = cell_index->row - menu->group_node.num_children;
         Frontable* frontable = menu->frontables->frontables[i];
         select_frontable(menu, frontable);
     }
@@ -349,7 +358,41 @@ void frontable_menu_update_colors(FrontableMenu* menu) {
     }
 }
 
-FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, FrontableList* frontables, Group* groups, uint16_t num_groups, const char* name) {
+static void add_child_group(GroupTreeNode* parent, GroupTreeNode* child) {
+    child->parent = parent;
+
+    uint16_t i = parent->num_children;
+
+    if (parent->children == NULL) {
+        // initial allocation
+        parent->children = (GroupTreeNode**)malloc(sizeof(GroupTreeNode*));
+        parent->children_size = 1;
+    } else if (i >= parent->children_size) {
+        // double size
+        parent->children_size *= 2;
+        parent->children = (GroupTreeNode**)realloc(
+            parent->children,
+            sizeof(GroupTreeNode*) * parent->children_size
+        );
+
+        if (parent->children == NULL) {
+            APP_LOG(APP_LOG_LEVEL_ERROR, "Error!, group node child realloc failed!");
+        }
+    }
+
+    parent->children[i] = child;
+    parent->num_children++;
+}
+
+// TODO: remove need for frontable list and name storing, just make it track in the group struct
+
+FrontableMenu* frontable_menu_create(
+    MemberMenuCallbacks callbacks,
+    FrontableList* frontables,
+    FrontableMenu* parent,
+    Group* group,
+    const char* name
+) {
     // create window and set up handlers
     Window* window = window_create();
     window_set_window_handlers(
@@ -366,11 +409,22 @@ FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, FrontableLis
         .window = window,
         .callbacks = callbacks,
         .frontables = frontables,
-        .groups = (Group*)malloc(sizeof(Group) * num_groups),
-        .num_groups = num_groups,
-        .name = name
+        .name = name,
     };
-    memcpy(menu->groups, groups, sizeof(Group) * num_groups);
+
+    // set up tree stuff after menu creation
+    menu->group_node = (GroupTreeNode) {
+        .group = group,
+        .menu = menu,
+        .num_children = 0,
+        .children = NULL,
+        .parent = NULL,
+        .children_size = 0
+    };
+
+    if (parent != NULL) {
+        add_child_group(&parent->group_node, &menu->group_node);
+    }
 
     // set user data of windows to be the related frontable menu pointer
     window_set_user_data(window, menu);
@@ -380,7 +434,11 @@ FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, FrontableLis
 
 void frontable_menu_destroy(FrontableMenu* menu) {
     window_destroy(menu->window);
-    free(menu->groups);
+
+    if (menu->group_node.children != NULL) {
+        free(menu->group_node.children);
+    }
+
     free(menu);
 }
 

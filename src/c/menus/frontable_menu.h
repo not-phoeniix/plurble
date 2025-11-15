@@ -18,7 +18,7 @@ typedef struct {
 void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index);
 void frontable_menu_select(FrontableMenu* menu, MenuIndex* cell_index);
 void frontable_menu_update_colors(FrontableMenu* menu);
-FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, FrontableList* frontables, Group* groups, uint16_t num_groups, const char* name);
+FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, FrontableList* frontables, FrontableMenu* parent, Group* group, const char* name);
 void frontable_menu_destroy(FrontableMenu* menu);
 void frontable_menu_window_push(FrontableMenu* menu);
 void frontable_menu_window_remove(FrontableMenu* menu);

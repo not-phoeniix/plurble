@@ -56,7 +56,7 @@ void current_fronters_menu_push() {
             .window_unload = window_unload
         };
 
-        menu = frontable_menu_create(callbacks, cache_get_current_fronters(), NULL, 0, "Fronters");
+        menu = frontable_menu_create(callbacks, cache_get_current_fronters(), NULL, NULL, "Fronters");
     }
 
     current_fronters_menu_set_is_empty(cache_get_first_fronter() == NULL);

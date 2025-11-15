@@ -110,7 +110,7 @@ Group* cache_get_group(uint32_t index) {
     return NULL;
 }
 
-uint32_t cache_make_group(GColor color, const char* name, Group* parent) {
+uint16_t cache_make_group(GColor color, const char* name, Group* parent) {
     if (groups == NULL) {
         groups = (GroupCollection*)malloc(sizeof(GroupCollection));
         groups->num_stored = 0;
@@ -121,11 +121,11 @@ uint32_t cache_make_group(GColor color, const char* name, Group* parent) {
         return -1;
     }
 
-    uint32_t index = groups->num_stored;
+    uint16_t index = groups->num_stored;
 
     groups->groups[index] = (Group) {
         .color = color,
-        .parent = parent,
+        .parent = parent
     };
     string_copy_smaller(groups->groups[index].name, name, GROUP_NAME_LENGTH);
 

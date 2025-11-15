@@ -22,7 +22,7 @@ void custom_fronts_menu_push() {
             .window_unload = NULL
         };
 
-        menu = frontable_menu_create(callbacks, cache_get_custom_fronts(), NULL, 0, "Custom Front");
+        menu = frontable_menu_create(callbacks, cache_get_custom_fronts(), NULL, NULL, "Custom Front");
     }
 
     frontable_menu_window_push(menu);
