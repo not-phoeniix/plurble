@@ -4,7 +4,7 @@
 #include "frontable.h"
 #include "frontable_list.h"
 
-#define GROUP_NAME_LENGTH 32
+#define GROUP_NAME_LENGTH 64
 
 struct Group;
 
@@ -12,5 +12,5 @@ typedef struct Group {
     struct Group* parent;
     char name[GROUP_NAME_LENGTH + 1];
     GColor color;
-    FrontableList* members;
+    FrontableList* frontables;
 } Group;

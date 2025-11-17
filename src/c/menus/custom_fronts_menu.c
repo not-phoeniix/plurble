@@ -22,7 +22,12 @@ void custom_fronts_menu_push() {
             .window_unload = NULL
         };
 
-        menu = frontable_menu_create(callbacks, cache_get_custom_fronts(), NULL, NULL, "Custom Front");
+        static Group group;
+        group.color = GColorBlack;
+        group.frontables = cache_get_custom_fronts();
+        strcpy(group.name, "Custom Fronts");
+        group.parent = NULL;
+        menu = frontable_menu_create(callbacks, &group, NULL);
     }
 
     frontable_menu_window_push(menu);

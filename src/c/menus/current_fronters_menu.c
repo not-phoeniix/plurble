@@ -56,7 +56,12 @@ void current_fronters_menu_push() {
             .window_unload = window_unload
         };
 
-        menu = frontable_menu_create(callbacks, cache_get_current_fronters(), NULL, NULL, "Fronters");
+        static Group group;
+        group.color = GColorRed;
+        group.frontables = cache_get_current_fronters();
+        strcpy(group.name, "Fronters");
+        group.parent = NULL;
+        menu = frontable_menu_create(callbacks, &group, NULL);
     }
 
     current_fronters_menu_set_is_empty(cache_get_first_fronter() == NULL);

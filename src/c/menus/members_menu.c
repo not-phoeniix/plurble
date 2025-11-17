@@ -54,25 +54,25 @@ static void groups_init() {
         .color = GColorRed,
         .name = "RedGroop",
         .parent = &root_group,
-        .members = &list_one
+        .frontables = &list_one
     };
     groups[1] = (Group) {
         .color = GColorShockingPink,
         .name = "OtherGrop!",
         .parent = &root_group,
-        .members = &list_two
+        .frontables = &list_two
     };
     groups[2] = (Group) {
         .color = GColorGreen,
         .name = "NestGroup...",
         .parent = &groups[0],
-        .members = &list_three
+        .frontables = &list_three
     };
 
     menus = (FrontableMenu**)malloc(sizeof(FrontableMenu*) * NUM_GROUPS);
-    menus[0] = frontable_menu_create(callbacks, &list_one, root_menu, &groups[0], "root/RedGroop");
-    menus[1] = frontable_menu_create(callbacks, &list_two, root_menu, &groups[1], "root/OtherGrop!");
-    menus[2] = frontable_menu_create(callbacks, &list_three, menus[0], &groups[2], "root/RedGroop/NestGroup");
+    menus[0] = frontable_menu_create(callbacks, &groups[0], root_menu);
+    menus[1] = frontable_menu_create(callbacks, &groups[1], root_menu);
+    menus[2] = frontable_menu_create(callbacks, &groups[2], menus[0]);
 }
 
 static void groups_deinit() {
@@ -83,7 +83,7 @@ static void groups_deinit() {
 void members_menu_push() {
     if (!initialized) {
         // set up root group
-        root_group.members = cache_get_members();
+        root_group.frontables = cache_get_members();
         root_group.color = GColorWhite;
         strcpy(root_group.name, "root");
         root_group.parent = NULL;
@@ -95,7 +95,7 @@ void members_menu_push() {
             .window_unload = NULL
         };
 
-        root_menu = frontable_menu_create(callbacks, cache_get_members(), NULL, &root_group, "Members");
+        root_menu = frontable_menu_create(callbacks, &root_group, NULL);
 
         groups_init();
 
