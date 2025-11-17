@@ -4,6 +4,7 @@
 #include "../data/frontable_cache.h"
 
 static FrontableMenu* menu = NULL;
+static Group group;
 
 static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
     frontable_menu_draw_cell(menu, ctx, cell_layer, cell_index);
@@ -22,8 +23,7 @@ void custom_fronts_menu_push() {
             .window_unload = NULL
         };
 
-        static Group group;
-        group.color = GColorBlack;
+        group.color = settings_get()->background_color;
         group.frontables = cache_get_custom_fronts();
         strcpy(group.name, "Custom Fronts");
         group.parent = NULL;
@@ -41,6 +41,8 @@ void custom_fronts_menu_deinit() {
 }
 
 void custom_fronts_menu_update_colors() {
+    group.color = settings_get()->background_color;
+
     if (menu != NULL) {
         frontable_menu_update_colors(menu);
     }

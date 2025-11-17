@@ -9,6 +9,7 @@ static FrontableMenu* root_menu;
 
 static Group* groups = NULL;
 static FrontableMenu** menus = NULL;
+static uint16_t num_groups = 0;
 
 static bool initialized = false;
 
@@ -23,7 +24,7 @@ static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) 
 }
 
 static void groups_init() {
-    const uint16_t NUM_GROUPS = 3;
+    num_groups = 3;
 
     MemberMenuCallbacks callbacks = {
         .draw_row = draw_row,
@@ -49,7 +50,7 @@ static void groups_init() {
     frontable_list_add(all_members->frontables[9], &list_three);
     frontable_list_add(all_members->frontables[10], &list_three);
 
-    groups = (Group*)malloc(sizeof(Group) * NUM_GROUPS);
+    groups = (Group*)malloc(sizeof(Group) * num_groups);
     groups[0] = (Group) {
         .color = GColorRed,
         .name = "RedGroop",
@@ -69,7 +70,7 @@ static void groups_init() {
         .frontables = &list_three
     };
 
-    menus = (FrontableMenu**)malloc(sizeof(FrontableMenu*) * NUM_GROUPS);
+    menus = (FrontableMenu**)malloc(sizeof(FrontableMenu*) * num_groups);
     menus[0] = frontable_menu_create(callbacks, &groups[0], root_menu);
     menus[1] = frontable_menu_create(callbacks, &groups[1], root_menu);
     menus[2] = frontable_menu_create(callbacks, &groups[2], menus[0]);
@@ -84,8 +85,8 @@ void members_menu_push() {
     if (!initialized) {
         // set up root group
         root_group.frontables = cache_get_members();
-        root_group.color = GColorWhite;
-        strcpy(root_group.name, "root");
+        root_group.color = settings_get()->background_color;
+        strcpy(root_group.name, "Members");
         root_group.parent = NULL;
 
         MemberMenuCallbacks callbacks = {
@@ -115,7 +116,12 @@ void members_menu_deinit() {
 }
 
 void members_menu_update_colors() {
+    root_group.color = settings_get()->background_color;
     if (initialized) {
         frontable_menu_update_colors(root_menu);
+        for (uint16_t i = 0; i < num_groups; i++) {
+            printf("updating menu colors.. %u", i);
+            frontable_menu_update_colors(menus[i]);
+        }
     }
 }

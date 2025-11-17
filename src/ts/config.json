@@ -90,6 +90,16 @@
         "capabilities": [
           "COLOR"
         ]
+      },
+      {
+        "type": "toggle",
+        "messageKey": "GroupTitleAccent",
+        "label": "Group Title Bar Color Accent",
+        "description": "Set the title bar's background color to that of the currently opened group in the member list",
+        "defaultValue": false,
+        "capabilities": [
+          "COLOR"
+        ]
       }
     ]
   },

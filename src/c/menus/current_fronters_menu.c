@@ -4,6 +4,7 @@
 
 static FrontableMenu* menu = NULL;
 static TextLayer* text_layer = NULL;
+static Group group;
 static bool empty = false;
 
 static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
@@ -56,8 +57,7 @@ void current_fronters_menu_push() {
             .window_unload = window_unload
         };
 
-        static Group group;
-        group.color = GColorRed;
+        group.color = settings_get()->background_color;
         group.frontables = cache_get_current_fronters();
         strcpy(group.name, "Fronters");
         group.parent = NULL;
@@ -76,6 +76,8 @@ void current_fronters_menu_deinit() {
 }
 
 void current_fronters_menu_update_colors() {
+    group.color = settings_get()->background_color;
+
     if (menu != NULL) {
         frontable_menu_update_colors(menu);
     }

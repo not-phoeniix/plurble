@@ -19,6 +19,7 @@ static void set_defaults() {
     settings.member_color_tag = PBL_IF_COLOR_ELSE(PBL_IF_ROUND_ELSE(false, true), false);
     settings.global_fronter_accent = false;
     settings.api_key_valid = false;
+    settings.group_title_accent = false;
 }
 
 static void apply(bool update_colors) {
@@ -33,7 +34,7 @@ static void apply(bool update_colors) {
         setup_prompt_menu_remove();
         window_stack_pop_all(false);
         main_menu_push();
-    } else if (!settings.api_key_valid && !setup_prompt_menu_shown()) {
+    } else if (!settings.api_key_valid) {
         window_stack_pop_all(false);
         setup_prompt_menu_push();
     }

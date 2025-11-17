@@ -98,7 +98,16 @@ static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex o
 }
 
 static void status_bar_update_proc(Layer* layer, GContext* ctx) {
-    graphics_context_set_fill_color(ctx, settings_get()->background_color);
+    Window* window = layer_get_window(layer);
+    FrontableMenu* menu = (FrontableMenu*)window_get_user_data(window);
+
+    GColor bg = settings_get()->background_color;
+    if (settings_get()->group_title_accent) {
+        bg = menu->group_node.group->color;
+    }
+    GColor fg = gcolor_legible_over(bg);
+
+    graphics_context_set_fill_color(ctx, bg);
     graphics_fill_rect(ctx, layer_get_bounds(layer), 0, GCornerNone);
 }
 
@@ -353,8 +362,14 @@ void frontable_menu_update_colors(FrontableMenu* menu) {
     }
 
     if (menu->status_bar_text != NULL) {
-        text_layer_set_background_color(menu->status_bar_text, settings->background_color);
-        text_layer_set_text_color(menu->status_bar_text, gcolor_legible_over(settings->background_color));
+        GColor bg = settings_get()->background_color;
+        if (settings_get()->group_title_accent) {
+            bg = menu->group_node.group->color;
+        }
+
+        GColor fg = gcolor_legible_over(bg);
+        text_layer_set_background_color(menu->status_bar_text, bg);
+        text_layer_set_text_color(menu->status_bar_text, fg);
     }
 
     if (menu->window != NULL) {

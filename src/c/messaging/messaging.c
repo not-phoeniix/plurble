@@ -59,6 +59,15 @@ static void handle_settings_inbox(DictionaryIterator* iter, ClaySettings* settin
         );
         *update_colors = true;
     }
+
+    Tuple* group_title_accent = dict_find(iter, MESSAGE_KEY_GroupTitleAccent);
+    if (group_title_accent != NULL) {
+        settings->group_title_accent = PBL_IF_COLOR_ELSE(
+            group_title_accent->value->int16,
+            false
+        );
+        *update_colors = true;
+    }
 }
 
 static uint32_t uint32_from_byte_arr(uint8_t* start) {
