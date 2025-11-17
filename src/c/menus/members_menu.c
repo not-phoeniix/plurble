@@ -23,7 +23,7 @@ static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) 
 }
 
 static void groups_init() {
-    const uint16_t NUM_GROUPS = 2;
+    const uint16_t NUM_GROUPS = 3;
 
     MemberMenuCallbacks callbacks = {
         .draw_row = draw_row,
@@ -34,16 +34,20 @@ static void groups_init() {
 
     FrontableList* all_members = cache_get_members();
 
-    static FrontableList list_one = {NULL, 0, 0};
+    static FrontableList list_one;
     frontable_list_add(all_members->frontables[0], &list_one);
     frontable_list_add(all_members->frontables[1], &list_one);
     frontable_list_add(all_members->frontables[2], &list_one);
-    static FrontableList list_two = {NULL, 0, 0};
+    static FrontableList list_two;
     frontable_list_add(all_members->frontables[3], &list_two);
     frontable_list_add(all_members->frontables[4], &list_two);
     frontable_list_add(all_members->frontables[5], &list_two);
     frontable_list_add(all_members->frontables[6], &list_two);
     frontable_list_add(all_members->frontables[7], &list_two);
+    static FrontableList list_three;
+    frontable_list_add(all_members->frontables[8], &list_three);
+    frontable_list_add(all_members->frontables[9], &list_three);
+    frontable_list_add(all_members->frontables[10], &list_three);
 
     groups = (Group*)malloc(sizeof(Group) * NUM_GROUPS);
     groups[0] = (Group) {
@@ -58,10 +62,17 @@ static void groups_init() {
         .parent = &root_group,
         .members = &list_two
     };
+    groups[2] = (Group) {
+        .color = GColorGreen,
+        .name = "NestGroup...",
+        .parent = &groups[0],
+        .members = &list_three
+    };
 
     menus = (FrontableMenu**)malloc(sizeof(FrontableMenu*) * NUM_GROUPS);
     menus[0] = frontable_menu_create(callbacks, &list_one, root_menu, &groups[0], "root/RedGroop");
     menus[1] = frontable_menu_create(callbacks, &list_two, root_menu, &groups[1], "root/OtherGrop!");
+    menus[2] = frontable_menu_create(callbacks, &list_three, menus[0], &groups[2], "root/RedGroop/NestGroup");
 }
 
 static void groups_deinit() {
