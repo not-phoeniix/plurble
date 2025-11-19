@@ -1,7 +1,6 @@
 #include "frontable_cache.h"
 #include "../menus/main_menu.h"
 #include "../tools/string_tools.h"
-#include "../frontables/group_collection.h"
 
 #define PRONOUNS_KEY 2
 #define FRONTABLES_NUM_KEY 3
@@ -35,7 +34,7 @@ typedef struct {
 static FrontableList members;
 static FrontableList custom_fronts;
 static FrontableList current_fronters;
-static GroupCollection* groups = NULL;
+static GroupCollection groups;
 
 FrontableList* cache_get_members() { return &members; }
 FrontableList* cache_get_custom_fronts() { return &custom_fronts; }
@@ -102,43 +101,26 @@ void cache_clear_current_fronters() {
     frontable_list_clear(&current_fronters);
 }
 
-Group* cache_get_group(uint32_t index) {
-    if (groups != NULL && index < groups->num_stored) {
-        return &groups->groups[index];
+void cache_add_group(Group* group) {
+    if (groups.num_stored >= GROUP_LIST_MAX_COUNT) {
+        APP_LOG(APP_LOG_LEVEL_ERROR, "ERROR! Cannot add any more groups to cache, limit has been reached!");
+        return;
     }
 
-    return NULL;
+    groups.groups[groups.num_stored] = group;
+    groups.num_stored++;
 }
 
-uint16_t cache_make_group(GColor color, const char* name, Group* parent) {
-    if (groups == NULL) {
-        groups = (GroupCollection*)malloc(sizeof(GroupCollection));
-        groups->num_stored = 0;
-    }
-
-    if (groups->num_stored >= GROUP_LIST_MAX_COUNT) {
-        APP_LOG(APP_LOG_LEVEL_ERROR, "ERROR! Cannot make any more groups to cache, limit has been reached!");
-        return -1;
-    }
-
-    uint16_t index = groups->num_stored;
-
-    groups->groups[index] = (Group) {
-        .color = color,
-        .parent = parent
-    };
-    string_copy_smaller(groups->groups[index].name, name, GROUP_NAME_LENGTH);
-
-    groups->num_stored++;
-    return index;
+GroupCollection* cache_get_groups() {
+    return &groups;
 }
 
 void cache_clear_groups() {
-    if (groups != NULL) {
-        free(groups);
+    for (uint16_t i = 0; i < groups.num_stored; i++) {
+        free(groups.groups[i]);
+        groups.groups[i] = NULL;
     }
-
-    groups = NULL;
+    groups.num_stored = 0;
 }
 
 static void store_pronoun_map(char* pronoun_map, size_t pronoun_map_size) {

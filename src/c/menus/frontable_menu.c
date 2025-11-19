@@ -377,7 +377,28 @@ void frontable_menu_update_colors(FrontableMenu* menu) {
     }
 }
 
+static void remove_from_parent(GroupTreeNode* node) {
+    if (node->parent == NULL) return;
+
+    // find child pointer in parent's children, remove if found
+    for (uint16_t i = 0; i < node->parent->num_children; i++) {
+        if (node->parent->children[i] == node) {
+            // if node is found move everything forward an index
+            for (uint16_t j = i + 1; j < node->parent->num_children; j++) {
+                node->parent->children[j - 1] = node->parent->children[j];
+            }
+
+            node->parent->num_children--;
+            break;
+        }
+    }
+
+    node->parent = NULL;
+}
+
 static void add_child_group(GroupTreeNode* parent, GroupTreeNode* child) {
+    remove_from_parent(child);
+
     child->parent = parent;
 
     uint16_t i = parent->num_children;
@@ -403,9 +424,7 @@ static void add_child_group(GroupTreeNode* parent, GroupTreeNode* child) {
     parent->num_children++;
 }
 
-// TODO: remove need for frontable list and name storing, just make it track in the group struct
-
-FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, Group* group, FrontableMenu* parent) {
+FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, Group* group) {
     // create window and set up handlers
     Window* window = window_create();
     window_set_window_handlers(
@@ -430,10 +449,6 @@ FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, Group* group
             .children_size = 0
         }
     };
-
-    if (parent != NULL) {
-        add_child_group(&parent->group_node, &menu->group_node);
-    }
 
     // set user data of windows to be the related frontable menu pointer
     window_set_user_data(window, menu);
@@ -465,6 +480,11 @@ FrontableList* frontable_menu_get_frontables(FrontableMenu* menu) {
 
 void frontable_menu_set_frontables(FrontableMenu* menu, FrontableList* frontables) {
     menu->group_node.group->frontables = frontables;
+}
+
+void frontable_menu_set_parent(FrontableMenu* menu, FrontableMenu* parent) {
+    remove_from_parent(&menu->group_node);
+    add_child_group(&parent->group_node, &menu->group_node);
 }
 
 Window* frontable_menu_get_window(FrontableMenu* menu) {

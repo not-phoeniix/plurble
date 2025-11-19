@@ -7,7 +7,6 @@
 static Group root_group;
 static FrontableMenu* root_menu;
 
-static Group* groups = NULL;
 static FrontableMenu** menus = NULL;
 static uint16_t num_groups = 0;
 
@@ -24,7 +23,8 @@ static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) 
 }
 
 static void groups_init() {
-    num_groups = 3;
+    GroupCollection* group_collection = cache_get_groups();
+    num_groups = group_collection->num_stored;
 
     MemberMenuCallbacks callbacks = {
         .draw_row = draw_row,
@@ -33,52 +33,35 @@ static void groups_init() {
         .window_unload = NULL
     };
 
-    FrontableList* all_members = cache_get_members();
-
-    static FrontableList list_one;
-    frontable_list_add(all_members->frontables[0], &list_one);
-    frontable_list_add(all_members->frontables[1], &list_one);
-    frontable_list_add(all_members->frontables[2], &list_one);
-    static FrontableList list_two;
-    frontable_list_add(all_members->frontables[3], &list_two);
-    frontable_list_add(all_members->frontables[4], &list_two);
-    frontable_list_add(all_members->frontables[5], &list_two);
-    frontable_list_add(all_members->frontables[6], &list_two);
-    frontable_list_add(all_members->frontables[7], &list_two);
-    static FrontableList list_three;
-    frontable_list_add(all_members->frontables[8], &list_three);
-    frontable_list_add(all_members->frontables[9], &list_three);
-    frontable_list_add(all_members->frontables[10], &list_three);
-
-    groups = (Group*)malloc(sizeof(Group) * num_groups);
-    groups[0] = (Group) {
-        .color = GColorRed,
-        .name = "RedGroop",
-        .parent = &root_group,
-        .frontables = &list_one
-    };
-    groups[1] = (Group) {
-        .color = GColorShockingPink,
-        .name = "OtherGrop!",
-        .parent = &root_group,
-        .frontables = &list_two
-    };
-    groups[2] = (Group) {
-        .color = GColorGreen,
-        .name = "NestGroup...",
-        .parent = &groups[0],
-        .frontables = &list_three
-    };
-
+    // create menus with null parent pointers
     menus = (FrontableMenu**)malloc(sizeof(FrontableMenu*) * num_groups);
-    menus[0] = frontable_menu_create(callbacks, &groups[0], root_menu);
-    menus[1] = frontable_menu_create(callbacks, &groups[1], root_menu);
-    menus[2] = frontable_menu_create(callbacks, &groups[2], menus[0]);
+    for (uint16_t i = 0; i < num_groups; i++) {
+        Group* group = group_collection->groups[i];
+        menus[i] = frontable_menu_create(callbacks, group);
+    }
+
+    // re-iterate to search for and set parent menus
+    for (uint16_t i = 0; i < num_groups; i++) {
+        Group* group = group_collection->groups[i];
+        FrontableMenu* parent = root_menu;
+
+        for (uint16_t j = 0; j < num_groups; j++) {
+            if (group->parent == NULL) break;
+
+            if (i != j && group->parent == group_collection->groups[j]) {
+                parent = menus[j];
+            }
+        }
+
+        frontable_menu_set_parent(menus[i], parent);
+    }
 }
 
 static void groups_deinit() {
-    free(menus);
-    free(groups);
+    if (menus != NULL) {
+        free(menus);
+        menus = NULL;
+    }
 }
 
 void members_menu_push() {
@@ -96,7 +79,53 @@ void members_menu_push() {
             .window_unload = NULL
         };
 
-        root_menu = frontable_menu_create(callbacks, &root_group, NULL);
+        root_menu = frontable_menu_create(callbacks, &root_group);
+
+        cache_clear_groups();
+
+        FrontableList* all_members = cache_get_members();
+
+        static FrontableList list_one;
+        frontable_list_add(all_members->frontables[0], &list_one);
+        frontable_list_add(all_members->frontables[1], &list_one);
+        frontable_list_add(all_members->frontables[2], &list_one);
+        static FrontableList list_two;
+        frontable_list_add(all_members->frontables[3], &list_two);
+        frontable_list_add(all_members->frontables[4], &list_two);
+        frontable_list_add(all_members->frontables[5], &list_two);
+        frontable_list_add(all_members->frontables[6], &list_two);
+        frontable_list_add(all_members->frontables[7], &list_two);
+        static FrontableList list_three;
+        frontable_list_add(all_members->frontables[8], &list_three);
+        frontable_list_add(all_members->frontables[9], &list_three);
+        frontable_list_add(all_members->frontables[10], &list_three);
+
+        Group* g1 = malloc(sizeof(Group));
+        *g1 = (Group) {
+            .color = GColorRed,
+            .name = "RedGroop",
+            .parent = &root_group,
+            .frontables = &list_one
+        };
+        cache_add_group(g1);
+
+        Group* g2 = malloc(sizeof(Group));
+        *g2 = (Group) {
+            .color = GColorShockingPink,
+            .name = "OtherGrop!",
+            .parent = &root_group,
+            .frontables = &list_two
+        };
+        cache_add_group(g2);
+
+        Group* g3 = malloc(sizeof(Group));
+        *g3 = (Group) {
+            .color = GColorGreen,
+            .name = "NestGroup...",
+            .parent = g1,
+            .frontables = &list_three
+        };
+        cache_add_group(g3);
 
         groups_init();
 
@@ -124,4 +153,12 @@ void members_menu_update_colors() {
             frontable_menu_update_colors(menus[i]);
         }
     }
+}
+
+void members_menu_refresh_groups() {
+    if (initialized) {
+        groups_deinit();
+    }
+
+    groups_init();
 }

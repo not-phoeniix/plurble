@@ -27,7 +27,7 @@ void custom_fronts_menu_push() {
         group.frontables = cache_get_custom_fronts();
         strcpy(group.name, "Custom Fronts");
         group.parent = NULL;
-        menu = frontable_menu_create(callbacks, &group, NULL);
+        menu = frontable_menu_create(callbacks, &group);
     }
 
     frontable_menu_window_push(menu);
