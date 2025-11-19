@@ -79,12 +79,7 @@ static uint32_t uint32_from_byte_arr(uint8_t* start) {
     return num;
 }
 
-static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, bool* update_colors) {
-    Tuple* api_key_valid = dict_find(iter, MESSAGE_KEY_ApiKeyValid);
-    if (api_key_valid != NULL) {
-        settings->api_key_valid = api_key_valid->value->int16;
-    }
-
+static void handle_api_frontables(DictionaryIterator* iter) {
     static int frontable_counter = 0;
     static int total_frontables = 0;
     Tuple* num_total_frontables = dict_find(iter, MESSAGE_KEY_NumTotalFrontables);
@@ -164,7 +159,9 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
         main_menu_mark_members_loaded();
         main_menu_confirm_frontable_fetch();
     }
+}
 
+static void handle_api_current_fronts(DictionaryIterator* iter, bool* update_colors) {
     static int current_front_counter = 0;
     static int total_current_fronters = 0;
     Tuple* num_current_fronters = dict_find(iter, MESSAGE_KEY_NumCurrentFronters);
@@ -222,6 +219,23 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
             current_fronters_menu_set_is_empty(true);
         }
     }
+}
+
+static void handle_api_groups(DictionaryIterator* iter) {
+    static int group_counter = 0;
+    static int total_groups = 0;
+    // Tuple* num_groups = dict_find(iter, MESSAGE_KEY_NumGroups);
+}
+
+static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, bool* update_colors) {
+    Tuple* api_key_valid = dict_find(iter, MESSAGE_KEY_ApiKeyValid);
+    if (api_key_valid != NULL) {
+        settings->api_key_valid = api_key_valid->value->int16;
+    }
+
+    handle_api_frontables(iter);
+    handle_api_current_fronts(iter, update_colors);
+    handle_api_groups(iter);
 }
 
 static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {

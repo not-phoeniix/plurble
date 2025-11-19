@@ -37,9 +37,11 @@
       "ApiKeyValid",
       "AccentColor",
       "BackgroundColor",
+
       "NumCurrentFronters",
       "NumCurrentFrontersInBatch",
       "CurrentFronter",
+
       "NumTotalFrontables",
       "NumFrontablesInBatch",
       "FrontableHash",
@@ -47,6 +49,12 @@
       "FrontableColor",
       "FrontablePronouns",
       "FrontableIsCustom",
+
+      "NumGroups",
+      "NumGroupsInBatch",
+      "GroupName",
+      "GroupColor",
+
       "AddFrontRequest",
       "SetFrontRequest",
       "RemoveFrontRequest",

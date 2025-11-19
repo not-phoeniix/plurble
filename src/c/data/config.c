@@ -31,7 +31,6 @@ static void apply(bool update_colors) {
     }
 
     if (settings.api_key_valid && setup_prompt_menu_shown()) {
-        setup_prompt_menu_remove();
         window_stack_pop_all(false);
         main_menu_push();
     } else if (!settings.api_key_valid) {

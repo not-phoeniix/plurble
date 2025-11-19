@@ -18,12 +18,6 @@ static void init() {
     }
     settings_load();
 
-    if (settings_get()->api_key_valid) {
-        main_menu_push();
-    } else {
-        setup_prompt_menu_push();
-    }
-
     Frontable* front = cache_get_first_fronter();
     if (front == NULL) {
         main_menu_set_fronters_subtitle("no one is fronting");
