@@ -1,11 +1,11 @@
 import { AppMessageDesc, Frontable, FrontEntryMessage, Group, Member } from "./types";
 import * as utils from "./utils";
 
-//! NOTE: make sure these match up with the #define's in 
-//!   messaging.c, frontable.h, & group.h <3
+//! NOTE: make sure these match up with the #defines in 
+//!   frontable.h & group.h <3
 const FRONTABLES_PER_MESSAGE = 32;
 const CURRENT_FRONTS_PER_MESSAGE = 16;
-const GROUPS_PER_MESSAGE = 16;
+const GROUPS_PER_MESSAGE = 1;
 const FRONTABLE_NAME_LENGTH = 32;
 const FRONTABLE_PRONOUNS_LENGTH = 16;
 const GROUP_NAME_LENGTH = 32;
@@ -143,6 +143,8 @@ export async function sendGroupsToWatch(groups: Group[]): Promise<void> {
     const numGroups = groups.length;
     const numMessages = Math.ceil(numGroups / GROUPS_PER_MESSAGE);
 
+    const groupsOriginal: Group[] = JSON.parse(JSON.stringify(groups));
+
     for (let i = 0; i < numMessages; i++) {
         const batchSize = Math.min(groups.length, GROUPS_PER_MESSAGE);
         const toSend = groups.splice(0, batchSize);
@@ -152,7 +154,7 @@ export async function sendGroupsToWatch(groups: Group[]): Promise<void> {
         let membersArr: number[] = [];
         let parentIndicesArr: number[] = [];
 
-        toSend.forEach((group, i) => {
+        toSend.forEach((group) => {
             // store name
             let name = group.name;
             if (name.length > GROUP_NAME_LENGTH) {
@@ -187,19 +189,17 @@ export async function sendGroupsToWatch(groups: Group[]): Promise<void> {
 
             // store parent indices
             let index = -1;
-            for (let j = 0; j < toSend.length; j++) {
-                if (i === j) continue;
-
+            for (let j = 0; j < groupsOriginal.length; j++) {
                 // don't use indices that won't fit in 8 bits
                 if (j >= 255) break;
 
-                if (group.parent === toSend[j].id) {
+                if (group.parent === groupsOriginal[j].id) {
                     index = j;
                     break;
                 }
             }
 
-            // +1 the index so we can fit it within an unsigned int
+            // +1 the index so we can fit negative 1 within an unsigned int
             parentIndicesArr.push(index + 1);
         });
 

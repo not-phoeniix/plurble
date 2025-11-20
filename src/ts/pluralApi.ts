@@ -1,4 +1,4 @@
-import { FrontEntry, FrontEntryMessage, Frontable, MemberMessage, CustomFrontMessage } from "./types";
+import { FrontEntry, FrontEntryMessage, Frontable, MemberMessage, CustomFrontMessage, GroupMessage } from "./types";
 import * as cache from "./cache";
 
 const NORMAL_FETCH_URL = "https://api.apparyllis.com/v1/";
@@ -145,4 +145,11 @@ export async function getCurrentFronts(): Promise<FrontEntryMessage[]> {
         route: `fronters`,
         method: "GET"
     }).then(data => data as FrontEntryMessage[]);
+}
+
+export async function getGroups(systemId: string): Promise<GroupMessage[]> {
+    return pluralMessage({
+        route: `groups/${systemId}`,
+        method: "GET"
+    }).then(data => data as GroupMessage[]);
 }

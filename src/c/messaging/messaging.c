@@ -7,9 +7,6 @@
 #include "../menus/members_menu.h"
 #include "../tools/string_tools.h"
 
-#define FRONTABLES_PER_MESSAGE 32
-#define CURRENT_FRONTS_PER_MESSAGE 16
-#define GROUPS_PER_MESSAGE 16
 #define DELIMETER ';'
 
 //! NOTE: add "${workspaceFolder}/build/include/" to your
@@ -302,7 +299,7 @@ static void handle_api_groups(DictionaryIterator* iter) {
             member_data_offset++;
             for (uint16_t j = 0; j < members_count; j++) {
                 uint32_t hash = uint32_from_byte_arr(
-                    members_byte_array + member_data_offset
+                    &members_byte_array[member_data_offset]
                 );
 
                 Frontable* f = cache_get_frontable(hash);

@@ -94,12 +94,14 @@ async function fetchAndSendCurrentFronts() {
     await messaging.sendCurrentFrontersToWatch(currentFronters);
 }
 
-async function fetchAndSendGroups() {
-    const groups: Group[] = [
-    ];
+async function fetchAndSendGroups(uid: string, useCache: boolean) {
+    const groups = (await pluralApi.getGroups(uid))
+        .map(message => Group.create(message));
 
-    console.log("trying to send groups fingers crossed <3");
-    messaging.sendGroupsToWatch(groups);
+    if (groups) {
+        console.log("Groups found! sending to watch...");
+        await messaging.sendGroupsToWatch(groups);
+    }
 }
 
 Pebble.addEventListener("ready", async (e) => {
@@ -129,7 +131,7 @@ Pebble.addEventListener("ready", async (e) => {
 
     await fetchAndSendFrontables(uid, true);
     await fetchAndSendCurrentFronts();
-    await fetchAndSendGroups();
+    await fetchAndSendGroups(uid, false);
 
     console.log("hey! app finished fetching and sending things! :)");
 });
