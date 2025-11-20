@@ -96,23 +96,47 @@ async function fetchAndSendCurrentFronts() {
 }
 
 async function fetchAndSendGroups(uid: string, useCache: boolean) {
-    const groups = (await pluralApi.getGroups(uid))
-        .map(message => Group.create(message));
+    let groups: Group[] | null = null;
+    if (useCache) {
+        groups = cache.getAllGroups();
+    } else {
+        // clear groups before fetching things again
+        await messaging.sendGroupsToWatch([]);
+    }
 
-    groups.forEach(g => g.members.sort((a, b) => {
-        const memberA = cache.getFrontable(utils.genHash(a));
-        const memberB = cache.getFrontable(utils.genHash(b));
+    if (!groups) {
+        if (uid) {
+            console.log("Groups not cached, fetching from API...");
 
-        if (!memberA || !memberB) return 0;
+            groups = (await pluralApi.getGroups(uid))
+                .map(m => Group.create(m));
 
-        if (memberA.name.toLowerCase() > memberB.name.toLowerCase()) {
-            return 1;
-        } else if (memberA.name.toLowerCase() < memberB.name.toLowerCase()) {
-            return -1;
+            // sort group children alphabetically
+            groups.forEach(g => g.members.sort((a, b) => {
+                const memberA = cache.getFrontable(utils.genHash(a));
+                const memberB = cache.getFrontable(utils.genHash(b));
+
+                if (!memberA || !memberB) return 0;
+
+                if (memberA.name.toLowerCase() > memberB.name.toLowerCase()) {
+                    return 1;
+                } else if (memberA.name.toLowerCase() < memberB.name.toLowerCase()) {
+                    return -1;
+                }
+
+                return 0;
+            }));
+
+            cache.cacheGroups(groups);
+
+            console.log("Groups fetched, assembled, and cached!");
+
+        } else {
+            console.error("Cannot fetch groups from API, UID was never cached!");
         }
-
-        return 0;
-    }));
+    } else {
+        console.log("Groups found in cache!");
+    }
 
     if (groups) {
         console.log("Groups found! sending to watch...");
@@ -146,8 +170,10 @@ Pebble.addEventListener("ready", async (e) => {
     }
 
     await fetchAndSendFrontables(uid, true);
-    await fetchAndSendCurrentFronts();
-    await fetchAndSendGroups(uid, false);
+    await Promise.all([
+        fetchAndSendCurrentFronts(),
+        fetchAndSendGroups(uid, false)
+    ]);
 
     console.log("hey! app finished fetching and sending things! :)");
 });
@@ -207,13 +233,16 @@ Pebble.addEventListener("appmessage", async (e) => {
         }
     }
 
-    if (msg.FetchFrontersRequest) {
+    if (msg.FetchDataRequest) {
         const uid = cache.getSystemId();
         if (uid) {
             fetchAndSendFrontables(uid, false)
-                .then(() => fetchAndSendCurrentFronts());
+                .then(() => {
+                    fetchAndSendCurrentFronts();
+                    fetchAndSendGroups(uid, false);
+                });
         } else {
-            console.error("Cannot re-fetch fronters, system ID is not cached!");
+            console.error("Cannot re-fetch data, system ID is not cached!");
         }
     }
 

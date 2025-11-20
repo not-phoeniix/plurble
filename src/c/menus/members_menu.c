@@ -86,9 +86,19 @@ static void groups_init() {
 
 static void groups_deinit() {
     if (menus != NULL) {
+        for (uint16_t i = 0; i < num_groups; i++) {
+            frontable_menu_destroy(menus[i]);
+        }
+
         free(menus);
         menus = NULL;
     }
+
+    if (root_menu != NULL) {
+        frontable_menu_clear_children(root_menu);
+    }
+
+    num_groups = 0;
 }
 
 void members_menu_push() {
@@ -123,7 +133,6 @@ void members_menu_update_colors() {
     if (root_initialized && groups_initialized) {
         frontable_menu_update_colors(root_menu);
         for (uint16_t i = 0; i < num_groups; i++) {
-            printf("updating menu colors.. %u", i);
             frontable_menu_update_colors(menus[i]);
         }
     }

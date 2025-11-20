@@ -1,13 +1,14 @@
 #include "frontable_menu.h"
 #include "../messaging/messaging.h"
 
+#define TREE_MAX_CHILD_COUNT 64
+
 struct GroupTreeNode;
 typedef struct GroupTreeNode {
     Group* group;
     struct GroupTreeNode* parent;
-    struct GroupTreeNode** children;
+    struct GroupTreeNode* children[TREE_MAX_CHILD_COUNT];
     uint16_t num_children;
-    uint16_t children_size;
     FrontableMenu* menu;
 } GroupTreeNode;
 
@@ -170,11 +171,22 @@ static void menu_layer_setup(FrontableMenu* menu) {
 
 // ~~~ ACTION MENU SETUP ~~~
 
+static void window_pop_recursive(FrontableMenu* menu) {
+    GroupTreeNode* parent = menu->group_node.parent;
+
+    if (parent != NULL) {
+        window_stack_remove(menu->window, false);
+        window_pop_recursive(parent->menu);
+    } else {
+        window_stack_remove(menu->window, true);
+    }
+}
+
 static void action_set_as_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
     FrontableMenu* menu = (FrontableMenu*)context;
     if (menu->selected_frontable != NULL) {
         messaging_set_as_front(menu->selected_frontable->hash);
-        window_stack_remove(menu->window, true);
+        window_pop_recursive(menu);
     }
 }
 
@@ -401,22 +413,9 @@ static void add_child_group(GroupTreeNode* parent, GroupTreeNode* child) {
     child->parent = parent;
 
     uint16_t i = parent->num_children;
-
-    if (parent->children == NULL) {
-        // initial allocation
-        parent->children = (GroupTreeNode**)malloc(sizeof(GroupTreeNode*));
-        parent->children_size = 1;
-    } else if (i >= parent->children_size) {
-        // double size
-        parent->children_size *= 2;
-        parent->children = (GroupTreeNode**)realloc(
-            parent->children,
-            sizeof(GroupTreeNode*) * parent->children_size
-        );
-
-        if (parent->children == NULL) {
-            APP_LOG(APP_LOG_LEVEL_ERROR, "Error!, group node child realloc failed!");
-        }
+    if (i >= TREE_MAX_CHILD_COUNT) {
+        APP_LOG(APP_LOG_LEVEL_WARNING, "WARNING: Frontable menu max child count reached!");
+        return;
     }
 
     parent->children[i] = child;
@@ -443,9 +442,8 @@ FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, Group* group
             .group = group,
             .menu = menu,
             .num_children = 0,
-            .children = NULL,
-            .parent = NULL,
-            .children_size = 0
+            .children = {NULL},
+            .parent = NULL
         }
     };
 
@@ -457,11 +455,6 @@ FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, Group* group
 
 void frontable_menu_destroy(FrontableMenu* menu) {
     window_destroy(menu->window);
-
-    if (menu->group_node.children != NULL) {
-        free(menu->group_node.children);
-    }
-
     free(menu);
 }
 
@@ -484,6 +477,10 @@ void frontable_menu_set_frontables(FrontableMenu* menu, FrontableList* frontable
 void frontable_menu_set_parent(FrontableMenu* menu, FrontableMenu* parent) {
     remove_from_parent(&menu->group_node);
     add_child_group(&parent->group_node, &menu->group_node);
+}
+
+void frontable_menu_clear_children(FrontableMenu* menu) {
+    menu->group_node.num_children = 0;
 }
 
 Window* frontable_menu_get_window(FrontableMenu* menu) {

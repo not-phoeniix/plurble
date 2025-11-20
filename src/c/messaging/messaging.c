@@ -225,7 +225,7 @@ static void handle_api_current_fronts(DictionaryIterator* iter, bool* update_col
 }
 
 static void handle_api_groups(DictionaryIterator* iter) {
-    static uint8_t* parent_index_arr = NULL;
+    static uint8_t parent_index_arr[GROUP_LIST_MAX_COUNT];
     static int32_t parent_index_counter = 0;
 
     // using regular ints here so APP_LOG printf doesn't yell at me lol
@@ -250,12 +250,7 @@ static void handle_api_groups(DictionaryIterator* iter) {
         );
         cache_clear_groups();
 
-        if (total_groups > 0) {
-            parent_index_arr = malloc(sizeof(uint8_t) * total_groups);
-            memset(parent_index_arr, 0, sizeof(uint8_t) * total_groups);
-        } else {
-            parent_index_arr = NULL;
-        }
+        memset(parent_index_arr, 0, sizeof(uint8_t) * total_groups);
         parent_index_counter = 0;
     }
 
@@ -309,6 +304,13 @@ static void handle_api_groups(DictionaryIterator* iter) {
             }
 
             group_counter++;
+            APP_LOG(
+                APP_LOG_LEVEL_INFO,
+                "Recieved group '%s'! Index: %d/%d",
+                group->name,
+                group_counter,
+                total_groups
+            );
         }
 
         // copy indices into array so we can iterate later!
@@ -323,20 +325,19 @@ static void handle_api_groups(DictionaryIterator* iter) {
     }
 
     if (group_counter >= total_groups) {
-        // re-iterate to assign group parent pointers
-        GroupCollection* groups = cache_get_groups();
-        for (uint16_t i = 0; i < groups->num_stored; i++) {
-            // subtract 1 from index so we can know when no parent exists
-            //   (while still allowing 255 other options for the uint8)
-            int16_t index = (int16_t)parent_index_arr[i] - 1;
-            if (index >= 0) {
-                groups->groups[i]->parent = groups->groups[index];
-            }
-        }
-
+        // only re-assign parent pointers if the parent index array exists
         if (parent_index_arr != NULL) {
-            free(parent_index_arr);
-            parent_index_arr = NULL;
+            // re-iterate to assign group parent pointers
+            GroupCollection* groups = cache_get_groups();
+            for (uint16_t i = 0; i < groups->num_stored; i++) {
+                // subtract 1 from index so we can know when no parent exists
+                //   (while still allowing 255 other options for the uint8)
+                int16_t index = (int16_t)parent_index_arr[i] - 1;
+                if (index >= 0) {
+                    groups->groups[i]->parent = groups->groups[index];
+                }
+            }
+
             parent_index_counter = 0;
         }
 
@@ -437,8 +438,8 @@ void messaging_remove_from_front(uint32_t frontable_hash) {
     front_message(frontable_hash, MESSAGE_KEY_RemoveFrontRequest);
 }
 
-void messaging_fetch_fronters() {
-    bool_message(MESSAGE_KEY_FetchFrontersRequest, true);
+void messaging_fetch_data() {
+    bool_message(MESSAGE_KEY_FetchDataRequest, true);
 }
 
 void messaging_clear_cache() {

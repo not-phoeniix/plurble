@@ -24,5 +24,6 @@ void frontable_menu_window_push(FrontableMenu* menu);
 void frontable_menu_window_remove(FrontableMenu* menu);
 void frontable_menu_set_frontables(FrontableMenu* menu, FrontableList* frontables);
 void frontable_menu_set_parent(FrontableMenu* menu, FrontableMenu* parent);
+void frontable_menu_clear_children(FrontableMenu* menu);
 FrontableList* frontable_menu_get_frontables(FrontableMenu* menu);
 Window* frontable_menu_get_window(FrontableMenu* menu);

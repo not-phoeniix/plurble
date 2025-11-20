@@ -69,7 +69,7 @@ static void select(int index, void* context) {
     switch (index) {
         case 0:
             if (can_fetch_members) {
-                messaging_fetch_fronters();
+                messaging_fetch_data();
                 items[0].subtitle = "Fetching...";
                 can_fetch_members = false;
                 fetch_timeout_timer = app_timer_register(10000, fetch_timeout_name_callback, NULL);

@@ -327,4 +327,5 @@ void cache_persist_delete() {
 void frontable_cache_deinit() {
     cache_clear_current_fronters();
     cache_clear_frontables();
+    cache_clear_groups();
 }

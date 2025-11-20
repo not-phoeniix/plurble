@@ -60,7 +60,7 @@
       "AddFrontRequest",
       "SetFrontRequest",
       "RemoveFrontRequest",
-      "FetchFrontersRequest",
+      "FetchDataRequest",
       "ClearCacheRequest"
     ],
     "resources": {
