@@ -13,6 +13,7 @@ typedef struct {
     bool group_title_accent;
     bool api_key_valid;
     bool show_groups;
+    bool hide_members_in_root;
 } ClaySettings;
 
 ClaySettings* settings_get();

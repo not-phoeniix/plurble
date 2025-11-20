@@ -13,7 +13,7 @@ const clay = new Clay(config);
 
 // set to true to use the SimplyPlural pretesting server 
 //   when debugging/testing new functionality <3
-const USE_DEV_SERVER = false;
+const USE_DEV_SERVER = true;
 
 async function setupApi(token: string) {
     console.log("setting up API and socket...");

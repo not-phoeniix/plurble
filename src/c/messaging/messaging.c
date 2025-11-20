@@ -67,6 +67,13 @@ static void handle_settings_inbox(DictionaryIterator* iter, ClaySettings* settin
         );
         *update_colors = true;
     }
+
+    Tuple* hide_members_in_root = dict_find(iter, MESSAGE_KEY_HideMembersInRoot);
+    if (hide_members_in_root != NULL) {
+        settings->hide_members_in_root = hide_members_in_root->value->int16;
+        *update_colors = true;
+        members_menu_refresh_groups();
+    }
 }
 
 static uint32_t uint32_from_byte_arr(uint8_t* start) {
@@ -325,25 +332,31 @@ static void handle_api_groups(DictionaryIterator* iter) {
     }
 
     if (group_counter >= total_groups) {
-        // only re-assign parent pointers if the parent index array exists
-        if (parent_index_arr != NULL) {
-            // re-iterate to assign group parent pointers
-            GroupCollection* groups = cache_get_groups();
-            for (uint16_t i = 0; i < groups->num_stored; i++) {
-                // subtract 1 from index so we can know when no parent exists
-                //   (while still allowing 255 other options for the uint8)
-                int16_t index = (int16_t)parent_index_arr[i] - 1;
-                if (index >= 0) {
-                    groups->groups[i]->parent = groups->groups[index];
-                }
+        // re-iterate to assign group parent pointers
+        GroupCollection* groups = cache_get_groups();
+        for (uint16_t i = 0; i < groups->num_stored; i++) {
+            // subtract 1 from index so we can know when no parent exists
+            //   (while still allowing 255 other options for the uint8)
+            int16_t index = (int16_t)parent_index_arr[i] - 1;
+            if (index >= 0) {
+                groups->groups[i]->parent = groups->groups[index];
             }
-
-            parent_index_counter = 0;
         }
+
+        parent_index_counter = 0;
+
+        // TODO: rather than send member data in the groups, send the data in the members themselves <3
+        //   make it a bit field! where each bit represents whether the member belongs to that group!
+        //   0b0010 <-- belongs to group index 1
+        //   0b01001000 <-- belongs to group indices 3 and 6
+        //   etc <3
 
         APP_LOG(APP_LOG_LEVEL_INFO, "All groups recieved!");
 
-        members_menu_refresh_groups();
+        // only refresh groups if any are being sent in the first place
+        if (group_batch_size != NULL) {
+            members_menu_refresh_groups();
+        }
     }
 }
 

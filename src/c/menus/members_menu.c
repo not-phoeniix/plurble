@@ -5,7 +5,8 @@
 #include "../tools/string_tools.h"
 
 static Group root_group;
-static FrontableMenu* root_menu;
+static FrontableMenu* root_menu = NULL;
+static FrontableList* hidden_root_list = NULL;
 
 static FrontableMenu** menus = NULL;
 static uint16_t num_groups = 0;
@@ -24,10 +25,16 @@ static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) 
 }
 
 static void root_init() {
-    root_group.frontables = cache_get_members();
+    hidden_root_list = frontable_list_create();
+
     root_group.color = settings_get()->background_color;
     strcpy(root_group.name, "Members");
     root_group.parent = NULL;
+    if (settings_get()->hide_members_in_root && settings_get()->show_groups) {
+        root_group.frontables = hidden_root_list;
+    } else {
+        root_group.frontables = cache_get_members();
+    }
 
     MemberMenuCallbacks callbacks = {
         .draw_row = draw_row,
@@ -37,6 +44,39 @@ static void root_init() {
     };
 
     root_menu = frontable_menu_create(callbacks, &root_group);
+}
+
+static void find_groupless() {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Searching for groupless members...");
+
+    if (hidden_root_list != NULL) {
+        frontable_list_clear(hidden_root_list);
+    }
+
+    GroupCollection* group_collection = cache_get_groups();
+
+    FrontableList* members = cache_get_members();
+    for (uint16_t i = 0; i < members->num_stored; i++) {
+        Frontable* member = members->frontables[i];
+        bool in_group = false;
+
+        // for each member, search every single group for itself
+        for (uint16_t j = 0; j < group_collection->num_stored; j++) {
+            Group* group = group_collection->groups[j];
+            if (frontable_list_contains(group->frontables, member)) {
+                in_group = true;
+
+                // printf("found member '%s' in group '%s' !!", member->name, group->name);
+
+                break;
+            }
+        }
+
+        if (!in_group) {
+            // APP_LOG(APP_LOG_LEVEL_INFO, "Groupless member %s found!", member->name);
+            frontable_list_add(member, hidden_root_list);
+        }
+    }
 }
 
 static void groups_init() {
@@ -98,6 +138,10 @@ static void groups_deinit() {
         frontable_menu_clear_children(root_menu);
     }
 
+    if (hidden_root_list != NULL) {
+        frontable_list_clear(hidden_root_list);
+    }
+
     num_groups = 0;
 }
 
@@ -109,6 +153,7 @@ void members_menu_push() {
 
     if (!groups_initialized) {
         groups_init();
+        find_groupless();
         groups_initialized = true;
     }
 
@@ -117,6 +162,8 @@ void members_menu_push() {
 
 void members_menu_deinit() {
     if (root_initialized) {
+        frontable_list_destroy(hidden_root_list);
+        hidden_root_list = NULL;
         frontable_menu_destroy(root_menu);
         root_menu = NULL;
         root_initialized = false;
@@ -144,9 +191,16 @@ void members_menu_refresh_groups() {
     }
 
     groups_init();
+    find_groupless();
 
     if (!settings_get()->show_groups) {
         frontable_menu_clear_children(root_menu);
+    }
+
+    if (settings_get()->hide_members_in_root && settings_get()->show_groups) {
+        root_group.frontables = hidden_root_list;
+    } else {
+        root_group.frontables = cache_get_members();
     }
 
     groups_initialized = true;

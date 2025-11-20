@@ -37,6 +37,7 @@
       "ApiKeyValid",
       "AccentColor",
       "BackgroundColor",
+      "HideMembersInRoot",
 
       "NumCurrentFronters",
       "NumCurrentFrontersInBatch",

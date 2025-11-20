@@ -55,3 +55,13 @@ void frontable_list_deep_clear(FrontableList* list) {
 
     frontable_list_clear(list);
 }
+
+bool frontable_list_contains(FrontableList* list, Frontable* frontable) {
+    for (uint16_t i = 0; i < list->num_stored; i++) {
+        if (list->frontables[i] == frontable) {
+            return true;
+        }
+    }
+
+    return false;
+}

@@ -21,6 +21,7 @@ static void set_defaults() {
     settings.api_key_valid = false;
     settings.group_title_accent = false;
     settings.show_groups = true;
+    settings.hide_members_in_root = false;
 }
 
 static void apply(bool update_colors) {
