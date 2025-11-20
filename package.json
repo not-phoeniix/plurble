@@ -50,10 +50,12 @@
       "FrontablePronouns",
       "FrontableIsCustom",
 
-      "NumGroups",
+      "NumTotalGroups",
       "NumGroupsInBatch",
       "GroupName",
       "GroupColor",
+      "GroupMembers",
+      "GroupParentIndex",
 
       "AddFrontRequest",
       "SetFrontRequest",

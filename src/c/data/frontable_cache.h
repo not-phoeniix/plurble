@@ -9,6 +9,7 @@ FrontableList* cache_get_members();
 FrontableList* cache_get_custom_fronts();
 FrontableList* cache_get_current_fronters();
 Frontable* cache_get_first_fronter();
+Frontable* cache_get_frontable(uint32_t hash);
 
 void cache_add_frontable(Frontable* frontable);
 void cache_clear_frontables();

@@ -47,6 +47,28 @@ Frontable* cache_get_first_fronter() {
     return NULL;
 }
 
+Frontable* cache_get_frontable(uint32_t hash) {
+    //! using just iteration to search isn't the best idea...
+    //!   for the future, since we have hashes for each frontable:
+    //!   make a hash map maybe !!!!
+
+    for (uint32_t i = 0; i < members.num_stored; i++) {
+        Frontable* member = members.frontables[i];
+        if (member->hash == hash) {
+            return member;
+        }
+    }
+
+    for (uint32_t i = 0; i < custom_fronts.num_stored; i++) {
+        Frontable* custom_front = custom_fronts.frontables[i];
+        if (custom_front->hash == hash) {
+            return custom_front;
+        }
+    }
+
+    return NULL;
+}
+
 void cache_add_frontable(Frontable* frontable) {
     if (frontable_get_is_custom(frontable)) {
         frontable_list_add(frontable, &custom_fronts);
@@ -61,32 +83,7 @@ void cache_clear_frontables() {
 }
 
 void cache_add_current_fronter(uint32_t frontable_hash) {
-    Frontable* frontable = NULL;
-
-    //! using just iteration to search isn't the best idea...
-    //!   for the future, since we have hashes for each frontable:
-    //!   make a hash map maybe !!!!
-
-    for (uint16_t i = 0; i < members.num_stored; i++) {
-        Frontable* f = members.frontables[i];
-
-        if (f->hash == frontable_hash) {
-            frontable = f;
-            break;
-        }
-    }
-
-    if (frontable == NULL) {
-        for (uint16_t i = 0; i < custom_fronts.num_stored; i++) {
-            Frontable* f = custom_fronts.frontables[i];
-
-            if (f->hash == frontable_hash) {
-                frontable = f;
-                break;
-            }
-        }
-    }
-
+    Frontable* frontable = cache_get_frontable(frontable_hash);
     if (frontable != NULL) {
         frontable_set_is_fronting(frontable, true);
         frontable_list_add(frontable, &current_fronters);
@@ -103,7 +100,7 @@ void cache_clear_current_fronters() {
 
 void cache_add_group(Group* group) {
     if (groups.num_stored >= GROUP_LIST_MAX_COUNT) {
-        APP_LOG(APP_LOG_LEVEL_ERROR, "ERROR! Cannot add any more groups to cache, limit has been reached!");
+        APP_LOG(APP_LOG_LEVEL_ERROR, "ERROR! Cannot add group '%s' to cache, limit has been reached!", group->name);
         return;
     }
 
@@ -117,7 +114,7 @@ GroupCollection* cache_get_groups() {
 
 void cache_clear_groups() {
     for (uint16_t i = 0; i < groups.num_stored; i++) {
-        free(groups.groups[i]);
+        group_destroy(groups.groups[i]);
         groups.groups[i] = NULL;
     }
     groups.num_stored = 0;

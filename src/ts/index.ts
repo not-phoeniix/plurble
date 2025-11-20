@@ -3,7 +3,7 @@ import * as pluralApi from "./pluralApi";
 import * as pluralSocket from "./pluralSocket";
 import * as cache from "./cache";
 import * as messaging from "./messaging";
-import { Member, CustomFront, AppMessageDesc, Frontable } from "./types";
+import { Member, CustomFront, AppMessageDesc, Frontable, Group } from "./types";
 import { version } from "../../package.json";
 
 // i gotta use node CommonJS requires unfortunately, it's not a TS module
@@ -12,7 +12,7 @@ const clay = new Clay(config);
 
 // set to true to use the SimplyPlural pretesting server 
 //   when debugging/testing new functionality <3
-const USE_DEV_SERVER = false;
+const USE_DEV_SERVER = true;
 
 async function setupApi(token: string) {
     console.log("setting up API and socket...");
@@ -94,6 +94,14 @@ async function fetchAndSendCurrentFronts() {
     await messaging.sendCurrentFrontersToWatch(currentFronters);
 }
 
+async function fetchAndSendGroups() {
+    const groups: Group[] = [
+    ];
+
+    console.log("trying to send groups fingers crossed <3");
+    messaging.sendGroupsToWatch(groups);
+}
+
 Pebble.addEventListener("ready", async (e) => {
     // check app version, clear cache across versions!
     const cachedVersion = cache.getAppVersion();
@@ -121,6 +129,7 @@ Pebble.addEventListener("ready", async (e) => {
 
     await fetchAndSendFrontables(uid, true);
     await fetchAndSendCurrentFronts();
+    await fetchAndSendGroups();
 
     console.log("hey! app finished fetching and sending things! :)");
 });
@@ -226,5 +235,3 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
         console.warn("webview response doesn't exist!");
     }
 });
-
-// TODO: somehow connect the clear cache function to a button in clay config

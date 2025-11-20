@@ -68,11 +68,28 @@ export interface FrontEntry {
 
 export type Frontable = Member | CustomFront;
 
+export interface Group {
+    id: string;
+    name: string;
+    color: string;
+    parent: string;
+    members: string[];
+}
+
+export namespace Group {
+    export function create(jsonData: GroupMessage): Group {
+        const group: Group = jsonData.content;
+        group.id = jsonData.id;
+        return group;
+    }
+}
+
 // message types
 export type FrontEntryMessage = ApiMessage<FrontEntry>;
 export type MemberMessage = ApiMessage<Member>;
 export type CustomFrontMessage = ApiMessage<CustomFront>;
 export type FrontEntrySocketMessage = SocketMessage<FrontEntry>;
+export type GroupMessage = ApiMessage<Group>;
 export type AuthSocketMessage = SocketMessage<undefined> & {
     resolvedToken: {
         uid: string;
@@ -84,9 +101,12 @@ export type AuthSocketMessage = SocketMessage<undefined> & {
 // describes all the message keys defined in package.json
 export type AppMessageDesc = {
     PluralApiKey?: string;
+    ApiKeyValid?: boolean;
+
     NumCurrentFronters?: number;
     NumCurrentFrontersInBatch?: number;
     CurrentFronter?: number[];
+
     NumTotalFrontables?: number;
     NumFrontablesInBatch?: number;
     FrontableHash?: number[];
@@ -94,6 +114,14 @@ export type AppMessageDesc = {
     FrontableColor?: number[];
     FrontablePronouns?: string;
     FrontableIsCustom?: number[];
+
+    NumTotalGroups?: number;
+    NumGroupsInBatch?: number;
+    GroupName?: string;
+    GroupColor?: number[];
+    GroupMembers?: number[];
+    GroupParentIndex?: number[];
+
     AddFrontRequest?: number;
     SetFrontRequest?: number;
     RemoveFrontRequest?: number;

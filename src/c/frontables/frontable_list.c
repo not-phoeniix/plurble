@@ -14,6 +14,21 @@ static void double_size(FrontableList* list) {
     }
 }
 
+FrontableList* frontable_list_create() {
+    FrontableList* list = malloc(sizeof(FrontableList));
+    *list = (FrontableList) {
+        .frontables = NULL,
+        .num_stored = 0,
+        .size = 0
+    };
+    return list;
+}
+
+void frontable_list_destroy(FrontableList* list) {
+    frontable_list_clear(list);
+    free(list);
+}
+
 void frontable_list_add(Frontable* to_add, FrontableList* list) {
     while (list->num_stored >= list->size) {
         double_size(list);

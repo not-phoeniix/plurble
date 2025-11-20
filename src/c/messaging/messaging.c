@@ -4,10 +4,12 @@
 #include "../data/frontable_cache.h"
 #include "../menus/main_menu.h"
 #include "../menus/current_fronters_menu.h"
+#include "../menus/members_menu.h"
 #include "../tools/string_tools.h"
 
 #define FRONTABLES_PER_MESSAGE 32
 #define CURRENT_FRONTS_PER_MESSAGE 16
+#define GROUPS_PER_MESSAGE 16
 #define DELIMETER ';'
 
 //! NOTE: add "${workspaceFolder}/build/include/" to your
@@ -80,8 +82,10 @@ static uint32_t uint32_from_byte_arr(uint8_t* start) {
 }
 
 static void handle_api_frontables(DictionaryIterator* iter) {
+    // using regular ints here so APP_LOG printf doesn't yell at me lol
     static int frontable_counter = 0;
     static int total_frontables = 0;
+
     Tuple* num_total_frontables = dict_find(iter, MESSAGE_KEY_NumTotalFrontables);
     if (num_total_frontables != NULL) {
         total_frontables = num_total_frontables->value->int32;
@@ -162,8 +166,10 @@ static void handle_api_frontables(DictionaryIterator* iter) {
 }
 
 static void handle_api_current_fronts(DictionaryIterator* iter, bool* update_colors) {
+    // using regular ints here so APP_LOG printf doesn't yell at me lol
     static int current_front_counter = 0;
     static int total_current_fronters = 0;
+
     Tuple* num_current_fronters = dict_find(iter, MESSAGE_KEY_NumCurrentFronters);
     if (num_current_fronters != NULL) {
         total_current_fronters = num_current_fronters->value->int32;
@@ -222,9 +228,125 @@ static void handle_api_current_fronts(DictionaryIterator* iter, bool* update_col
 }
 
 static void handle_api_groups(DictionaryIterator* iter) {
+    static uint8_t* parent_index_arr = NULL;
+    static int32_t parent_index_counter = 0;
+
+    // using regular ints here so APP_LOG printf doesn't yell at me lol
     static int group_counter = 0;
     static int total_groups = 0;
-    // Tuple* num_groups = dict_find(iter, MESSAGE_KEY_NumGroups);
+
+    Tuple* num_total_groups = dict_find(iter, MESSAGE_KEY_NumTotalGroups);
+    if (num_total_groups != NULL) {
+        total_groups = num_total_groups->value->int32;
+        group_counter = 0;
+
+        APP_LOG(
+            APP_LOG_LEVEL_INFO,
+            "Identified start of group message sequence, expected total transfer count: %d",
+            total_groups
+        );
+
+        APP_LOG(
+            APP_LOG_LEVEL_INFO,
+            "Clearing group cache and allocating index array of size: %d",
+            total_groups
+        );
+        cache_clear_groups();
+
+        if (total_groups > 0) {
+            parent_index_arr = malloc(sizeof(uint8_t) * total_groups);
+            memset(parent_index_arr, 0, sizeof(uint8_t) * total_groups);
+        } else {
+            parent_index_arr = NULL;
+        }
+        parent_index_counter = 0;
+    }
+
+    Tuple* group_name = dict_find(iter, MESSAGE_KEY_GroupName);
+    Tuple* group_color = dict_find(iter, MESSAGE_KEY_GroupColor);
+    Tuple* group_members = dict_find(iter, MESSAGE_KEY_GroupMembers);
+    Tuple* group_batch_size = dict_find(iter, MESSAGE_KEY_NumGroupsInBatch);
+    Tuple* group_parent_index = dict_find(iter, MESSAGE_KEY_GroupParentIndex);
+
+    if (
+        group_name != NULL &&
+        group_color != NULL &&
+        group_members != NULL &&
+        group_parent_index != NULL &&
+        group_batch_size != NULL
+    ) {
+        int32_t batch_size = group_batch_size->value->int32;
+        uint8_t* color_byte_arr = group_color->value->data;
+        uint8_t* parent_indices = group_parent_index->value->data;
+        char* names_combined = group_name->value->cstring;
+        uint8_t* members_byte_array = group_members->value->data;
+
+        uint16_t names_length = 0;
+        char** names = string_split(names_combined, DELIMETER, &names_length);
+
+        // create groups!
+        uint16_t member_data_offset = 0;
+        for (int32_t i = 0; i < batch_size; i++) {
+            Group* group = group_create(
+                names[i],
+                (GColor) {.argb = color_byte_arr[i]},
+                NULL
+            );
+
+            cache_add_group(group);
+
+            // adding contained children !!!!
+            // casting to uint16_t so we don't overflow if we
+            //   have 255 members (unlikely but just in case <3)
+            uint16_t members_count = (uint16_t)members_byte_array[member_data_offset];
+            member_data_offset++;
+            for (uint16_t j = 0; j < members_count; j++) {
+                uint32_t hash = uint32_from_byte_arr(
+                    members_byte_array + member_data_offset
+                );
+
+                Frontable* f = cache_get_frontable(hash);
+                frontable_list_add(f, group->frontables);
+
+                member_data_offset += 4;
+            }
+
+            group_counter++;
+        }
+
+        // copy indices into array so we can iterate later!
+        memcpy(
+            &parent_index_arr[parent_index_counter],
+            parent_indices,
+            sizeof(uint8_t) * (uint32_t)batch_size
+        );
+        parent_index_counter += batch_size;
+
+        string_array_free(names, names_length);
+    }
+
+    if (group_counter >= total_groups) {
+        // re-iterate to assign group parent pointers
+        GroupCollection* groups = cache_get_groups();
+        for (uint16_t i = 0; i < groups->num_stored; i++) {
+            // subtract 1 from index so we can know when no parent exists
+            //   (while still allowing 255 other options for the uint8)
+            int16_t index = (int16_t)parent_index_arr[i] - 1;
+            if (index >= 0) {
+                groups->groups[i]->parent = groups->groups[index];
+            }
+        }
+
+        if (parent_index_arr != NULL) {
+            free(parent_index_arr);
+            parent_index_arr = NULL;
+            parent_index_counter = 0;
+        }
+
+        APP_LOG(APP_LOG_LEVEL_INFO, "All groups recieved!");
+
+        members_menu_refresh_groups();
+    }
 }
 
 static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, bool* update_colors) {

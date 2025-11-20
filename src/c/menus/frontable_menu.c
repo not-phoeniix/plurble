@@ -105,7 +105,6 @@ static void status_bar_update_proc(Layer* layer, GContext* ctx) {
     if (settings_get()->group_title_accent) {
         bg = menu->group_node.group->color;
     }
-    GColor fg = gcolor_legible_over(bg);
 
     graphics_context_set_fill_color(ctx, bg);
     graphics_fill_rect(ctx, layer_get_bounds(layer), 0, GCornerNone);
