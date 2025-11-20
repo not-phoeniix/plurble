@@ -3,6 +3,7 @@ import * as pluralApi from "./pluralApi";
 import * as pluralSocket from "./pluralSocket";
 import * as cache from "./cache";
 import * as messaging from "./messaging";
+import * as utils from "./utils";
 import { Member, CustomFront, AppMessageDesc, Frontable, Group } from "./types";
 import { version } from "../../package.json";
 
@@ -97,6 +98,21 @@ async function fetchAndSendCurrentFronts() {
 async function fetchAndSendGroups(uid: string, useCache: boolean) {
     const groups = (await pluralApi.getGroups(uid))
         .map(message => Group.create(message));
+
+    groups.forEach(g => g.members.sort((a, b) => {
+        const memberA = cache.getFrontable(utils.genHash(a));
+        const memberB = cache.getFrontable(utils.genHash(b));
+
+        if (!memberA || !memberB) return 0;
+
+        if (memberA.name.toLowerCase() > memberB.name.toLowerCase()) {
+            return 1;
+        } else if (memberA.name.toLowerCase() < memberB.name.toLowerCase()) {
+            return -1;
+        }
+
+        return 0;
+    }));
 
     if (groups) {
         console.log("Groups found! sending to watch...");
