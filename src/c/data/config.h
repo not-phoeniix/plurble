@@ -12,6 +12,7 @@ typedef struct {
     bool global_fronter_accent;
     bool group_title_accent;
     bool api_key_valid;
+    bool show_groups;
 } ClaySettings;
 
 ClaySettings* settings_get();

@@ -20,6 +20,7 @@ static void set_defaults() {
     settings.global_fronter_accent = false;
     settings.api_key_valid = false;
     settings.group_title_accent = false;
+    settings.show_groups = true;
 }
 
 static void apply(bool update_colors) {

@@ -144,5 +144,10 @@ void members_menu_refresh_groups() {
     }
 
     groups_init();
+
+    if (!settings_get()->show_groups) {
+        frontable_menu_clear_children(root_menu);
+    }
+
     groups_initialized = true;
 }

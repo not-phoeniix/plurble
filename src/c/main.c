@@ -16,6 +16,7 @@ static void init() {
         main_menu_mark_custom_fronts_loaded();
         main_menu_mark_fronters_loaded();
     }
+    main_menu_push();
     settings_load();
 
     Frontable* front = cache_get_first_fronter();
@@ -27,6 +28,7 @@ static void init() {
 }
 
 static void deinit() {
+    settings_save(false);
     cache_persist_store();
 
     members_menu_deinit();
