@@ -7,20 +7,28 @@ import * as utils from "./utils";
 import { Member, CustomFront, AppMessageDesc, Frontable, Group } from "./types";
 import { version } from "../../package.json";
 
+// local TS environment variables that won't be pushed... 
+//   if you're getting errors just make an "env.json" 
+//   file in the ts folder <3
+import env from "./env.json";
+
 // i gotta use node CommonJS requires unfortunately, it's not a TS module
 const Clay = require("pebble-clay");
 const clay = new Clay(config);
-
-// set to true to use the SimplyPlural pretesting server 
-//   when debugging/testing new functionality <3
-const USE_DEV_SERVER = true;
 
 async function setupApi(token: string) {
     console.log("setting up API and socket...");
 
     try {
-        pluralApi.init(token, USE_DEV_SERVER);
-        pluralSocket.init(token, USE_DEV_SERVER);
+        const useDevServer = ((env as any).usePretestingServer) ?? false;
+        if (useDevServer) {
+            console.log("Using pretesting servers!");
+        } else {
+            console.log("Using normal servers!");
+        }
+
+        pluralApi.init(token, useDevServer);
+        pluralSocket.init(token, useDevServer);
 
         console.log("API and socket set up!");
 
