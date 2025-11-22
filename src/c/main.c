@@ -14,13 +14,15 @@ static void init() {
     APP_LOG(APP_LOG_LEVEL_INFO, "Hi friend, thank you for using plurble! I hope you are having a lovely day <3");
 
     messaging_init();
+    settings_load();
     if (cache_persist_load()) {
         main_menu_mark_members_loaded();
         main_menu_mark_custom_fronts_loaded();
         main_menu_mark_fronters_loaded();
+        members_menu_refresh_groups();
+        members_menu_refresh_groupless_members();
     }
     main_menu_push();
-    settings_load();
 
     Frontable* front = cache_get_first_fronter();
     if (front == NULL) {
