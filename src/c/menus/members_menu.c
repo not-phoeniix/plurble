@@ -46,39 +46,6 @@ static void root_init() {
     root_menu = frontable_menu_create(callbacks, &root_group);
 }
 
-static void find_groupless() {
-    APP_LOG(APP_LOG_LEVEL_INFO, "Searching for groupless members...");
-
-    if (hidden_root_list != NULL) {
-        frontable_list_clear(hidden_root_list);
-    }
-
-    GroupCollection* group_collection = cache_get_groups();
-
-    FrontableList* members = cache_get_members();
-    for (uint16_t i = 0; i < members->num_stored; i++) {
-        Frontable* member = members->frontables[i];
-        bool in_group = false;
-
-        // for each member, search every single group for itself
-        for (uint16_t j = 0; j < group_collection->num_stored; j++) {
-            Group* group = group_collection->groups[j];
-            if (frontable_list_contains(group->frontables, member)) {
-                in_group = true;
-
-                // printf("found member '%s' in group '%s' !!", member->name, group->name);
-
-                break;
-            }
-        }
-
-        if (!in_group) {
-            // APP_LOG(APP_LOG_LEVEL_INFO, "Groupless member %s found!", member->name);
-            frontable_list_add(member, hidden_root_list);
-        }
-    }
-}
-
 static void groups_init() {
     // checking here too in case groups need to be initialized
     //   before the menu is pushed to the window stack and created
@@ -153,7 +120,6 @@ void members_menu_push() {
 
     if (!groups_initialized) {
         groups_init();
-        find_groupless();
         groups_initialized = true;
     }
 
@@ -186,12 +152,13 @@ void members_menu_update_colors() {
 }
 
 void members_menu_refresh_groups() {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Refreshing groups...");
+
     if (groups_initialized) {
         groups_deinit();
     }
 
     groups_init();
-    find_groupless();
 
     if (!settings_get()->show_groups) {
         frontable_menu_clear_children(root_menu);
@@ -204,4 +171,38 @@ void members_menu_refresh_groups() {
     }
 
     groups_initialized = true;
+
+    APP_LOG(APP_LOG_LEVEL_INFO, "Groups refreshed!");
+}
+
+void members_menu_refresh_groupless_members() {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Searching for groupless members...");
+
+    if (hidden_root_list != NULL) {
+        frontable_list_clear(hidden_root_list);
+    }
+
+    GroupCollection* group_collection = cache_get_groups();
+
+    FrontableList* members = cache_get_members();
+    for (uint16_t i = 0; i < members->num_stored; i++) {
+        Frontable* member = members->frontables[i];
+        bool in_group = false;
+
+        // for each member, search every single group for itself
+        for (uint16_t j = 0; j < group_collection->num_stored; j++) {
+            Group* group = group_collection->groups[j];
+            if (frontable_list_contains(group->frontables, member)) {
+                in_group = true;
+                break;
+            }
+        }
+
+        if (!in_group) {
+            APP_LOG(APP_LOG_LEVEL_INFO, "Groupless member %s found!", member->name);
+            frontable_list_add(member, hidden_root_list);
+        }
+    }
+
+    APP_LOG(APP_LOG_LEVEL_INFO, "Groupless member search finished!");
 }

@@ -10,6 +10,9 @@
 #include "menus/settings_menu.h"
 
 static void init() {
+    // baha thanks for checking out the source code too <3
+    APP_LOG(APP_LOG_LEVEL_INFO, "Hi friend, thank you for using plurble! I hope you are having a lovely day <3");
+
     messaging_init();
     if (cache_persist_load()) {
         main_menu_mark_members_loaded();

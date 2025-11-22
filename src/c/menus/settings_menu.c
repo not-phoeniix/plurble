@@ -22,7 +22,7 @@ static void status_bar_update_proc(Layer* layer, GContext* ctx) {
 }
 
 static void reset_fetch_name_callback(void* data) {
-    items[1].subtitle = "Re-fetch frontables...";
+    items[1].subtitle = "Re-fetch from API...";
     can_fetch_members = true;
 
     if (simple_menu_layer != NULL) {
@@ -77,6 +77,7 @@ static void select(int index, void* context) {
             }
 
             members_menu_refresh_groups();
+            members_menu_refresh_groupless_members();
             break;
 
         case 1:
@@ -117,7 +118,7 @@ static void window_load() {
 
     items[1] = (SimpleMenuItem) {
         .title = "Refresh Data",
-        .subtitle = "Re-fetch frontables...",
+        .subtitle = "Re-fetch from API...",
         .icon = NULL,
         .callback = select,
     };

@@ -10,6 +10,7 @@ typedef struct {
     char name[FRONTABLE_NAME_LENGTH + 1];
     char pronouns[FRONTABLE_PRONOUNS_LENGTH + 1];
     uint32_t hash;
+    uint32_t group_bit_field;
 
     // bits are as follows (left to right):
     //   0: whether or not frontable is fronting

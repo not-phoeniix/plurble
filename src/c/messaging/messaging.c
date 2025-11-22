@@ -109,7 +109,10 @@ static void handle_api_frontables(DictionaryIterator* iter) {
     Tuple* frontable_color = dict_find(iter, MESSAGE_KEY_FrontableColor);
     Tuple* frontable_pronouns = dict_find(iter, MESSAGE_KEY_FrontablePronouns);
     Tuple* frontable_is_custom = dict_find(iter, MESSAGE_KEY_FrontableIsCustom);
+    Tuple* frontable_group_bits = dict_find(iter, MESSAGE_KEY_FrontableGroupBitField);
     Tuple* frontable_batch_size = dict_find(iter, MESSAGE_KEY_NumFrontablesInBatch);
+
+    bool recieved_frontables = false;
 
     // handle frontable byte data being sent
     if (
@@ -118,6 +121,7 @@ static void handle_api_frontables(DictionaryIterator* iter) {
         frontable_color != NULL &&
         frontable_pronouns != NULL &&
         frontable_is_custom != NULL &&
+        frontable_group_bits != NULL &&
         frontable_batch_size != NULL
     ) {
         int32_t batch_size = frontable_batch_size->value->int32;
@@ -126,6 +130,7 @@ static void handle_api_frontables(DictionaryIterator* iter) {
         uint8_t* is_custom_byte_arr = frontable_is_custom->value->data;
         char* names_combined = frontable_name->value->cstring;
         char* pronouns_combined = frontable_pronouns->value->cstring;
+        uint8_t* group_bits_byte_arr = frontable_group_bits->value->data;
 
         uint16_t names_length = 0;
         char** names = string_split(names_combined, DELIMETER, &names_length);
@@ -134,6 +139,7 @@ static void handle_api_frontables(DictionaryIterator* iter) {
 
         for (int32_t i = 0; i < batch_size; i++) {
             uint32_t hash = uint32_from_byte_arr(hash_byte_arr + (i * sizeof(uint32_t)));
+            uint32_t bitfield = uint32_from_byte_arr(group_bits_byte_arr + (i * sizeof(uint32_t)));
             uint8_t is_custom = is_custom_byte_arr[i];
             uint8_t color = color_byte_arr[i];
 
@@ -144,8 +150,10 @@ static void handle_api_frontables(DictionaryIterator* iter) {
                 is_custom,
                 (GColor) {.argb = color}
             );
+            f->group_bit_field = bitfield;
 
             cache_add_frontable(f);
+            recieved_frontables = true;
 
             frontable_counter++;
             APP_LOG(
@@ -161,11 +169,31 @@ static void handle_api_frontables(DictionaryIterator* iter) {
         string_array_free(pronouns, pronouns_length);
     }
 
-    if (frontable_counter >= total_frontables) {
+    if (frontable_counter >= total_frontables && recieved_frontables) {
         APP_LOG(APP_LOG_LEVEL_INFO, "All frontables recieved!");
         main_menu_mark_custom_fronts_loaded();
         main_menu_mark_members_loaded();
         main_menu_confirm_frontable_fetch();
+
+        // iterate across members and add them to groups
+        GroupCollection* groups = cache_get_groups();
+        FrontableList* members = cache_get_members();
+        for (uint16_t i = 0; i < members->num_stored; i++) {
+            Frontable* member = members->frontables[i];
+
+            for (uint16_t j = 0; j < groups->num_stored; j++) {
+                Group* group = groups->groups[j];
+
+                if (((member->group_bit_field >> j) & 1) != 0) {
+                    frontable_list_add(member, group->frontables);
+                }
+            }
+        }
+
+        members_menu_refresh_groupless_members();
+
+    } else if (!recieved_frontables) {
+        APP_LOG(APP_LOG_LEVEL_INFO, "No frontables in message detected!");
     }
 }
 
@@ -263,14 +291,14 @@ static void handle_api_groups(DictionaryIterator* iter) {
 
     Tuple* group_name = dict_find(iter, MESSAGE_KEY_GroupName);
     Tuple* group_color = dict_find(iter, MESSAGE_KEY_GroupColor);
-    Tuple* group_members = dict_find(iter, MESSAGE_KEY_GroupMembers);
     Tuple* group_batch_size = dict_find(iter, MESSAGE_KEY_NumGroupsInBatch);
     Tuple* group_parent_index = dict_find(iter, MESSAGE_KEY_GroupParentIndex);
+
+    bool recieved_groups = false;
 
     if (
         group_name != NULL &&
         group_color != NULL &&
-        group_members != NULL &&
         group_parent_index != NULL &&
         group_batch_size != NULL
     ) {
@@ -278,13 +306,11 @@ static void handle_api_groups(DictionaryIterator* iter) {
         uint8_t* color_byte_arr = group_color->value->data;
         uint8_t* parent_indices = group_parent_index->value->data;
         char* names_combined = group_name->value->cstring;
-        uint8_t* members_byte_array = group_members->value->data;
 
         uint16_t names_length = 0;
         char** names = string_split(names_combined, DELIMETER, &names_length);
 
         // create groups!
-        uint16_t member_data_offset = 0;
         for (int32_t i = 0; i < batch_size; i++) {
             Group* group = group_create(
                 names[i],
@@ -293,22 +319,7 @@ static void handle_api_groups(DictionaryIterator* iter) {
             );
 
             cache_add_group(group);
-
-            // adding contained children !!!!
-            // casting to uint16_t so we don't overflow if we
-            //   have 255 members (unlikely but just in case <3)
-            uint16_t members_count = (uint16_t)members_byte_array[member_data_offset];
-            member_data_offset++;
-            for (uint16_t j = 0; j < members_count; j++) {
-                uint32_t hash = uint32_from_byte_arr(
-                    &members_byte_array[member_data_offset]
-                );
-
-                Frontable* f = cache_get_frontable(hash);
-                frontable_list_add(f, group->frontables);
-
-                member_data_offset += 4;
-            }
+            recieved_groups = true;
 
             group_counter++;
             APP_LOG(
@@ -331,7 +342,7 @@ static void handle_api_groups(DictionaryIterator* iter) {
         string_array_free(names, names_length);
     }
 
-    if (group_counter >= total_groups) {
+    if (group_counter >= total_groups && recieved_groups) {
         // re-iterate to assign group parent pointers
         GroupCollection* groups = cache_get_groups();
         for (uint16_t i = 0; i < groups->num_stored; i++) {
@@ -345,18 +356,11 @@ static void handle_api_groups(DictionaryIterator* iter) {
 
         parent_index_counter = 0;
 
-        // TODO: rather than send member data in the groups, send the data in the members themselves <3
-        //   make it a bit field! where each bit represents whether the member belongs to that group!
-        //   0b0010 <-- belongs to group index 1
-        //   0b01001000 <-- belongs to group indices 3 and 6
-        //   etc <3
-
+        members_menu_refresh_groups();
         APP_LOG(APP_LOG_LEVEL_INFO, "All groups recieved!");
 
-        // only refresh groups if any are being sent in the first place
-        if (group_batch_size != NULL) {
-            members_menu_refresh_groups();
-        }
+    } else if (!recieved_groups) {
+        APP_LOG(APP_LOG_LEVEL_INFO, "No groups recognized in message!");
     }
 }
 
@@ -366,9 +370,9 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
         settings->api_key_valid = api_key_valid->value->int16;
     }
 
+    handle_api_groups(iter);
     handle_api_frontables(iter);
     handle_api_current_fronts(iter, update_colors);
-    handle_api_groups(iter);
 }
 
 static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {

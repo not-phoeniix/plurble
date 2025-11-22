@@ -41,6 +41,7 @@ async function setupApi(token: string) {
     }
 }
 
+// sends frontables to watch, depends on groups being fetched first!
 async function fetchAndSendFrontables(uid: string, useCache: boolean) {
     // assemble cached fronters to send to watch, fetch if missing
     let frontables: Frontable[] | null = null;
@@ -49,7 +50,7 @@ async function fetchAndSendFrontables(uid: string, useCache: boolean) {
     } else {
         // clear frontables before fetching things again
         await messaging.sendCurrentFrontersToWatch([]);
-        await messaging.sendFrontablesToWatch([]);
+        await messaging.sendFrontablesToWatch([], []);
     }
 
     if (!frontables) {
@@ -81,12 +82,23 @@ async function fetchAndSendFrontables(uid: string, useCache: boolean) {
         console.log("Frontables found in cache!");
     }
 
+    console.log("Getting groups for frontable data...")
+    let groups = cache.getAllGroups();
+    if (!groups) {
+        console.log("Groups not cached, fetching...")
+        groups = (await pluralApi.getGroups(uid)).map(Group.create);
+        cache.cacheGroups(groups);
+    } else {
+        console.log("Getting groups found in cache!")
+    }
+
     if (frontables) {
         console.log("Frontables found! sending to watch...");
-        await messaging.sendFrontablesToWatch(frontables);
+        await messaging.sendFrontablesToWatch(frontables, groups);
     }
 }
 
+// fetches and sends current fronts to watch, depends on frontables being fetched first!
 async function fetchAndSendCurrentFronts() {
     // always fetch and send current fronters to 
     //   watch, don't rely on cache
@@ -95,6 +107,7 @@ async function fetchAndSendCurrentFronts() {
     await messaging.sendCurrentFrontersToWatch(currentFronters);
 }
 
+// fetches and sends groups to watch! no dependencies
 async function fetchAndSendGroups(uid: string, useCache: boolean) {
     let groups: Group[] | null = null;
     if (useCache) {
@@ -169,11 +182,9 @@ Pebble.addEventListener("ready", async (e) => {
         return;
     }
 
+    await fetchAndSendGroups(uid, true);
     await fetchAndSendFrontables(uid, true);
-    await Promise.all([
-        fetchAndSendCurrentFronts(),
-        fetchAndSendGroups(uid, false)
-    ]);
+    await fetchAndSendCurrentFronts();
 
     console.log("hey! app finished fetching and sending things! :)");
 });
@@ -236,11 +247,9 @@ Pebble.addEventListener("appmessage", async (e) => {
     if (msg.FetchDataRequest) {
         const uid = cache.getSystemId();
         if (uid) {
-            fetchAndSendFrontables(uid, false)
-                .then(() => {
-                    fetchAndSendCurrentFronts();
-                    fetchAndSendGroups(uid, false);
-                });
+            fetchAndSendGroups(uid, false)
+                .then(() => fetchAndSendFrontables(uid, false))
+                .then(() => fetchAndSendCurrentFronts());
         } else {
             console.error("Cannot re-fetch data, system ID is not cached!");
         }

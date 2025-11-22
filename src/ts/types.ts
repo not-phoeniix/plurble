@@ -114,12 +114,12 @@ export type AppMessageDesc = {
     FrontableColor?: number[];
     FrontablePronouns?: string;
     FrontableIsCustom?: number[];
+    FrontableGroupBitField?: number[];
 
     NumTotalGroups?: number;
     NumGroupsInBatch?: number;
     GroupName?: string;
     GroupColor?: number[];
-    GroupMembers?: number[];
     GroupParentIndex?: number[];
 
     AddFrontRequest?: number;

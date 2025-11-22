@@ -57,12 +57,18 @@ static void update_selected_highlight(FrontableMenu* menu, uint16_t index) {
 // ~~~ MENU LAYER SETUP ~~~
 
 static uint16_t get_num_rows(MenuLayer* layer, uint16_t section_index, void* context) {
+    uint16_t count = 0;
+
     FrontableMenu* menu = (FrontableMenu*)context;
-    if (menu != NULL && menu->group_node.group->frontables->frontables != NULL) {
-        return menu->group_node.group->frontables->num_stored;
-    } else {
-        return 0;
+    if (menu != NULL) {
+        if (menu->group_node.group->frontables->frontables != NULL) {
+            count += menu->group_node.group->frontables->num_stored;
+        }
+
+        count += menu->group_node.num_children;
     }
+
+    return count;
 }
 
 static int16_t get_cell_height(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {

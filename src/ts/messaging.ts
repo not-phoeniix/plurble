@@ -9,9 +9,10 @@ const GROUPS_PER_MESSAGE = 1;
 const FRONTABLE_NAME_LENGTH = 32;
 const FRONTABLE_PRONOUNS_LENGTH = 16;
 const GROUP_NAME_LENGTH = 32;
+const GROUP_LIST_MAX_COUNT = 32;
 const DELIMETER = ';';
 
-export async function sendFrontablesToWatch(frontables: Frontable[]): Promise<void> {
+export async function sendFrontablesToWatch(frontables: Frontable[], groups: Group[]): Promise<void> {
     // sort based on frontable type and name alphabetically
     frontables.sort((a, b) => {
         let value = 0;
@@ -47,6 +48,7 @@ export async function sendFrontablesToWatch(frontables: Frontable[]): Promise<vo
         let colorsArr: number[] = [];
         let isCustomArr: boolean[] = [];
         let hashesArr: number[] = [];
+        let groupBitArr: number[] = [];
 
         toSend.forEach((frontable) => {
             // store pronouns
@@ -76,6 +78,17 @@ export async function sendFrontablesToWatch(frontables: Frontable[]): Promise<vo
 
             // store hashes
             hashesArr.push(frontable.hash);
+
+            // make and store bit fields
+            let bitField = 0;
+            if (groups) {
+                for (let i = 0; i < Math.min(groups.length, GROUP_LIST_MAX_COUNT); i++) {
+                    if (groups[i].members.find(m => m === frontable.id)) {
+                        bitField |= (1 << i);
+                    }
+                }
+            }
+            groupBitArr.push(bitField);
         });
 
         const msg: AppMessageDesc = {
@@ -84,9 +97,7 @@ export async function sendFrontablesToWatch(frontables: Frontable[]): Promise<vo
             FrontablePronouns: pronounsArr.map(p => p.replace(DELIMETER, "_")).join(DELIMETER),
             FrontableIsCustom: isCustomArr.map(c => c ? 1 : 0),
             FrontableColor: colorsArr,
-
-            // no need for byte array, batch size should always 
-            //   be below max value of uint8_t (below 255)
+            FrontableGroupBitField: utils.toByteArray(groupBitArr),
             NumFrontablesInBatch: batchSize
         };
 
@@ -151,7 +162,6 @@ export async function sendGroupsToWatch(groups: Group[]): Promise<void> {
 
         let namesArr: string[] = [];
         let colorsArr: number[] = [];
-        let membersArr: number[] = [];
         let parentIndicesArr: number[] = [];
 
         toSend.forEach((group) => {
@@ -164,28 +174,6 @@ export async function sendGroupsToWatch(groups: Group[]): Promise<void> {
 
             // store colors
             colorsArr.push(utils.toARGB8Color(group.color));
-
-            // store members (weird format)
-            //
-            // members array format
-            //   [
-            //      memberCount, 
-            //      hash0_byte0, hash0_byte1, hash0_byte2, hash0_byte3 
-            //      hash1_byte0, hash1_byte1, hash1_byte2, hash1_byte3 
-            //      ... 
-            //                                   hashMemberCount_byte3
-            //   ]
-            // 
-            // ensure member array doesn't exceed 256 byte limit for message keys
-            const numMembers = Math.min(group.members.length, Math.floor(255 / 4));
-            if (membersArr.length + (numMembers * 4) + 1 <= 256) {
-                // only add to array if it stays below the 256 count limit
-                membersArr.push(numMembers);
-                for (let i = 0; i < numMembers; i++) {
-                    const memberHash = utils.genHash(group.members[i]);
-                    membersArr.push(...utils.toByteArray([memberHash]));
-                }
-            }
 
             // store parent indices
             let index = -1;
@@ -206,7 +194,6 @@ export async function sendGroupsToWatch(groups: Group[]): Promise<void> {
         const msg: AppMessageDesc = {
             GroupName: namesArr.map(n => n.replace(DELIMETER, "_")).join(DELIMETER),
             GroupColor: colorsArr,
-            GroupMembers: membersArr,
             GroupParentIndex: parentIndicesArr,
 
             // no need for byte array, batch size should always 
