@@ -78,5 +78,5 @@ void setup_prompt_menu_remove() {
 }
 
 bool setup_prompt_menu_shown() {
-    return window_stack_get_top_window() == window;
+    return window_stack_get_top_window() == window && window != NULL;
 }

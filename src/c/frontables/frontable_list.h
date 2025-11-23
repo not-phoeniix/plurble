@@ -10,6 +10,14 @@ typedef struct {
     uint16_t num_stored;
 } FrontableList;
 
+/// @brief Creates a new frontable list on the heap
+/// @return Pointer to new frontable list on heap
+FrontableList* frontable_list_create();
+
+/// @brief Destroys a frontable list, freeing memory in the process
+/// @param list Frontable list to destroy
+void frontable_list_destroy(FrontableList* list);
+
 /// @brief Adds a frontable to the end of a frontable list
 /// @param to_add Frontable to add
 /// @param list List to add to
@@ -22,3 +30,9 @@ void frontable_list_clear(FrontableList* list);
 /// @brief Clears a frontable list and frees memory of all contained frontables
 /// @param list List to clear
 void frontable_list_deep_clear(FrontableList* list);
+
+/// @brief Gets whether or not a frontable list contains a frontable
+/// @param list List to check contents of
+/// @param frontable Frontable to check if existing
+/// @return True if list contains frontable, false if otherwise
+bool frontable_list_contains(FrontableList* list, Frontable* frontable);

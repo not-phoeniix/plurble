@@ -62,6 +62,13 @@
       },
       {
         "type": "toggle",
+        "messageKey": "HideMembersInRoot",
+        "label": "Hide Members Who Are In Groups",
+        "description": "Members who are in groups will be hidden from the root view of the member list",
+        "defaultValue": false
+      },
+      {
+        "type": "toggle",
         "messageKey": "MemberColorTag",
         "label": "Member Color Tag",
         "description": "Small tag in the member list of each member's color next to their name.",
@@ -86,6 +93,16 @@
         "messageKey": "GlobalFronterAccent",
         "label": "Global Fronter Color Accent",
         "description": "Set the app-wide accent color to that of the current first fronting member, uses accent color as fallback.",
+        "defaultValue": false,
+        "capabilities": [
+          "COLOR"
+        ]
+      },
+      {
+        "type": "toggle",
+        "messageKey": "GroupTitleAccent",
+        "label": "Group Title Bar Color Accent",
+        "description": "Set the title bar's background color to that of the currently opened group in the member list",
         "defaultValue": false,
         "capabilities": [
           "COLOR"

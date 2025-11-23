@@ -1,6 +1,17 @@
 #include "frontable_menu.h"
 #include "../messaging/messaging.h"
 
+#define TREE_MAX_CHILD_COUNT 64
+
+struct GroupTreeNode;
+typedef struct GroupTreeNode {
+    Group* group;
+    struct GroupTreeNode* parent;
+    struct GroupTreeNode* children[TREE_MAX_CHILD_COUNT];
+    uint16_t num_children;
+    FrontableMenu* menu;
+} GroupTreeNode;
+
 struct FrontableMenu {
     Window* window;
     MemberMenuCallbacks callbacks;
@@ -10,39 +21,54 @@ struct FrontableMenu {
     ActionMenuLevel* fronting_action_level;
     ActionMenuConfig action_menu_config;
 
-    const char* name;
     TextLayer* status_bar_text;
     Layer* status_bar_layer;
 
+    GroupTreeNode group_node;
+
     Frontable* selected_frontable;
-    FrontableList* frontables;
     GColor highlight_color;
 };
 
 // ~~~ HELPER FUNCTIONS ~~~
 
 static void update_selected_highlight(FrontableMenu* menu, uint16_t index) {
-    if (settings_get()->member_color_highlight && menu->frontables->frontables != NULL) {
-        GColor color = frontable_get_color(menu->frontables->frontables[index]);
-        if (color.argb == settings_get()->background_color.argb) {
-            color = gcolor_legible_over(settings_get()->background_color);
-        }
+    GColor color = settings_get()->accent_color;
 
-        menu->highlight_color = color;
-    } else {
-        menu->highlight_color = settings_get()->accent_color;
+    if (settings_get()->member_color_highlight) {
+        if (index < menu->group_node.num_children) {
+            // try to get color of selected group first
+            color = menu->group_node.children[index]->group->color;
+        } else if (menu->group_node.group->frontables->frontables != NULL) {
+            // otherwise try to get color of selected frontable
+            uint16_t i = index - menu->group_node.num_children;
+            Frontable* f = menu->group_node.group->frontables->frontables[i];
+            color = frontable_get_color(f);
+        }
     }
+
+    if (color.argb == settings_get()->background_color.argb) {
+        color = gcolor_legible_over(settings_get()->background_color);
+    }
+
+    menu->highlight_color = color;
 }
 
 // ~~~ MENU LAYER SETUP ~~~
 
 static uint16_t get_num_rows(MenuLayer* layer, uint16_t section_index, void* context) {
+    uint16_t count = 0;
+
     FrontableMenu* menu = (FrontableMenu*)context;
-    if (menu != NULL && menu->frontables != NULL) {
-        return menu->frontables->num_stored;
-    } else {
-        return 0;
+    if (menu != NULL) {
+        if (menu->group_node.group->frontables->frontables != NULL) {
+            count += menu->group_node.group->frontables->num_stored;
+        }
+
+        count += menu->group_node.num_children;
     }
+
+    return count;
 }
 
 static int16_t get_cell_height(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
@@ -67,12 +93,27 @@ static uint16_t get_num_sections(MenuLayer* menu_layer, void* context) {
 
 static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex old_index, void* context) {
     FrontableMenu* menu = (FrontableMenu*)context;
-    menu->selected_frontable = menu->frontables->frontables[new_index.row];
+
     update_selected_highlight(menu, new_index.row);
+
+    int16_t frontable_idx = new_index.row - menu->group_node.num_children;
+    if (frontable_idx >= 0) {
+        menu->selected_frontable = menu->group_node.group->frontables->frontables[new_index.row];
+    } else {
+        menu->selected_frontable = NULL;
+    }
 }
 
 static void status_bar_update_proc(Layer* layer, GContext* ctx) {
-    graphics_context_set_fill_color(ctx, settings_get()->background_color);
+    Window* window = layer_get_window(layer);
+    FrontableMenu* menu = (FrontableMenu*)window_get_user_data(window);
+
+    GColor bg = settings_get()->background_color;
+    if (settings_get()->group_title_accent) {
+        bg = menu->group_node.group->color;
+    }
+
+    graphics_context_set_fill_color(ctx, bg);
     graphics_fill_rect(ctx, layer_get_bounds(layer), 0, GCornerNone);
 }
 
@@ -128,7 +169,7 @@ static void menu_layer_setup(FrontableMenu* menu) {
     menu->status_bar_text = text_layer_create(status_bar_text_bounds);
     text_layer_set_font(menu->status_bar_text, fonts_get_system_font(FONT_KEY_GOTHIC_14));
     text_layer_set_text_alignment(menu->status_bar_text, GTextAlignmentCenter);
-    text_layer_set_text(menu->status_bar_text, menu->name);
+    text_layer_set_text(menu->status_bar_text, menu->group_node.group->name);
 
     layer_add_child(menu->status_bar_layer, text_layer_get_layer(menu->status_bar_text));
     layer_add_child(root_layer, menu->status_bar_layer);
@@ -136,11 +177,22 @@ static void menu_layer_setup(FrontableMenu* menu) {
 
 // ~~~ ACTION MENU SETUP ~~~
 
+static void window_pop_recursive(FrontableMenu* menu) {
+    GroupTreeNode* parent = menu->group_node.parent;
+
+    if (parent != NULL) {
+        window_stack_remove(menu->window, false);
+        window_pop_recursive(parent->menu);
+    } else {
+        window_stack_remove(menu->window, true);
+    }
+}
+
 static void action_set_as_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
     FrontableMenu* menu = (FrontableMenu*)context;
     if (menu->selected_frontable != NULL) {
         messaging_set_as_front(menu->selected_frontable->hash);
-        window_stack_remove(menu->window, true);
+        window_pop_recursive(menu);
     }
 }
 
@@ -217,11 +269,29 @@ static void window_unload(Window* window) {
 void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index) {
     GRect bounds = layer_get_bounds(cell_layer);
     bool compact = settings_get()->compact_member_list;
-    Frontable* frontable = menu->frontables->frontables[cell_index->row];
+
+    char* name = NULL;
+    char* pronouns = NULL;
+    GColor color = GColorBlack;
+
+    if (cell_index->row < menu->group_node.num_children) {
+        Group* group = menu->group_node.children[cell_index->row]->group;
+        name = group->name;
+        color = group->color;
+    } else {
+        uint16_t i = cell_index->row - menu->group_node.num_children;
+        Frontable* frontable = menu->group_node.group->frontables->frontables[i];
+
+        color = frontable_get_color(frontable);
+        name = frontable->name;
+        if (!frontable_get_is_custom(frontable)) {
+            pronouns = frontable->pronouns;
+        }
+    }
 
     if (settings_get()->member_color_tag) {
         // small color label on frontable
-        graphics_context_set_fill_color(ctx, frontable_get_color(frontable));
+        graphics_context_set_fill_color(ctx, color);
         GRect color_tag_bounds = bounds;
         color_tag_bounds.size.w = 3;
         graphics_fill_rect(ctx, color_tag_bounds, 0, GCornerNone);
@@ -238,20 +308,13 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
     menu_cell_basic_draw(
         ctx,
         cell_layer,
-        frontable->name,
-        compact || frontable_get_is_custom(frontable) ? NULL : frontable->pronouns,
+        name,
+        compact ? NULL : pronouns,
         NULL
     );
 }
 
-void frontable_menu_select_frontable(FrontableMenu* menu, MenuIndex* cell_index) {
-    // do not select anything if no fronters are stored!
-    if (menu->frontables->num_stored <= 0) {
-        return;
-    }
-
-    Frontable* frontable = menu->frontables->frontables[cell_index->row];
-
+static void select_frontable(FrontableMenu* menu, Frontable* frontable) {
     // make accent be the color of the frontable, and change it
     //   if it matches the color of the background
     GColor action_menu_accent = frontable_get_color(frontable);
@@ -277,6 +340,28 @@ void frontable_menu_select_frontable(FrontableMenu* menu, MenuIndex* cell_index)
     action_menu_open(&menu->action_menu_config);
 }
 
+static void select_group(FrontableMenu* menu, GroupTreeNode* node) {
+    frontable_menu_window_push(node->menu);
+}
+
+void frontable_menu_select(FrontableMenu* menu, MenuIndex* cell_index) {
+    if (
+        menu->group_node.group->frontables->num_stored <= 0 &&
+        menu->group_node.num_children <= 0
+    ) {
+        return;
+    }
+
+    if (cell_index->row < menu->group_node.num_children) {
+        GroupTreeNode* node = menu->group_node.children[cell_index->row];
+        select_group(menu, node);
+    } else {
+        uint16_t i = cell_index->row - menu->group_node.num_children;
+        Frontable* f = menu->group_node.group->frontables->frontables[i];
+        select_frontable(menu, f);
+    }
+}
+
 void frontable_menu_update_colors(FrontableMenu* menu) {
     ClaySettings* settings = settings_get();
 
@@ -294,8 +379,14 @@ void frontable_menu_update_colors(FrontableMenu* menu) {
     }
 
     if (menu->status_bar_text != NULL) {
-        text_layer_set_background_color(menu->status_bar_text, settings->background_color);
-        text_layer_set_text_color(menu->status_bar_text, gcolor_legible_over(settings->background_color));
+        GColor bg = settings_get()->background_color;
+        if (settings_get()->group_title_accent) {
+            bg = menu->group_node.group->color;
+        }
+
+        GColor fg = gcolor_legible_over(bg);
+        text_layer_set_background_color(menu->status_bar_text, bg);
+        text_layer_set_text_color(menu->status_bar_text, fg);
     }
 
     if (menu->window != NULL) {
@@ -303,7 +394,41 @@ void frontable_menu_update_colors(FrontableMenu* menu) {
     }
 }
 
-FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, FrontableList* frontables, const char* name) {
+static void remove_from_parent(GroupTreeNode* node) {
+    if (node->parent == NULL) return;
+
+    // find child pointer in parent's children, remove if found
+    for (uint16_t i = 0; i < node->parent->num_children; i++) {
+        if (node->parent->children[i] == node) {
+            // if node is found move everything forward an index
+            for (uint16_t j = i + 1; j < node->parent->num_children; j++) {
+                node->parent->children[j - 1] = node->parent->children[j];
+            }
+
+            node->parent->num_children--;
+            break;
+        }
+    }
+
+    node->parent = NULL;
+}
+
+static void add_child_group(GroupTreeNode* parent, GroupTreeNode* child) {
+    remove_from_parent(child);
+
+    child->parent = parent;
+
+    uint16_t i = parent->num_children;
+    if (i >= TREE_MAX_CHILD_COUNT) {
+        APP_LOG(APP_LOG_LEVEL_WARNING, "WARNING: Frontable menu max child count reached!");
+        return;
+    }
+
+    parent->children[i] = child;
+    parent->num_children++;
+}
+
+FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, Group* group) {
     // create window and set up handlers
     Window* window = window_create();
     window_set_window_handlers(
@@ -319,8 +444,13 @@ FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, FrontableLis
     *menu = (FrontableMenu) {
         .window = window,
         .callbacks = callbacks,
-        .frontables = frontables,
-        .name = name
+        .group_node = {
+            .group = group,
+            .menu = menu,
+            .num_children = 0,
+            .children = {NULL},
+            .parent = NULL
+        }
     };
 
     // set user data of windows to be the related frontable menu pointer
@@ -343,11 +473,20 @@ void frontable_menu_window_remove(FrontableMenu* menu) {
 }
 
 FrontableList* frontable_menu_get_frontables(FrontableMenu* menu) {
-    return menu->frontables;
+    return menu->group_node.group->frontables;
 }
 
 void frontable_menu_set_frontables(FrontableMenu* menu, FrontableList* frontables) {
-    menu->frontables = frontables;
+    menu->group_node.group->frontables = frontables;
+}
+
+void frontable_menu_set_parent(FrontableMenu* menu, FrontableMenu* parent) {
+    remove_from_parent(&menu->group_node);
+    add_child_group(&parent->group_node, &menu->group_node);
+}
+
+void frontable_menu_clear_children(FrontableMenu* menu) {
+    menu->group_node.num_children = 0;
 }
 
 Window* frontable_menu_get_window(FrontableMenu* menu) {

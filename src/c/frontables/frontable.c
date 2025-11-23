@@ -75,7 +75,8 @@ Frontable* frontable_create(uint32_t hash, const char* name, const char* pronoun
     *f = (Frontable) {
         .hash = hash,
         .packed_data = frontable_make_packed_data(false, is_custom, color),
-        .pronouns = {'\0'}
+        .pronouns = {'\0'},
+        .group_bit_field = 0
     };
     string_copy_smaller(f->name, name, FRONTABLE_NAME_LENGTH);
     if (pronouns != NULL) {

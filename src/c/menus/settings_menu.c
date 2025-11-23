@@ -3,10 +3,11 @@
 #include "../data/config.h"
 #include "../messaging/messaging.h"
 #include "../data/frontable_cache.h"
+#include "../menus/members_menu.h"
 
 static Window* window = NULL;
 static SimpleMenuLayer* simple_menu_layer = NULL;
-static SimpleMenuItem items[2];
+static SimpleMenuItem items[3];
 static SimpleMenuSection sections[1];
 static TextLayer* status_bar_text = NULL;
 static Layer* status_bar_layer = NULL;
@@ -21,7 +22,7 @@ static void status_bar_update_proc(Layer* layer, GContext* ctx) {
 }
 
 static void reset_fetch_name_callback(void* data) {
-    items[0].subtitle = "Re-fetch frontables...";
+    items[1].subtitle = "Re-fetch from API...";
     can_fetch_members = true;
 
     if (simple_menu_layer != NULL) {
@@ -30,7 +31,7 @@ static void reset_fetch_name_callback(void* data) {
 }
 
 static void fetch_timeout_name_callback(void* data) {
-    items[0].subtitle = "Fetch timed out :(";
+    items[1].subtitle = "Fetch timed out :(";
     if (simple_menu_layer != NULL) {
         layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
     }
@@ -46,14 +47,14 @@ void main_menu_confirm_frontable_fetch() {
         fetch_timeout_timer = NULL;
     }
 
-    items[0].subtitle = "Fetched :D";
+    items[1].subtitle = "Fetched :D";
     app_timer_register(3000, reset_fetch_name_callback, NULL);
 }
 
 static void reset_cache_confirm(void* data) {
     confirm_clear_cache = false;
-    items[1].subtitle = "Will reset app...";
-    items[1].title = "Clear Cache";
+    items[2].subtitle = "Will reset app...";
+    items[2].title = "Clear Cache";
 
     if (confirm_clear_cache_timer != NULL) {
         app_timer_cancel(confirm_clear_cache_timer);
@@ -68,17 +69,30 @@ static void reset_cache_confirm(void* data) {
 static void select(int index, void* context) {
     switch (index) {
         case 0:
+            settings_get()->show_groups = !settings_get()->show_groups;
+
+            items[0].subtitle = settings_get()->show_groups ? "True" : "False";
+            if (simple_menu_layer != NULL) {
+                layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+            }
+
+            members_menu_refresh_groups();
+            members_menu_refresh_groupless_members();
+            break;
+
+        case 1:
             if (can_fetch_members) {
-                messaging_fetch_fronters();
-                items[0].subtitle = "Fetching...";
+                messaging_fetch_data();
+                items[1].subtitle = "Fetching...";
                 can_fetch_members = false;
                 fetch_timeout_timer = app_timer_register(10000, fetch_timeout_name_callback, NULL);
             }
             break;
-        case 1:
+
+        case 2:
             if (!confirm_clear_cache) {
-                items[1].subtitle = "Click to confirm";
-                items[1].title = "U SURE?";
+                items[2].subtitle = "Click to confirm";
+                items[2].title = "U SURE?";
                 confirm_clear_cache = true;
                 app_timer_register(2000, reset_cache_confirm, NULL);
             } else {
@@ -96,13 +110,20 @@ static void window_load() {
     Layer* root_layer = window_get_root_layer(window);
 
     items[0] = (SimpleMenuItem) {
+        .title = "Show Groups",
+        .subtitle = settings_get()->show_groups ? "True" : "False",
+        .icon = NULL,
+        .callback = select
+    };
+
+    items[1] = (SimpleMenuItem) {
         .title = "Refresh Data",
-        .subtitle = "Re-fetch frontables...",
+        .subtitle = "Re-fetch from API...",
         .icon = NULL,
         .callback = select,
     };
 
-    items[1] = (SimpleMenuItem) {
+    items[2] = (SimpleMenuItem) {
         .title = "Clear Cache",
         .subtitle = "Will reset app...",
         .icon = NULL,
@@ -110,7 +131,7 @@ static void window_load() {
     };
 
     sections[0] = (SimpleMenuSection) {
-        .num_items = 2,
+        .num_items = 3,
         .items = items
     };
 
@@ -127,7 +148,7 @@ static void window_load() {
         menu_bounds,
         window,
         sections,
-        2,
+        1,
         NULL
     );
 

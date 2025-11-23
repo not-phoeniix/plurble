@@ -3,23 +3,32 @@ import * as pluralApi from "./pluralApi";
 import * as pluralSocket from "./pluralSocket";
 import * as cache from "./cache";
 import * as messaging from "./messaging";
-import { Member, CustomFront, AppMessageDesc, Frontable } from "./types";
+import * as utils from "./utils";
+import { Member, CustomFront, AppMessageDesc, Frontable, Group } from "./types";
 import { version } from "../../package.json";
+
+// local TS environment variables that won't be pushed... 
+//   if you're getting errors just make an "env.json" 
+//   file in the ts folder <3
+import env from "./env.json";
 
 // i gotta use node CommonJS requires unfortunately, it's not a TS module
 const Clay = require("pebble-clay");
 const clay = new Clay(config);
 
-// set to true to use the SimplyPlural pretesting server 
-//   when debugging/testing new functionality <3
-const USE_DEV_SERVER = false;
-
 async function setupApi(token: string) {
     console.log("setting up API and socket...");
 
     try {
-        pluralApi.init(token, USE_DEV_SERVER);
-        pluralSocket.init(token, USE_DEV_SERVER);
+        const useDevServer = ((env as any).usePretestingServer) ?? false;
+        if (useDevServer) {
+            console.log("Using pretesting servers!");
+        } else {
+            console.log("Using normal servers!");
+        }
+
+        pluralApi.init(token, useDevServer);
+        pluralSocket.init(token, useDevServer);
 
         console.log("API and socket set up!");
 
@@ -40,6 +49,7 @@ async function setupApi(token: string) {
     }
 }
 
+// sends frontables to watch, depends on groups being fetched first!
 async function fetchAndSendFrontables(uid: string, useCache: boolean) {
     // assemble cached fronters to send to watch, fetch if missing
     let frontables: Frontable[] | null = null;
@@ -48,7 +58,7 @@ async function fetchAndSendFrontables(uid: string, useCache: boolean) {
     } else {
         // clear frontables before fetching things again
         await messaging.sendCurrentFrontersToWatch([]);
-        await messaging.sendFrontablesToWatch([]);
+        await messaging.sendFrontablesToWatch([], []);
     }
 
     if (!frontables) {
@@ -80,18 +90,79 @@ async function fetchAndSendFrontables(uid: string, useCache: boolean) {
         console.log("Frontables found in cache!");
     }
 
+    console.log("Getting groups for frontable data...")
+    let groups = cache.getAllGroups();
+    if (!groups) {
+        console.log("Groups not cached, fetching...")
+        groups = (await pluralApi.getGroups(uid)).map(Group.create);
+        cache.cacheGroups(groups);
+    } else {
+        console.log("Getting groups found in cache!")
+    }
+
     if (frontables) {
         console.log("Frontables found! sending to watch...");
-        await messaging.sendFrontablesToWatch(frontables);
+        await messaging.sendFrontablesToWatch(frontables, groups);
     }
 }
 
+// fetches and sends current fronts to watch, depends on frontables being fetched first!
 async function fetchAndSendCurrentFronts() {
     // always fetch and send current fronters to 
     //   watch, don't rely on cache
     const currentFronters = await pluralApi.getCurrentFronts();
     cache.cacheCurrentFronts(currentFronters);
     await messaging.sendCurrentFrontersToWatch(currentFronters);
+}
+
+// fetches and sends groups to watch! no dependencies
+async function fetchAndSendGroups(uid: string, useCache: boolean) {
+    let groups: Group[] | null = null;
+    if (useCache) {
+        groups = cache.getAllGroups();
+    } else {
+        // clear groups before fetching things again
+        await messaging.sendGroupsToWatch([]);
+    }
+
+    if (!groups) {
+        if (uid) {
+            console.log("Groups not cached, fetching from API...");
+
+            groups = (await pluralApi.getGroups(uid))
+                .map(m => Group.create(m));
+
+            // sort group children alphabetically
+            groups.forEach(g => g.members.sort((a, b) => {
+                const memberA = cache.getFrontable(utils.genHash(a));
+                const memberB = cache.getFrontable(utils.genHash(b));
+
+                if (!memberA || !memberB) return 0;
+
+                if (memberA.name.toLowerCase() > memberB.name.toLowerCase()) {
+                    return 1;
+                } else if (memberA.name.toLowerCase() < memberB.name.toLowerCase()) {
+                    return -1;
+                }
+
+                return 0;
+            }));
+
+            cache.cacheGroups(groups);
+
+            console.log("Groups fetched, assembled, and cached!");
+
+        } else {
+            console.error("Cannot fetch groups from API, UID was never cached!");
+        }
+    } else {
+        console.log("Groups found in cache!");
+    }
+
+    if (groups) {
+        console.log("Groups found! sending to watch...");
+        await messaging.sendGroupsToWatch(groups);
+    }
 }
 
 Pebble.addEventListener("ready", async (e) => {
@@ -119,6 +190,7 @@ Pebble.addEventListener("ready", async (e) => {
         return;
     }
 
+    await fetchAndSendGroups(uid, true);
     await fetchAndSendFrontables(uid, true);
     await fetchAndSendCurrentFronts();
 
@@ -180,13 +252,14 @@ Pebble.addEventListener("appmessage", async (e) => {
         }
     }
 
-    if (msg.FetchFrontersRequest) {
+    if (msg.FetchDataRequest) {
         const uid = cache.getSystemId();
         if (uid) {
-            fetchAndSendFrontables(uid, false)
+            fetchAndSendGroups(uid, false)
+                .then(() => fetchAndSendFrontables(uid, false))
                 .then(() => fetchAndSendCurrentFronts());
         } else {
-            console.error("Cannot re-fetch fronters, system ID is not cached!");
+            console.error("Cannot re-fetch data, system ID is not cached!");
         }
     }
 
@@ -226,5 +299,3 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
         console.warn("webview response doesn't exist!");
     }
 });
-
-// TODO: somehow connect the clear cache function to a button in clay config

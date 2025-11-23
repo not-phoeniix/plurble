@@ -63,7 +63,7 @@ function onOpen(e: Event) {
 }
 
 function onMessage(e: MessageEvent) {
-    if (e.data == "pong") {
+    if (e.data === "pong") {
         return;
     }
 

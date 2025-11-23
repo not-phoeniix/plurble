@@ -4,13 +4,14 @@
 #include "../data/frontable_cache.h"
 
 static FrontableMenu* menu = NULL;
+static Group group;
 
 static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
     frontable_menu_draw_cell(menu, ctx, cell_layer, cell_index);
 }
 
 static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
-    frontable_menu_select_frontable(menu, cell_index);
+    frontable_menu_select(menu, cell_index);
 }
 
 void custom_fronts_menu_push() {
@@ -22,7 +23,11 @@ void custom_fronts_menu_push() {
             .window_unload = NULL
         };
 
-        menu = frontable_menu_create(callbacks, cache_get_custom_fronts(), "Custom Front");
+        group.color = settings_get()->background_color;
+        group.frontables = cache_get_custom_fronts();
+        strcpy(group.name, "Custom Fronts");
+        group.parent = NULL;
+        menu = frontable_menu_create(callbacks, &group);
     }
 
     frontable_menu_window_push(menu);
@@ -36,6 +41,8 @@ void custom_fronts_menu_deinit() {
 }
 
 void custom_fronts_menu_update_colors() {
+    group.color = settings_get()->background_color;
+
     if (menu != NULL) {
         frontable_menu_update_colors(menu);
     }

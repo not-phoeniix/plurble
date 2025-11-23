@@ -14,6 +14,21 @@ static void double_size(FrontableList* list) {
     }
 }
 
+FrontableList* frontable_list_create() {
+    FrontableList* list = malloc(sizeof(FrontableList));
+    *list = (FrontableList) {
+        .frontables = NULL,
+        .num_stored = 0,
+        .size = 0
+    };
+    return list;
+}
+
+void frontable_list_destroy(FrontableList* list) {
+    frontable_list_clear(list);
+    free(list);
+}
+
 void frontable_list_add(Frontable* to_add, FrontableList* list) {
     while (list->num_stored >= list->size) {
         double_size(list);
@@ -39,4 +54,14 @@ void frontable_list_deep_clear(FrontableList* list) {
     }
 
     frontable_list_clear(list);
+}
+
+bool frontable_list_contains(FrontableList* list, Frontable* frontable) {
+    for (uint16_t i = 0; i < list->num_stored; i++) {
+        if (list->frontables[i] == frontable) {
+            return true;
+        }
+    }
+
+    return false;
 }

@@ -10,7 +10,10 @@ typedef struct {
     bool member_color_tag;
     bool member_color_highlight;
     bool global_fronter_accent;
+    bool group_title_accent;
     bool api_key_valid;
+    bool show_groups;
+    bool hide_members_in_root;
 } ClaySettings;
 
 ClaySettings* settings_get();

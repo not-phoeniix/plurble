@@ -32,13 +32,17 @@
       "MemberColorHighlight",
       "MemberColorTag",
       "GlobalFronterAccent",
+      "GroupTitleAccent",
       "PluralApiKey",
       "ApiKeyValid",
       "AccentColor",
       "BackgroundColor",
+      "HideMembersInRoot",
+
       "NumCurrentFronters",
       "NumCurrentFrontersInBatch",
       "CurrentFronter",
+
       "NumTotalFrontables",
       "NumFrontablesInBatch",
       "FrontableHash",
@@ -46,10 +50,18 @@
       "FrontableColor",
       "FrontablePronouns",
       "FrontableIsCustom",
+      "FrontableGroupBitField",
+
+      "NumTotalGroups",
+      "NumGroupsInBatch",
+      "GroupName",
+      "GroupColor",
+      "GroupParentIndex",
+
       "AddFrontRequest",
       "SetFrontRequest",
       "RemoveFrontRequest",
-      "FetchFrontersRequest",
+      "FetchDataRequest",
       "ClearCacheRequest"
     ],
     "resources": {

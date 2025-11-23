@@ -1,39 +1,53 @@
 #include "frontable_cache.h"
-#include "../menus/main_menu.h"
 #include "../tools/string_tools.h"
 
 #define PRONOUNS_KEY 2
 #define FRONTABLES_NUM_KEY 3
 #define FRONTABLES_KEY_MIN 4
 #define FRONTABLES_KEY_MAX 20
+#define GROUPS_NUM_KEY 21
+#define GROUPS_KEY_MIN 22
+#define GROUPS_KEY_MAX 30
 
 // tweak these to adjust how much memory is allocated
-#define MAX_CACHED_FRONTABLES 128
-#define MAX_CACHED_PRONOUNS 22
+#define MAX_CACHED_FRONTABLES 96
+#define MAX_CACHED_PRONOUNS 16
+#define MAX_CACHED_GROUPS GROUP_LIST_MAX_COUNT
 #define COMPRESSED_NAME_LENGTH 19
 #define COMPRESSED_PRONOUNS_LENGTH 10
 
 // ~~~ current memory footprint ~~~
 //
 // max memory taken up by pronoun map:
-//   MAX_CACHED_PRONOUNS * (COMPRESSED_PRONOUNS_LENGTH + 1) == 242 bytes
+//   MAX_CACHED_PRONOUNS * (COMPRESSED_PRONOUNS_LENGTH + 1) == 176 bytes
 //
 // max memory taken up by frontables:
-//   sizeof(CompressedFrontable) * MAX_CACHED_FRONTABLES == 3584 bytes
-//   ^ this should equate to 14 chunks stored
+//   sizeof(CompressedFrontable) * MAX_CACHED_FRONTABLES == 3072 bytes
+//   ^ this should equate to 12 chunks stored
 //
-// total memory footprint: 3826 bytes
+// max memory taken up by groups:
+//   sizeof(CompressedGroup) * MAX_CACHED_GROUPS == 704 bytes
+//
+// total memory footprint: 3952 bytes <3
 
 typedef struct {
     char name[COMPRESSED_NAME_LENGTH + 1];
     uint32_t hash;
-    int16_t pronoun_index;
+    uint32_t group_bit_field;
+    uint8_t pronoun_index;
     uint8_t packed_data;
 } CompressedFrontable;
+
+typedef struct {
+    char name[COMPRESSED_NAME_LENGTH + 1];
+    uint8_t color;
+    uint8_t parent_index;
+} CompressedGroup;
 
 static FrontableList members;
 static FrontableList custom_fronts;
 static FrontableList current_fronters;
+static GroupCollection groups;
 
 FrontableList* cache_get_members() { return &members; }
 FrontableList* cache_get_custom_fronts() { return &custom_fronts; }
@@ -41,6 +55,28 @@ FrontableList* cache_get_current_fronters() { return &current_fronters; }
 Frontable* cache_get_first_fronter() {
     if (current_fronters.frontables != NULL) {
         return current_fronters.frontables[0];
+    }
+
+    return NULL;
+}
+
+Frontable* cache_get_frontable(uint32_t hash) {
+    //! using just iteration to search isn't the best idea...
+    //!   for the future, since we have hashes for each frontable:
+    //!   make a hash map maybe !!!!
+
+    for (uint32_t i = 0; i < members.num_stored; i++) {
+        Frontable* member = members.frontables[i];
+        if (member->hash == hash) {
+            return member;
+        }
+    }
+
+    for (uint32_t i = 0; i < custom_fronts.num_stored; i++) {
+        Frontable* custom_front = custom_fronts.frontables[i];
+        if (custom_front->hash == hash) {
+            return custom_front;
+        }
     }
 
     return NULL;
@@ -60,32 +96,7 @@ void cache_clear_frontables() {
 }
 
 void cache_add_current_fronter(uint32_t frontable_hash) {
-    Frontable* frontable = NULL;
-
-    //! using just iteration to search isn't the best idea...
-    //!   for the future, since we have hashes for each frontable:
-    //!   make a hash map maybe !!!!
-
-    for (uint16_t i = 0; i < members.num_stored; i++) {
-        Frontable* f = members.frontables[i];
-
-        if (f->hash == frontable_hash) {
-            frontable = f;
-            break;
-        }
-    }
-
-    if (frontable == NULL) {
-        for (uint16_t i = 0; i < custom_fronts.num_stored; i++) {
-            Frontable* f = custom_fronts.frontables[i];
-
-            if (f->hash == frontable_hash) {
-                frontable = f;
-                break;
-            }
-        }
-    }
-
+    Frontable* frontable = cache_get_frontable(frontable_hash);
     if (frontable != NULL) {
         frontable_set_is_fronting(frontable, true);
         frontable_list_add(frontable, &current_fronters);
@@ -98,6 +109,28 @@ void cache_clear_current_fronters() {
     }
 
     frontable_list_clear(&current_fronters);
+}
+
+void cache_add_group(Group* group) {
+    if (groups.num_stored >= GROUP_LIST_MAX_COUNT) {
+        APP_LOG(APP_LOG_LEVEL_ERROR, "ERROR! Cannot add group '%s' to cache, limit has been reached!", group->name);
+        return;
+    }
+
+    groups.groups[groups.num_stored] = group;
+    groups.num_stored++;
+}
+
+GroupCollection* cache_get_groups() {
+    return &groups;
+}
+
+void cache_clear_groups() {
+    for (uint16_t i = 0; i < groups.num_stored; i++) {
+        group_destroy(groups.groups[i]);
+        groups.groups[i] = NULL;
+    }
+    groups.num_stored = 0;
 }
 
 static void store_pronoun_map(char* pronoun_map, size_t pronoun_map_size) {
@@ -135,6 +168,7 @@ static void store_frontables(char* pronoun_map) {
     );
     uint16_t frontable_index = 0;
 
+    // convert custom fronts into compressed frontables
     for (uint16_t i = 0; i < custom_fronts.num_stored; i++) {
         if (frontable_index >= MAX_CACHED_FRONTABLES) break;
 
@@ -143,7 +177,8 @@ static void store_frontables(char* pronoun_map) {
         frontables_to_store[frontable_index] = (CompressedFrontable) {
             .hash = custom_front->hash,
             .packed_data = custom_front->packed_data,
-            .pronoun_index = -1
+            .pronoun_index = 0,
+            .group_bit_field = 0
         };
         string_copy_smaller(
             frontables_to_store[frontable_index].name,
@@ -154,6 +189,7 @@ static void store_frontables(char* pronoun_map) {
         frontable_index++;
     }
 
+    // convert members into compressed frontables
     for (uint16_t i = 0; i < members.num_stored; i++) {
         if (frontable_index >= MAX_CACHED_FRONTABLES) break;
 
@@ -161,10 +197,10 @@ static void store_frontables(char* pronoun_map) {
 
         // find index of pronouns, pronoun_index counts the
         //   number of stored pronouns at this point
-        int16_t pronoun_index = -1;
+        uint8_t pronoun_index = 0;
         for (uint16_t j = 0; j < MAX_CACHED_PRONOUNS; j++) {
             if (string_start_same(member->pronouns, pronoun_map + (j * (COMPRESSED_PRONOUNS_LENGTH + 1)))) {
-                pronoun_index = j;
+                pronoun_index = j + 1;
                 break;
             }
         }
@@ -172,7 +208,8 @@ static void store_frontables(char* pronoun_map) {
         frontables_to_store[frontable_index] = (CompressedFrontable) {
             .hash = member->hash,
             .packed_data = member->packed_data,
-            .pronoun_index = pronoun_index
+            .pronoun_index = pronoun_index,
+            .group_bit_field = member->group_bit_field
         };
         string_copy_smaller(
             frontables_to_store[frontable_index].name,
@@ -194,7 +231,7 @@ static void store_frontables(char* pronoun_map) {
         if (num_to_store > remaining_frontables) num_to_store = remaining_frontables;
         uint16_t size = num_to_store * sizeof(CompressedFrontable);
 
-        persist_write_data(key, frontables_to_store + index_offset, size);
+        persist_write_data(key, &frontables_to_store[index_offset], size);
 
         index_offset += num_to_store;
         remaining_frontables -= num_to_store;
@@ -203,40 +240,60 @@ static void store_frontables(char* pronoun_map) {
     free(frontables_to_store);
 }
 
-void cache_persist_store() {
-    APP_LOG(APP_LOG_LEVEL_INFO, "Attempting to store frontable cache into persistent storage...");
+static void store_groups() {
+    CompressedGroup* groups_to_store = malloc(
+        sizeof(CompressedGroup) * MAX_CACHED_GROUPS
+    );
 
-    size_t map_size = sizeof(char) * MAX_CACHED_PRONOUNS * (COMPRESSED_PRONOUNS_LENGTH + 1);
-    char* pronoun_map = (char*)malloc(map_size);
-    memset(pronoun_map, '\0', map_size);
+    // convert cached groups into compressed groups
+    uint16_t group_index = 0;
+    for (uint16_t i = 0; i < groups.num_stored; i++) {
+        if (group_index >= MAX_CACHED_GROUPS) break;
 
-    store_pronoun_map(pronoun_map, map_size);
-    store_frontables(pronoun_map);
+        Group* group = groups.groups[i];
 
-    free(pronoun_map);
+        int16_t parent_index = -1;
+        for (uint16_t j = 0; j < groups.num_stored; j++) {
+            Group* parent = groups.groups[j];
+            if (i != j && group->parent == parent) {
+                parent_index = j;
+            }
+        }
 
-    APP_LOG(APP_LOG_LEVEL_INFO, "Frontable cache stored into persistent storage!");
-}
+        groups_to_store[group_index] = (CompressedGroup) {
+            .color = group->color.argb,
+            .parent_index = (uint8_t)(parent_index + 1)
+        };
+        string_copy_smaller(
+            groups_to_store[group_index].name,
+            group->name,
+            COMPRESSED_NAME_LENGTH
+        );
 
-bool cache_persist_load() {
-    APP_LOG(APP_LOG_LEVEL_INFO, "Attempting to load frontable cache from persistent storage...");
-
-    if (
-        !persist_exists(PRONOUNS_KEY) ||
-        !persist_exists(FRONTABLES_NUM_KEY) ||
-        !persist_exists(FRONTABLES_KEY_MIN)
-    ) {
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Cannot load persistent data if it was never saved in the first place!");
-        return false;
+        group_index++;
     }
 
-    cache_clear_current_fronters();
-    cache_clear_frontables();
+    // store chunks
+    int32_t remaining_groups = group_index;
+    persist_write_int(GROUPS_NUM_KEY, remaining_groups);
+    uint16_t index_offset = 0;
+    for (uint32_t key = GROUPS_KEY_MIN; key <= GROUPS_KEY_MAX; key++) {
+        if (remaining_groups <= 0) break;
 
-    size_t size = sizeof(char) * MAX_CACHED_PRONOUNS * (COMPRESSED_PRONOUNS_LENGTH + 1);
-    char* pronoun_map = (char*)malloc(size);
-    persist_read_data(PRONOUNS_KEY, pronoun_map, size);
+        uint16_t num_to_store = PERSIST_DATA_MAX_LENGTH / sizeof(CompressedGroup);
+        if (num_to_store > remaining_groups) num_to_store = remaining_groups;
+        uint16_t size = num_to_store * sizeof(CompressedFrontable);
 
+        persist_write_data(key, &groups_to_store[index_offset], size);
+
+        index_offset += num_to_store;
+        remaining_groups -= num_to_store;
+    }
+
+    free(groups_to_store);
+}
+
+static void load_frontables(char* pronoun_map) {
     CompressedFrontable* cached_frontables = (CompressedFrontable*)malloc(
         sizeof(CompressedFrontable) * MAX_CACHED_FRONTABLES
     );
@@ -252,7 +309,7 @@ bool cache_persist_load() {
         if (num_to_load > remaining_frontables) num_to_load = remaining_frontables;
         uint16_t size = num_to_load * sizeof(CompressedFrontable);
 
-        persist_read_data(key, cached_frontables + index_offset, size);
+        persist_read_data(key, &cached_frontables[index_offset], size);
 
         index_offset += num_to_load;
         remaining_frontables -= num_to_load;
@@ -271,12 +328,13 @@ bool cache_persist_load() {
         );
 
         f->packed_data = cached->packed_data;
+        f->group_bit_field = cached->group_bit_field;
 
-        if (cached->pronoun_index >= 0) {
+        if (cached->pronoun_index > 0) {
+            uint16_t index = cached->pronoun_index - 1;
             string_copy_smaller(
                 f->pronouns,
-                // pronoun_map + (cached->pronoun_index * (COMPRESSED_PRONOUNS_LENGTH + 1)),
-                pronoun_map + (cached->pronoun_index * (COMPRESSED_PRONOUNS_LENGTH + 1)),
+                &pronoun_map[index * (COMPRESSED_PRONOUNS_LENGTH + 1)],
                 FRONTABLE_PRONOUNS_LENGTH
             );
         }
@@ -287,9 +345,112 @@ bool cache_persist_load() {
         }
     }
 
-    // free previous memory
-    free(pronoun_map);
+    // re-iterate to assign frontables to groups
+    for (uint16_t i = 0; i < members.num_stored; i++) {
+        Frontable* member = members.frontables[i];
+
+        for (uint16_t j = 0; j < groups.num_stored; j++) {
+            Group* group = groups.groups[j];
+
+            if (((member->group_bit_field >> j) & 1) != 0) {
+                frontable_list_add(member, group->frontables);
+            }
+        }
+    }
+
     free(cached_frontables);
+}
+
+static void load_groups() {
+    CompressedGroup* cached_groups = malloc(
+        sizeof(CompressedGroup) * MAX_CACHED_GROUPS
+    );
+    int32_t num_groups = persist_read_int(GROUPS_NUM_KEY);
+
+    // retrieve chunks from storage
+    int32_t remaining_groups = num_groups;
+    uint16_t index_offset = 0;
+    for (uint32_t key = GROUPS_KEY_MIN; key <= GROUPS_KEY_MAX; key++) {
+        if (remaining_groups <= 0) break;
+
+        uint16_t num_to_load = PERSIST_DATA_MAX_LENGTH / sizeof(CompressedGroup);
+        if (num_to_load > remaining_groups) num_to_load = remaining_groups;
+        uint16_t size = num_to_load * sizeof(CompressedGroup);
+
+        persist_read_data(key, &cached_groups[index_offset], size);
+
+        index_offset += num_to_load;
+        remaining_groups -= num_to_load;
+    }
+
+    // load groups from compressed data
+    for (int32_t i = 0; i < num_groups; i++) {
+        CompressedGroup* cached = &cached_groups[i];
+
+        Group* g = group_create(
+            cached->name,
+            (GColor) {.argb = cached->color},
+            NULL
+        );
+
+        cache_add_group(g);
+    }
+
+    // assign parent pointers
+    for (int32_t i = 0; i < num_groups; i++) {
+        CompressedGroup* cached = &cached_groups[i];
+        Group* group = groups.groups[i];
+
+        if (cached->parent_index > 0) {
+            group->parent = groups.groups[cached->parent_index - 1];
+        }
+    }
+
+    free(cached_groups);
+}
+
+void cache_persist_store() {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Attempting to store frontable cache into persistent storage...");
+
+    size_t map_size = sizeof(char) * MAX_CACHED_PRONOUNS * (COMPRESSED_PRONOUNS_LENGTH + 1);
+    char* pronoun_map = (char*)malloc(map_size);
+    memset(pronoun_map, '\0', map_size);
+
+    store_pronoun_map(pronoun_map, map_size);
+    store_frontables(pronoun_map);
+    store_groups();
+
+    free(pronoun_map);
+
+    APP_LOG(APP_LOG_LEVEL_INFO, "Frontable cache stored into persistent storage!");
+}
+
+bool cache_persist_load() {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Attempting to load frontable cache from persistent storage...");
+
+    if (
+        !persist_exists(PRONOUNS_KEY) ||
+        !persist_exists(FRONTABLES_NUM_KEY) ||
+        !persist_exists(GROUPS_NUM_KEY)
+    ) {
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Cannot load persistent data if it was never saved in the first place!");
+        return false;
+    }
+
+    cache_clear_current_fronters();
+    cache_clear_frontables();
+    cache_clear_groups();
+
+    // load pronoun map
+    size_t size = sizeof(char) * MAX_CACHED_PRONOUNS * (COMPRESSED_PRONOUNS_LENGTH + 1);
+    char* pronoun_map = (char*)malloc(size);
+    persist_read_data(PRONOUNS_KEY, pronoun_map, size);
+
+    // load groups before frontables, frontables access groups
+    load_groups();
+    load_frontables(pronoun_map);
+
+    free(pronoun_map);
 
     APP_LOG(APP_LOG_LEVEL_INFO, "Frontable cache loaded from persistent storage!");
 
@@ -302,9 +463,13 @@ void cache_persist_delete() {
     for (uint32_t key = FRONTABLES_KEY_MIN; key <= FRONTABLES_KEY_MAX; key++) {
         persist_delete(key);
     }
+    for (uint32_t key = GROUPS_KEY_MIN; key <= GROUPS_KEY_MAX; key++) {
+        persist_delete(key);
+    }
 }
 
 void frontable_cache_deinit() {
     cache_clear_current_fronters();
     cache_clear_frontables();
+    cache_clear_groups();
 }

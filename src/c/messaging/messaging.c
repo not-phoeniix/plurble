@@ -4,10 +4,9 @@
 #include "../data/frontable_cache.h"
 #include "../menus/main_menu.h"
 #include "../menus/current_fronters_menu.h"
+#include "../menus/members_menu.h"
 #include "../tools/string_tools.h"
 
-#define FRONTABLES_PER_MESSAGE 32
-#define CURRENT_FRONTS_PER_MESSAGE 16
 #define DELIMETER ';'
 
 //! NOTE: add "${workspaceFolder}/build/include/" to your
@@ -59,6 +58,22 @@ static void handle_settings_inbox(DictionaryIterator* iter, ClaySettings* settin
         );
         *update_colors = true;
     }
+
+    Tuple* group_title_accent = dict_find(iter, MESSAGE_KEY_GroupTitleAccent);
+    if (group_title_accent != NULL) {
+        settings->group_title_accent = PBL_IF_COLOR_ELSE(
+            group_title_accent->value->int16,
+            false
+        );
+        *update_colors = true;
+    }
+
+    Tuple* hide_members_in_root = dict_find(iter, MESSAGE_KEY_HideMembersInRoot);
+    if (hide_members_in_root != NULL) {
+        settings->hide_members_in_root = hide_members_in_root->value->int16;
+        *update_colors = true;
+        members_menu_refresh_groups();
+    }
 }
 
 static uint32_t uint32_from_byte_arr(uint8_t* start) {
@@ -70,14 +85,11 @@ static uint32_t uint32_from_byte_arr(uint8_t* start) {
     return num;
 }
 
-static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, bool* update_colors) {
-    Tuple* api_key_valid = dict_find(iter, MESSAGE_KEY_ApiKeyValid);
-    if (api_key_valid != NULL) {
-        settings->api_key_valid = api_key_valid->value->int16;
-    }
-
+static void handle_api_frontables(DictionaryIterator* iter) {
+    // using regular ints here so APP_LOG printf doesn't yell at me lol
     static int frontable_counter = 0;
     static int total_frontables = 0;
+
     Tuple* num_total_frontables = dict_find(iter, MESSAGE_KEY_NumTotalFrontables);
     if (num_total_frontables != NULL) {
         total_frontables = num_total_frontables->value->int32;
@@ -97,7 +109,10 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
     Tuple* frontable_color = dict_find(iter, MESSAGE_KEY_FrontableColor);
     Tuple* frontable_pronouns = dict_find(iter, MESSAGE_KEY_FrontablePronouns);
     Tuple* frontable_is_custom = dict_find(iter, MESSAGE_KEY_FrontableIsCustom);
+    Tuple* frontable_group_bits = dict_find(iter, MESSAGE_KEY_FrontableGroupBitField);
     Tuple* frontable_batch_size = dict_find(iter, MESSAGE_KEY_NumFrontablesInBatch);
+
+    bool recieved_frontables = false;
 
     // handle frontable byte data being sent
     if (
@@ -106,6 +121,7 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
         frontable_color != NULL &&
         frontable_pronouns != NULL &&
         frontable_is_custom != NULL &&
+        frontable_group_bits != NULL &&
         frontable_batch_size != NULL
     ) {
         int32_t batch_size = frontable_batch_size->value->int32;
@@ -114,6 +130,7 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
         uint8_t* is_custom_byte_arr = frontable_is_custom->value->data;
         char* names_combined = frontable_name->value->cstring;
         char* pronouns_combined = frontable_pronouns->value->cstring;
+        uint8_t* group_bits_byte_arr = frontable_group_bits->value->data;
 
         uint16_t names_length = 0;
         char** names = string_split(names_combined, DELIMETER, &names_length);
@@ -122,6 +139,7 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
 
         for (int32_t i = 0; i < batch_size; i++) {
             uint32_t hash = uint32_from_byte_arr(hash_byte_arr + (i * sizeof(uint32_t)));
+            uint32_t bitfield = uint32_from_byte_arr(group_bits_byte_arr + (i * sizeof(uint32_t)));
             uint8_t is_custom = is_custom_byte_arr[i];
             uint8_t color = color_byte_arr[i];
 
@@ -132,8 +150,10 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
                 is_custom,
                 (GColor) {.argb = color}
             );
+            f->group_bit_field = bitfield;
 
             cache_add_frontable(f);
+            recieved_frontables = true;
 
             frontable_counter++;
             APP_LOG(
@@ -149,15 +169,39 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
         string_array_free(pronouns, pronouns_length);
     }
 
-    if (frontable_counter >= total_frontables) {
+    if (frontable_counter >= total_frontables && recieved_frontables) {
         APP_LOG(APP_LOG_LEVEL_INFO, "All frontables recieved!");
         main_menu_mark_custom_fronts_loaded();
         main_menu_mark_members_loaded();
         main_menu_confirm_frontable_fetch();
-    }
 
+        // iterate across members and add them to groups
+        GroupCollection* groups = cache_get_groups();
+        FrontableList* members = cache_get_members();
+        for (uint16_t i = 0; i < members->num_stored; i++) {
+            Frontable* member = members->frontables[i];
+
+            for (uint16_t j = 0; j < groups->num_stored; j++) {
+                Group* group = groups->groups[j];
+
+                if (((member->group_bit_field >> j) & 1) != 0) {
+                    frontable_list_add(member, group->frontables);
+                }
+            }
+        }
+
+        members_menu_refresh_groupless_members();
+
+    } else if (!recieved_frontables) {
+        APP_LOG(APP_LOG_LEVEL_INFO, "No frontables in message detected!");
+    }
+}
+
+static void handle_api_current_fronts(DictionaryIterator* iter, bool* update_colors) {
+    // using regular ints here so APP_LOG printf doesn't yell at me lol
     static int current_front_counter = 0;
     static int total_current_fronters = 0;
+
     Tuple* num_current_fronters = dict_find(iter, MESSAGE_KEY_NumCurrentFronters);
     if (num_current_fronters != NULL) {
         total_current_fronters = num_current_fronters->value->int32;
@@ -213,6 +257,122 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
             current_fronters_menu_set_is_empty(true);
         }
     }
+}
+
+static void handle_api_groups(DictionaryIterator* iter) {
+    static uint8_t parent_index_arr[GROUP_LIST_MAX_COUNT];
+    static int32_t parent_index_counter = 0;
+
+    // using regular ints here so APP_LOG printf doesn't yell at me lol
+    static int group_counter = 0;
+    static int total_groups = 0;
+
+    Tuple* num_total_groups = dict_find(iter, MESSAGE_KEY_NumTotalGroups);
+    if (num_total_groups != NULL) {
+        total_groups = num_total_groups->value->int32;
+        group_counter = 0;
+
+        APP_LOG(
+            APP_LOG_LEVEL_INFO,
+            "Identified start of group message sequence, expected total transfer count: %d",
+            total_groups
+        );
+
+        APP_LOG(
+            APP_LOG_LEVEL_INFO,
+            "Clearing group cache and allocating index array of size: %d",
+            total_groups
+        );
+        cache_clear_groups();
+
+        memset(parent_index_arr, 0, sizeof(uint8_t) * total_groups);
+        parent_index_counter = 0;
+    }
+
+    Tuple* group_name = dict_find(iter, MESSAGE_KEY_GroupName);
+    Tuple* group_color = dict_find(iter, MESSAGE_KEY_GroupColor);
+    Tuple* group_batch_size = dict_find(iter, MESSAGE_KEY_NumGroupsInBatch);
+    Tuple* group_parent_index = dict_find(iter, MESSAGE_KEY_GroupParentIndex);
+
+    bool recieved_groups = false;
+
+    if (
+        group_name != NULL &&
+        group_color != NULL &&
+        group_parent_index != NULL &&
+        group_batch_size != NULL
+    ) {
+        int32_t batch_size = group_batch_size->value->int32;
+        uint8_t* color_byte_arr = group_color->value->data;
+        uint8_t* parent_indices = group_parent_index->value->data;
+        char* names_combined = group_name->value->cstring;
+
+        uint16_t names_length = 0;
+        char** names = string_split(names_combined, DELIMETER, &names_length);
+
+        // create groups!
+        for (int32_t i = 0; i < batch_size; i++) {
+            Group* group = group_create(
+                names[i],
+                (GColor) {.argb = color_byte_arr[i]},
+                NULL
+            );
+
+            cache_add_group(group);
+            recieved_groups = true;
+
+            group_counter++;
+            APP_LOG(
+                APP_LOG_LEVEL_INFO,
+                "Recieved group '%s'! Index: %d/%d",
+                group->name,
+                group_counter,
+                total_groups
+            );
+        }
+
+        // copy indices into array so we can iterate later!
+        memcpy(
+            &parent_index_arr[parent_index_counter],
+            parent_indices,
+            sizeof(uint8_t) * (uint32_t)batch_size
+        );
+        parent_index_counter += batch_size;
+
+        string_array_free(names, names_length);
+    }
+
+    if (group_counter >= total_groups && recieved_groups) {
+        // re-iterate to assign group parent pointers
+        GroupCollection* groups = cache_get_groups();
+        for (uint16_t i = 0; i < groups->num_stored; i++) {
+            // subtract 1 from index so we can know when no parent exists
+            //   (while still allowing 255 other options for the uint8)
+            int16_t index = (int16_t)parent_index_arr[i] - 1;
+            if (index >= 0) {
+                groups->groups[i]->parent = groups->groups[index];
+            }
+        }
+
+        parent_index_counter = 0;
+
+        members_menu_refresh_groups();
+        APP_LOG(APP_LOG_LEVEL_INFO, "All groups recieved!");
+
+    } else if (!recieved_groups) {
+        APP_LOG(APP_LOG_LEVEL_INFO, "No groups recognized in message!");
+    }
+}
+
+static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, bool* update_colors) {
+    Tuple* api_key_valid = dict_find(iter, MESSAGE_KEY_ApiKeyValid);
+    if (api_key_valid != NULL) {
+        settings->api_key_valid = api_key_valid->value->int16;
+    }
+
+    handle_api_groups(iter);
+    handle_api_frontables(iter);
+    handle_api_current_fronts(iter, update_colors);
 }
 
 static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
@@ -295,8 +455,8 @@ void messaging_remove_from_front(uint32_t frontable_hash) {
     front_message(frontable_hash, MESSAGE_KEY_RemoveFrontRequest);
 }
 
-void messaging_fetch_fronters() {
-    bool_message(MESSAGE_KEY_FetchFrontersRequest, true);
+void messaging_fetch_data() {
+    bool_message(MESSAGE_KEY_FetchDataRequest, true);
 }
 
 void messaging_clear_cache() {

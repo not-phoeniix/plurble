@@ -10,19 +10,19 @@
 #include "menus/settings_menu.h"
 
 static void init() {
+    // baha thanks for checking out the source code too <3
+    APP_LOG(APP_LOG_LEVEL_INFO, "Hi friend, thank you for using plurble! I hope you are having a lovely day <3");
+
     messaging_init();
+    settings_load();
     if (cache_persist_load()) {
         main_menu_mark_members_loaded();
         main_menu_mark_custom_fronts_loaded();
         main_menu_mark_fronters_loaded();
+        members_menu_refresh_groups();
+        members_menu_refresh_groupless_members();
     }
-    settings_load();
-
-    if (settings_get()->api_key_valid) {
-        main_menu_push();
-    } else {
-        setup_prompt_menu_push();
-    }
+    main_menu_push();
 
     Frontable* front = cache_get_first_fronter();
     if (front == NULL) {
@@ -33,6 +33,7 @@ static void init() {
 }
 
 static void deinit() {
+    settings_save(false);
     cache_persist_store();
 
     members_menu_deinit();

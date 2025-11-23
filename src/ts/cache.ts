@@ -1,7 +1,8 @@
-import { Frontable, FrontEntryMessage } from "./types";
+import { Frontable, FrontEntryMessage, Group } from "./types";
 
 enum CacheKeys {
     Frontables = "cachedFrontables",
+    Groups = "cachedGroups",
     ApiToken = "cachedApiToken",
     SystemId = "cachedSystemId",
     CurrentFronts = "cachedCurrentFrontMessages",
@@ -25,6 +26,20 @@ export function getAllFrontables(): Frontable[] | null {
 export function getFrontable(hash: number): Frontable | null {
     const frontables = getAllFrontables();
     return frontables?.find(f => f.hash === hash) ?? null;
+}
+
+export function cacheGroups(groups: Group[]) {
+    localStorage.setItem(CacheKeys.Groups, JSON.stringify(groups));
+}
+
+export function getAllGroups(): Group[] | null {
+    const cachedGroupsStr = localStorage.getItem(CacheKeys.Groups);
+    if (cachedGroupsStr) {
+        const groups = JSON.parse(cachedGroupsStr) as Group[];
+        return groups;
+    }
+
+    return null;
 }
 
 export function getApiToken(): string | null {
