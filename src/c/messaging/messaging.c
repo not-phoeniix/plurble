@@ -89,6 +89,7 @@ static void handle_api_frontables(DictionaryIterator* iter) {
     // using regular ints here so APP_LOG printf doesn't yell at me lol
     static int frontable_counter = 0;
     static int total_frontables = 0;
+    static Frontable** frontables_to_set = NULL;
 
     Tuple* num_total_frontables = dict_find(iter, MESSAGE_KEY_NumTotalFrontables);
     if (num_total_frontables != NULL) {
@@ -101,7 +102,7 @@ static void handle_api_frontables(DictionaryIterator* iter) {
             total_frontables
         );
 
-        cache_clear_frontables();
+        frontables_to_set = malloc(sizeof(Frontable*) * total_frontables);
     }
 
     Tuple* frontable_hash = dict_find(iter, MESSAGE_KEY_FrontableHash);
@@ -152,7 +153,7 @@ static void handle_api_frontables(DictionaryIterator* iter) {
             );
             f->group_bit_field = bitfield;
 
-            cache_add_frontable(f);
+            frontables_to_set[frontable_counter] = f;
             recieved_frontables = true;
 
             frontable_counter++;
@@ -171,6 +172,14 @@ static void handle_api_frontables(DictionaryIterator* iter) {
 
     if (frontable_counter >= total_frontables && recieved_frontables) {
         APP_LOG(APP_LOG_LEVEL_INFO, "All frontables recieved!");
+
+        cache_clear_frontables();
+        for (int i = 0; i < total_frontables; i++) {
+            cache_add_frontable(frontables_to_set[i]);
+        }
+        free(frontables_to_set);
+        frontables_to_set = NULL;
+
         main_menu_mark_custom_fronts_loaded();
         main_menu_mark_members_loaded();
         main_menu_confirm_frontable_fetch();
@@ -201,6 +210,7 @@ static void handle_api_current_fronts(DictionaryIterator* iter, bool* update_col
     // using regular ints here so APP_LOG printf doesn't yell at me lol
     static int current_front_counter = 0;
     static int total_current_fronters = 0;
+    static uint32_t* fronters_to_set = NULL;
 
     Tuple* num_current_fronters = dict_find(iter, MESSAGE_KEY_NumCurrentFronters);
     if (num_current_fronters != NULL) {
@@ -213,7 +223,8 @@ static void handle_api_current_fronts(DictionaryIterator* iter, bool* update_col
             total_current_fronters
         );
 
-        cache_clear_current_fronters();
+        // cache_clear_current_fronters();
+        fronters_to_set = malloc(sizeof(uint32_t) * total_current_fronters);
     }
 
     // handle current fronters byte data being sent
@@ -226,7 +237,7 @@ static void handle_api_current_fronts(DictionaryIterator* iter, bool* update_col
 
         for (int32_t i = 0; i < batch_size; i++) {
             uint32_t hash = uint32_from_byte_arr(hash_byte_arr + (i * sizeof(uint32_t)));
-            cache_add_current_fronter(hash);
+            fronters_to_set[current_front_counter] = hash;
 
             current_front_counter++;
             APP_LOG(
@@ -243,7 +254,17 @@ static void handle_api_current_fronts(DictionaryIterator* iter, bool* update_col
         (current_front_counter >= total_current_fronters && total_current_fronters != 0) ||
         (num_current_fronters != NULL && total_current_fronters == 0)
     ) {
-        APP_LOG(APP_LOG_LEVEL_INFO, "All current fronters recieved!");
+        APP_LOG(APP_LOG_LEVEL_INFO, "All current fronters recieved! Setting fronters...");
+
+        cache_clear_current_fronters();
+        for (int i = 0; i < total_current_fronters; i++) {
+            cache_add_current_fronter(fronters_to_set[i]);
+        }
+        free(fronters_to_set);
+        fronters_to_set = NULL;
+
+        APP_LOG(APP_LOG_LEVEL_INFO, "New fronters set!");
+
         main_menu_mark_fronters_loaded();
 
         *update_colors = true;
@@ -266,6 +287,7 @@ static void handle_api_groups(DictionaryIterator* iter) {
     // using regular ints here so APP_LOG printf doesn't yell at me lol
     static int group_counter = 0;
     static int total_groups = 0;
+    static Group** groups_to_set = NULL;
 
     Tuple* num_total_groups = dict_find(iter, MESSAGE_KEY_NumTotalGroups);
     if (num_total_groups != NULL) {
@@ -278,12 +300,7 @@ static void handle_api_groups(DictionaryIterator* iter) {
             total_groups
         );
 
-        APP_LOG(
-            APP_LOG_LEVEL_INFO,
-            "Clearing group cache and allocating index array of size: %d",
-            total_groups
-        );
-        cache_clear_groups();
+        groups_to_set = malloc(sizeof(Group*) * total_groups);
 
         memset(parent_index_arr, 0, sizeof(uint8_t) * total_groups);
         parent_index_counter = 0;
@@ -318,7 +335,7 @@ static void handle_api_groups(DictionaryIterator* iter) {
                 NULL
             );
 
-            cache_add_group(group);
+            groups_to_set[group_counter] = group;
             recieved_groups = true;
 
             group_counter++;
@@ -343,6 +360,13 @@ static void handle_api_groups(DictionaryIterator* iter) {
     }
 
     if (group_counter >= total_groups && recieved_groups) {
+        cache_clear_groups();
+        for (int i = 0; i < total_groups; i++) {
+            cache_add_group(groups_to_set[i]);
+        }
+        free(groups_to_set);
+        groups_to_set = NULL;
+
         // re-iterate to assign group parent pointers
         GroupCollection* groups = cache_get_groups();
         for (uint16_t i = 0; i < groups->num_stored; i++) {
