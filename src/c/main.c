@@ -8,6 +8,19 @@
 #include "menus/current_fronters_menu.h"
 #include "menus/setup_prompt_menu.h"
 #include "menus/settings_menu.h"
+#include "menus/disconnected_menu.h"
+
+static void connection_handler(bool connected) {
+    window_stack_pop_all(false);
+
+    if (connected) {
+        APP_LOG(APP_LOG_LEVEL_INFO, "Phone reconnected, pushing main menu!");
+        main_menu_push();
+    } else {
+        APP_LOG(APP_LOG_LEVEL_INFO, "Phone disconnected, pushing disconnected menu!");
+        disconnected_menu_push();
+    }
+}
 
 static void init() {
     // baha thanks for checking out the source code too <3
@@ -22,7 +35,13 @@ static void init() {
         members_menu_refresh_groups();
         members_menu_refresh_groupless_members();
     }
-    main_menu_push();
+
+    connection_service_subscribe((ConnectionHandlers) {
+        .pebble_app_connection_handler = connection_handler
+    });
+
+    // push the appropriate menu depending on current watch connection status
+    connection_handler(connection_service_peek_pebble_app_connection());
 
     Frontable* front = cache_get_first_fronter();
     if (front == NULL) {
@@ -36,12 +55,15 @@ static void deinit() {
     settings_save(false);
     cache_persist_store();
 
+    connection_service_unsubscribe();
+
     members_menu_deinit();
     custom_fronts_menu_deinit();
     current_fronters_menu_deinit();
     main_menu_deinit();
     frontable_cache_deinit();
     settings_menu_deinit();
+    disconnected_menu_deinit();
 
     setup_prompt_menu_remove();
 }
