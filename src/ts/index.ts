@@ -181,6 +181,7 @@ Pebble.addEventListener("ready", async (e) => {
         await setupApi(token);
     } else {
         console.warn("Warning: API Token not cached! api can't be set up! running off cache...");
+        messaging.sendApiKeyIsValid(false);
     }
 
     // try to get cached uid

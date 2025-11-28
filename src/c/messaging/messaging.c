@@ -175,10 +175,17 @@ static void handle_api_frontables(DictionaryIterator* iter) {
 
         cache_clear_frontables();
         for (int i = 0; i < total_frontables; i++) {
+            if (frontables_to_set == NULL) {
+                APP_LOG(APP_LOG_LEVEL_WARNING, "WARNING: Trying to add frontable to cache with non-zero frontable sending count but frontable array is null");
+                break;
+            }
+
             cache_add_frontable(frontables_to_set[i]);
         }
         free(frontables_to_set);
         frontables_to_set = NULL;
+        total_frontables = 0;
+        frontable_counter = 0;
 
         main_menu_mark_custom_fronts_loaded();
         main_menu_mark_members_loaded();
@@ -258,10 +265,17 @@ static void handle_api_current_fronts(DictionaryIterator* iter, bool* update_col
 
         cache_clear_current_fronters();
         for (int i = 0; i < total_current_fronters; i++) {
+            if (fronters_to_set == NULL) {
+                APP_LOG(APP_LOG_LEVEL_WARNING, "WARNING: Trying to add current frontable to cache with non-zero current fronters count but array is null");
+                break;
+            }
+
             cache_add_current_fronter(fronters_to_set[i]);
         }
         free(fronters_to_set);
         fronters_to_set = NULL;
+        total_current_fronters = 0;
+        current_front_counter = 0;
 
         APP_LOG(APP_LOG_LEVEL_INFO, "New fronters set!");
 
@@ -362,10 +376,17 @@ static void handle_api_groups(DictionaryIterator* iter) {
     if (group_counter >= total_groups && recieved_groups) {
         cache_clear_groups();
         for (int i = 0; i < total_groups; i++) {
+            if (groups_to_set == NULL) {
+                APP_LOG(APP_LOG_LEVEL_WARNING, "WARNING: Trying to add group to cache with non-zero group sending count but group array is null");
+                break;
+            }
+
             cache_add_group(groups_to_set[i]);
         }
         free(groups_to_set);
         groups_to_set = NULL;
+        total_groups = 0;
+        group_counter = 0;
 
         // re-iterate to assign group parent pointers
         GroupCollection* groups = cache_get_groups();
