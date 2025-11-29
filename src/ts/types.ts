@@ -7,7 +7,7 @@ export interface ApiMessage<T = any> {
 }
 
 export interface SocketMessage<T = any> {
-    msg: "Successfully authenticated" | "update";
+    msg: "Successfully authenticated" | "update" | "Authentication violation: Token is missing or invalid. Goodbye :)";
     target?: "frontHistory";
     results: {
         exists: boolean;

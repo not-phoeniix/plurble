@@ -282,7 +282,6 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
         if (grabbedToken) {
             console.log(`API token "${grabbedToken}" grabbed from webviewclosed event!`);
             cache.cacheApiToken(grabbedToken);
-            messaging.sendApiKeyIsValid(true);
 
             console.log("Setting up API and socket again after grabbing new token!");
             await setupApi(grabbedToken);

@@ -74,8 +74,14 @@ function onMessage(e: MessageEvent) {
             case "Successfully authenticated":
                 const authMessage = data as AuthSocketMessage;
                 cache.cacheSystemId(authMessage.resolvedToken.uid)
+                messaging.sendApiKeyIsValid(true);
                 console.log("Socket successfully authenticated :D");
                 break;
+            case "Authentication violation: Token is missing or invalid. Goodbye :)":
+                console.warn("WARNING: Token is invalid! Closing plural socket <//3");
+                messaging.sendApiKeyIsValid(false);
+                break;
+
             case "update":
                 switch (data.target) {
                     case "frontHistory":
