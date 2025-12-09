@@ -14,6 +14,7 @@ This was an app originally made for the Rebble Hackathon #002!
 ### Current Features
 - [x] Real-time syncing with the cloud using the Simply Plural API
 - [x] Member list
+  - [x] Optional groups view
 - [x] Custom front list
 - [x] Display/management of currently fronting members/custom fronts
   - [x] Add to front
@@ -22,9 +23,11 @@ This was an app originally made for the Rebble Hackathon #002!
 - [x] App customization
   - [x] Customizable colors
   - [x] Per-member accent colors
+- [x] Local watch-side data caching for fast startup
+  - [x] 96 Members + custom fronts
+  - [x] 32 Groups
 
 ### Future features
-- [ ] Groups in member list
 - [ ] Poll viewing/voting
 - [ ] Basic front history viewing
 - [ ] Enhanced member info
