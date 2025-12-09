@@ -65,7 +65,7 @@ void current_fronters_menu_push() {
     }
 
     current_fronters_menu_set_is_empty(cache_get_first_fronter() == NULL);
-    frontable_menu_window_push(menu);
+    frontable_menu_window_push(menu, false, true);
 }
 
 void current_fronters_menu_deinit() {

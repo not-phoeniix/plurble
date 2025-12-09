@@ -30,7 +30,7 @@ void custom_fronts_menu_push() {
         menu = frontable_menu_create(callbacks, &group);
     }
 
-    frontable_menu_window_push(menu);
+    frontable_menu_window_push(menu, false, true);
 }
 
 void custom_fronts_menu_deinit() {

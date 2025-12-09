@@ -123,7 +123,7 @@ void members_menu_push() {
         groups_initialized = true;
     }
 
-    frontable_menu_window_push(root_menu);
+    frontable_menu_window_push(root_menu, false, true);
 }
 
 void members_menu_deinit() {
@@ -154,7 +154,49 @@ void members_menu_update_colors() {
 void members_menu_refresh_groups() {
     APP_LOG(APP_LOG_LEVEL_INFO, "Refreshing groups...");
 
+    // TODO: figure out a way to remember and restore the "current menu" between refreshes
+    //   so we don't crash if we have a sub group open
+
+    //! you should make this not name-based, save group
+    //!   UIDs/hashes if possible in the future
+    char prev_group_name[GROUP_NAME_LENGTH + 1] = {'\0'};
+    uint16_t prev_selected_index = 0;
+
     if (groups_initialized) {
+        FrontableMenu* shown_menu = NULL;
+
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Searching for a group menu to restore after refresh...");
+
+        // find shown window if any are shown
+        Window* top_window = window_stack_get_top_window();
+        for (uint16_t i = 0; i < num_groups; i++) {
+            if (frontable_menu_get_window(menus[i]) == top_window) {
+                shown_menu = menus[i];
+                break;
+            }
+        }
+
+        // save menu name, remove menu because it's about to be destroyed
+        if (shown_menu != NULL) {
+            APP_LOG(
+                APP_LOG_LEVEL_DEBUG,
+                "Found group menu '%s'",
+                frontable_menu_get_name(shown_menu)
+            );
+
+            string_copy_smaller(
+                prev_group_name,
+                frontable_menu_get_name(shown_menu),
+                sizeof(prev_group_name)
+            );
+
+            prev_selected_index = frontable_menu_get_selected_index(shown_menu).row;
+
+            frontable_menu_window_pop_to_root(shown_menu, false);
+        } else {
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "Group menu not identified, members menu must not be pushed to window stack.");
+        }
+
         groups_deinit();
     }
 
@@ -168,6 +210,30 @@ void members_menu_refresh_groups() {
         root_group.frontables = hidden_root_list;
     } else {
         root_group.frontables = cache_get_members();
+    }
+
+    // find group again and push it back to the stack (if it exists)
+    FrontableMenu* menu_to_restore = NULL;
+    for (uint16_t i = 0; i < num_groups; i++) {
+        // don't check if a group was never saved
+        if (prev_group_name[0] == '\0') break;
+
+        const char* name = frontable_menu_get_name(menus[i]);
+        if (string_start_same(name, prev_group_name)) {
+            menu_to_restore = menus[i];
+            break;
+        }
+    }
+
+    if (menu_to_restore != NULL) {
+        APP_LOG(
+            APP_LOG_LEVEL_DEBUG,
+            "Found new group menu '%s' to restore!",
+            frontable_menu_get_name(menu_to_restore)
+        );
+
+        frontable_menu_set_selected_index(menu_to_restore, prev_selected_index);
+        frontable_menu_window_push(menu_to_restore, true, false);
     }
 
     groups_initialized = true;

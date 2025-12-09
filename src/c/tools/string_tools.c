@@ -86,6 +86,9 @@ bool string_start_same(const char* a, const char* b) {
     return true;
 }
 
+// TODO: replace some of these string functions with built in ones ????
+//   why did i not know about strlcpy ??? lol
+
 void string_copy_smaller(char* dest, const char* src, uint16_t dest_len) {
     for (uint16_t i = 0; i <= dest_len; i++) {
         if (i < dest_len) {

@@ -28,6 +28,8 @@ struct FrontableMenu {
 
     Frontable* selected_frontable;
     GColor highlight_color;
+
+    uint16_t index_on_load;
 };
 
 // ~~~ HELPER FUNCTIONS ~~~
@@ -35,15 +37,19 @@ struct FrontableMenu {
 static void update_selected_highlight(FrontableMenu* menu, uint16_t index) {
     GColor color = settings_get()->accent_color;
 
+    FrontableList* frontables = menu->group_node.group->frontables;
+
     if (settings_get()->member_color_highlight) {
         if (index < menu->group_node.num_children) {
             // try to get color of selected group first
             color = menu->group_node.children[index]->group->color;
-        } else if (menu->group_node.group->frontables->frontables != NULL) {
+        } else if (frontables->num_stored > 0) {
             // otherwise try to get color of selected frontable
-            uint16_t i = index - menu->group_node.num_children;
-            Frontable* f = menu->group_node.group->frontables->frontables[i];
-            color = frontable_get_color(f);
+            int16_t i = index - menu->group_node.num_children;
+            if (i >= 0 && i < frontables->num_stored) {
+                Frontable* f = frontables->frontables[i];
+                color = frontable_get_color(f);
+            }
         }
     }
 
@@ -54,21 +60,35 @@ static void update_selected_highlight(FrontableMenu* menu, uint16_t index) {
     menu->highlight_color = color;
 }
 
+static void window_pop_recursive(FrontableMenu* menu, bool pop_root, bool animated) {
+    GroupTreeNode* parent = menu->group_node.parent;
+
+    if (parent == NULL) {
+        if (pop_root) {
+            window_stack_remove(menu->window, animated);
+        }
+    } else {
+        window_stack_remove(menu->window, false);
+        window_pop_recursive(parent->menu, pop_root, animated);
+    }
+}
+
+static void window_push_recursive(FrontableMenu* menu, Window* root_limit) {
+    GroupTreeNode* parent = menu->group_node.parent;
+
+    if (parent != NULL && parent->menu->window != root_limit) {
+        window_push_recursive(parent->menu, root_limit);
+    }
+
+    window_stack_push(menu->window, false);
+}
+
 // ~~~ MENU LAYER SETUP ~~~
 
 static uint16_t get_num_rows(MenuLayer* layer, uint16_t section_index, void* context) {
-    uint16_t count = 0;
-
     FrontableMenu* menu = (FrontableMenu*)context;
-    if (menu != NULL) {
-        if (menu->group_node.group->frontables->frontables != NULL) {
-            count += menu->group_node.group->frontables->num_stored;
-        }
-
-        count += menu->group_node.num_children;
-    }
-
-    return count;
+    FrontableList* frontables = menu->group_node.group->frontables;
+    return frontables->num_stored + menu->group_node.num_children;
 }
 
 static int16_t get_cell_height(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
@@ -94,13 +114,16 @@ static uint16_t get_num_sections(MenuLayer* menu_layer, void* context) {
 static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex old_index, void* context) {
     FrontableMenu* menu = (FrontableMenu*)context;
 
-    update_selected_highlight(menu, new_index.row);
+    if (menu != NULL) {
+        update_selected_highlight(menu, new_index.row);
+    }
 
-    int16_t frontable_idx = new_index.row - menu->group_node.num_children;
-    if (frontable_idx >= 0) {
-        menu->selected_frontable = menu->group_node.group->frontables->frontables[new_index.row];
-    } else {
-        menu->selected_frontable = NULL;
+    menu->selected_frontable = NULL;
+
+    int16_t i = new_index.row - menu->group_node.num_children;
+    FrontableList* frontables = menu->group_node.group->frontables;
+    if (i >= 0 && i < frontables->num_stored) {
+        menu->selected_frontable = frontables->frontables[i];
     }
 }
 
@@ -147,6 +170,11 @@ static void menu_layer_setup(FrontableMenu* menu) {
     menu_layer_set_click_config_onto_window(menu->menu_layer, menu->window);
     layer_add_child(root_layer, menu_layer_get_layer(menu->menu_layer));
     update_selected_highlight(menu, 0);
+    menu_layer_set_selected_index(
+        menu->menu_layer,
+        (MenuIndex) {.row = menu->index_on_load},
+        MenuRowAlignCenter, false
+    );
     frontable_menu_update_colors(menu);
 
     // ~~~ create status bar layers ~~~
@@ -177,22 +205,11 @@ static void menu_layer_setup(FrontableMenu* menu) {
 
 // ~~~ ACTION MENU SETUP ~~~
 
-static void window_pop_recursive(FrontableMenu* menu) {
-    GroupTreeNode* parent = menu->group_node.parent;
-
-    if (parent != NULL) {
-        window_stack_remove(menu->window, false);
-        window_pop_recursive(parent->menu);
-    } else {
-        window_stack_remove(menu->window, true);
-    }
-}
-
 static void action_set_as_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
     FrontableMenu* menu = (FrontableMenu*)context;
     if (menu->selected_frontable != NULL) {
         messaging_set_as_front(menu->selected_frontable->hash);
-        window_pop_recursive(menu);
+        window_pop_recursive(menu, true, true);
     }
 }
 
@@ -248,6 +265,8 @@ static void window_load(Window* window) {
 static void window_unload(Window* window) {
     FrontableMenu* menu = (FrontableMenu*)window_get_user_data(window);
 
+    menu->index_on_load = 0;
+
     menu_layer_destroy(menu->menu_layer);
     menu->menu_layer = NULL;
     layer_destroy(menu->status_bar_layer);
@@ -279,13 +298,16 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
         name = group->name;
         color = group->color;
     } else {
-        uint16_t i = cell_index->row - menu->group_node.num_children;
-        Frontable* frontable = menu->group_node.group->frontables->frontables[i];
+        int16_t i = cell_index->row - menu->group_node.num_children;
+        FrontableList* frontables = menu->group_node.group->frontables;
+        if (i >= 0 && i < frontables->num_stored) {
+            Frontable* frontable = frontables->frontables[i];
 
-        color = frontable_get_color(frontable);
-        name = frontable->name;
-        if (!frontable_get_is_custom(frontable)) {
-            pronouns = frontable->pronouns;
+            color = frontable_get_color(frontable);
+            name = frontable->name;
+            if (!frontable_get_is_custom(frontable)) {
+                pronouns = frontable->pronouns;
+            }
         }
     }
 
@@ -341,7 +363,7 @@ static void select_frontable(FrontableMenu* menu, Frontable* frontable) {
 }
 
 static void select_group(FrontableMenu* menu, GroupTreeNode* node) {
-    frontable_menu_window_push(node->menu);
+    frontable_menu_window_push(node->menu, false, true);
 }
 
 void frontable_menu_select(FrontableMenu* menu, MenuIndex* cell_index) {
@@ -464,12 +486,24 @@ void frontable_menu_destroy(FrontableMenu* menu) {
     free(menu);
 }
 
-void frontable_menu_window_push(FrontableMenu* menu) {
-    window_stack_push(menu->window, true);
+void frontable_menu_window_push(FrontableMenu* menu, bool recursive, bool animated) {
+    // if top of window stack isn't the parent of this menu
+    //   AND the menu HAS a parent, push all the parents recursively <3
+    GroupTreeNode* parent = menu->group_node.parent;
+    Window* current_window = window_stack_get_top_window();
+    if (recursive && parent != NULL && parent->menu->window != current_window) {
+        window_push_recursive(menu, current_window);
+    } else {
+        window_stack_push(menu->window, animated);
+    }
 }
 
 void frontable_menu_window_remove(FrontableMenu* menu) {
     window_stack_remove(menu->window, true);
+}
+
+void frontable_menu_window_pop_to_root(FrontableMenu* menu, bool animated) {
+    window_pop_recursive(menu, false, animated);
 }
 
 FrontableList* frontable_menu_get_frontables(FrontableMenu* menu) {
@@ -491,4 +525,24 @@ void frontable_menu_clear_children(FrontableMenu* menu) {
 
 Window* frontable_menu_get_window(FrontableMenu* menu) {
     return menu->window;
+}
+
+MenuIndex frontable_menu_get_selected_index(FrontableMenu* menu) {
+    return menu_layer_get_selected_index(menu->menu_layer);
+}
+
+void frontable_menu_set_selected_index(FrontableMenu* menu, uint16_t index) {
+    menu->index_on_load = index;
+    if (menu->menu_layer != NULL) {
+        menu_layer_set_selected_index(
+            menu->menu_layer,
+            (MenuIndex) {.row = index},
+            MenuRowAlignCenter,
+            false
+        );
+    }
+}
+
+const char* frontable_menu_get_name(FrontableMenu* menu) {
+    return menu->group_node.group->name;
 }

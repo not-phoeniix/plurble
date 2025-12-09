@@ -158,7 +158,7 @@ static void handle_api_frontables(DictionaryIterator* iter) {
 
             frontable_counter++;
             APP_LOG(
-                APP_LOG_LEVEL_INFO,
+                APP_LOG_LEVEL_DEBUG,
                 "Recieved frontable '%s'! Index: %d/%d",
                 f->name,
                 frontable_counter,
@@ -248,7 +248,7 @@ static void handle_api_current_fronts(DictionaryIterator* iter, bool* update_col
 
             current_front_counter++;
             APP_LOG(
-                APP_LOG_LEVEL_INFO,
+                APP_LOG_LEVEL_DEBUG,
                 "Recieved current front '%lu'! Index: %d/%d",
                 hash,
                 current_front_counter,
@@ -354,7 +354,7 @@ static void handle_api_groups(DictionaryIterator* iter) {
 
             group_counter++;
             APP_LOG(
-                APP_LOG_LEVEL_INFO,
+                APP_LOG_LEVEL_DEBUG,
                 "Recieved group '%s'! Index: %d/%d",
                 group->name,
                 group_counter,
