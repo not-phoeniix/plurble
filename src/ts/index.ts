@@ -288,14 +288,16 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
 
             const uid = cache.getSystemId();
             if (uid) {
-                await fetchAndSendFrontables(uid, true);
+                // refetch things *without* cache for use with NEW token/UID
+                await fetchAndSendGroups(uid, false);
+                await fetchAndSendFrontables(uid, false);
                 await fetchAndSendCurrentFronts();
             } else {
-                console.error(`Error, cannot fetch frontables, UID is not cached!`);
+                console.error("Error, cannot fetch new API data, UID is not cached!");
             }
         }
 
     } else {
-        console.warn("webview response doesn't exist!");
+        console.warn("WARNING: webview response doesn't exist!");
     }
 });
