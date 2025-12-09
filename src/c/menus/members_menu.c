@@ -184,7 +184,7 @@ void members_menu_refresh_groups() {
                 frontable_menu_get_name(shown_menu)
             );
 
-            string_copy_smaller(
+            strncpy(
                 prev_group_name,
                 frontable_menu_get_name(shown_menu),
                 sizeof(prev_group_name)
