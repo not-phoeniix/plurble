@@ -55,10 +55,6 @@ async function fetchAndSendFrontables(uid: string, useCache: boolean) {
     let frontables: Frontable[] | null = null;
     if (useCache) {
         frontables = cache.getAllFrontables();
-    } else {
-        // clear frontables before fetching things again
-        await messaging.sendCurrentFrontersToWatch([]);
-        await messaging.sendFrontablesToWatch([], []);
     }
 
     if (!frontables) {
@@ -120,9 +116,6 @@ async function fetchAndSendGroups(uid: string, useCache: boolean) {
     let groups: Group[] | null = null;
     if (useCache) {
         groups = cache.getAllGroups();
-    } else {
-        // clear groups before fetching things again
-        await messaging.sendGroupsToWatch([]);
     }
 
     if (!groups) {
