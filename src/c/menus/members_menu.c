@@ -154,9 +154,6 @@ void members_menu_update_colors() {
 void members_menu_refresh_groups() {
     APP_LOG(APP_LOG_LEVEL_INFO, "Refreshing groups...");
 
-    // TODO: figure out a way to remember and restore the "current menu" between refreshes
-    //   so we don't crash if we have a sub group open
-
     //! you should make this not name-based, save group
     //!   UIDs/hashes if possible in the future
     char prev_group_name[GROUP_NAME_LENGTH + 1] = {'\0'};
