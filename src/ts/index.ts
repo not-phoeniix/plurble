@@ -148,6 +148,17 @@ async function fetchAndSendGroups(uid: string, useCache: boolean) {
                 return 0;
             }));
 
+            // sort groups themselves too!
+            groups.sort((a, b) => {
+                if (a.name.toLowerCase() > b.name.toLowerCase()) {
+                    return 1
+                } else if (a.name.toLowerCase() < b.name.toLowerCase()) {
+                    return -1;
+                }
+
+                return 0;
+            });
+
             cache.cacheGroups(groups);
 
             console.log("Groups fetched, assembled, and cached!");

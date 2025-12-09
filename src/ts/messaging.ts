@@ -29,7 +29,7 @@ export async function sendFrontablesToWatch(frontables: Frontable[], groups: Gro
         // sort alphabetically
         if (a.name.toLowerCase() > b.name.toLowerCase()) {
             value += 1;
-        } else if (a.name.toLocaleLowerCase() < b.name.toLowerCase()) {
+        } else if (a.name.toLowerCase() < b.name.toLowerCase()) {
             value -= 1;
         }
 
