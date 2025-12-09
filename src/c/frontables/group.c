@@ -11,7 +11,7 @@ Group* group_create(const char* name, GColor color, Group* parent) {
         .frontables = frontables,
         .parent = parent
     };
-    strncpy(group->name, name, GROUP_NAME_LENGTH + 1);
+    string_safe_copy(group->name, name, GROUP_NAME_LENGTH);
 
     return group;
 }

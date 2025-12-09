@@ -4,14 +4,14 @@
 #include "frontable.h"
 #include "frontable_list.h"
 
-#define GROUP_NAME_LENGTH 32
+#define GROUP_NAME_LENGTH 33
 
 struct Group;
 
 /// @brief A struct that describes a group of frontables in a plural system
 typedef struct Group {
     struct Group* parent;
-    char name[GROUP_NAME_LENGTH + 1];
+    char name[GROUP_NAME_LENGTH];
     GColor color;
     FrontableList* frontables;
 } Group;

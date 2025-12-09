@@ -26,3 +26,9 @@ void string_array_free(char** string_array, uint16_t length);
 /// @param b Second string to compare
 /// @return Whether or not strings start with the same characters
 bool string_start_same(const char* a, const char* b);
+
+/// @brief Copies a string to a potentially smaller sized destination, ensures a null terminator
+/// @param dest Pointer to destination string
+/// @param src Pointer to source string
+/// @param size Max size of destination to copy
+void string_safe_copy(char* dest, const char* src, size_t size);

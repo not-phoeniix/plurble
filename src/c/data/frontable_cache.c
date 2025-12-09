@@ -44,6 +44,13 @@ typedef struct {
     uint8_t parent_index;
 } CompressedGroup;
 
+// TODO: command cache for frontable tracking for when phone gets disconnected
+// typedef struct {
+//     uint32_t hash;
+//     time_t time;
+//     uint8_t type;
+// } Command;
+
 static FrontableList members;
 static FrontableList custom_fronts;
 static FrontableList current_fronters;
@@ -150,8 +157,8 @@ static void store_pronoun_map(char* pronoun_map, size_t pronoun_map_size) {
 
         // add to array if they haven't been cached yet
         if (!pronouns_exist && pronoun_index < MAX_CACHED_PRONOUNS) {
-            strncpy(
-                pronoun_map + (pronoun_index * (COMPRESSED_PRONOUNS_LENGTH)),
+            string_safe_copy(
+                pronoun_map + (pronoun_index * COMPRESSED_PRONOUNS_LENGTH),
                 member->pronouns,
                 COMPRESSED_PRONOUNS_LENGTH
             );
@@ -180,7 +187,7 @@ static void store_frontables(char* pronoun_map) {
             .pronoun_index = 0,
             .group_bit_field = 0
         };
-        strncpy(
+        string_safe_copy(
             frontables_to_store[frontable_index].name,
             custom_front->name,
             COMPRESSED_NAME_LENGTH
@@ -211,7 +218,7 @@ static void store_frontables(char* pronoun_map) {
             .pronoun_index = pronoun_index,
             .group_bit_field = member->group_bit_field
         };
-        strncpy(
+        string_safe_copy(
             frontables_to_store[frontable_index].name,
             member->name,
             COMPRESSED_NAME_LENGTH
@@ -264,7 +271,7 @@ static void store_groups() {
             .color = group->color.argb,
             .parent_index = (uint8_t)(parent_index + 1)
         };
-        strncpy(
+        string_safe_copy(
             groups_to_store[group_index].name,
             group->name,
             COMPRESSED_NAME_LENGTH
@@ -332,7 +339,7 @@ static void load_frontables(char* pronoun_map) {
 
         if (cached->pronoun_index > 0) {
             uint16_t index = cached->pronoun_index - 1;
-            strncpy(
+            string_safe_copy(
                 f->pronouns,
                 &pronoun_map[index * (COMPRESSED_PRONOUNS_LENGTH)],
                 FRONTABLE_PRONOUNS_LENGTH

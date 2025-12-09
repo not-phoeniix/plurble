@@ -217,18 +217,18 @@ void main_menu_mark_custom_fronts_loaded() {
 
 void main_menu_set_members_subtitle(const char* subtitle) {
     static char s_subtitle[33];
-    strncpy(s_subtitle, subtitle, sizeof(s_subtitle));
+    string_safe_copy(s_subtitle, subtitle, sizeof(s_subtitle));
     items[1].subtitle = s_subtitle;
 }
 
 void main_menu_set_custom_fronts_subtitle(const char* subtitle) {
     static char s_subtitle[33];
-    strncpy(s_subtitle, subtitle, sizeof(s_subtitle));
+    string_safe_copy(s_subtitle, subtitle, sizeof(s_subtitle));
     items[2].subtitle = s_subtitle;
 }
 
 void main_menu_set_fronters_subtitle(const char* subtitle) {
     static char s_subtitle[33];
-    strncpy(s_subtitle, subtitle, sizeof(s_subtitle));
+    string_safe_copy(s_subtitle, subtitle, sizeof(s_subtitle));
     items[0].subtitle = s_subtitle;
 }

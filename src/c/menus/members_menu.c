@@ -156,7 +156,7 @@ void members_menu_refresh_groups() {
 
     //! you should make this not name-based, save group
     //!   UIDs/hashes if possible in the future
-    char prev_group_name[GROUP_NAME_LENGTH + 1] = {'\0'};
+    char prev_group_name[GROUP_NAME_LENGTH] = {'\0'};
     uint16_t prev_selected_index = 0;
 
     if (groups_initialized) {
@@ -181,7 +181,7 @@ void members_menu_refresh_groups() {
                 frontable_menu_get_name(shown_menu)
             );
 
-            strncpy(
+            string_safe_copy(
                 prev_group_name,
                 frontable_menu_get_name(shown_menu),
                 sizeof(prev_group_name)

@@ -85,3 +85,8 @@ bool string_start_same(const char* a, const char* b) {
 
     return true;
 }
+
+void string_safe_copy(char* dest, const char* src, size_t size) {
+    strncpy(dest, src, size);
+    dest[size - 1] = '\0';
+}

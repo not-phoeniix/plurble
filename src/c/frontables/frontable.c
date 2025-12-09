@@ -78,9 +78,9 @@ Frontable* frontable_create(uint32_t hash, const char* name, const char* pronoun
         .pronouns = {'\0'},
         .group_bit_field = 0
     };
-    strncpy(f->name, name, FRONTABLE_NAME_LENGTH);
+    string_safe_copy(f->name, name, FRONTABLE_NAME_LENGTH);
     if (pronouns != NULL) {
-        strncpy(f->pronouns, pronouns, FRONTABLE_PRONOUNS_LENGTH);
+        string_safe_copy(f->pronouns, pronouns, FRONTABLE_PRONOUNS_LENGTH);
     }
 
     return f;
