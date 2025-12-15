@@ -26,7 +26,7 @@ struct FrontableMenu {
 
     GroupTreeNode group_node;
 
-    Frontable* selected_frontable;
+    uint32_t selected_frontable_hash;
     GColor highlight_color;
 
     uint16_t index_on_load;
@@ -119,12 +119,12 @@ static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex o
     }
 
     menu->index_on_load = new_index.row;
-    menu->selected_frontable = NULL;
+    menu->selected_frontable_hash = 0;
 
     int16_t i = new_index.row - menu->group_node.num_children;
     FrontableList* frontables = menu->group_node.group->frontables;
     if (i >= 0 && i < frontables->num_stored) {
-        menu->selected_frontable = frontables->frontables[i];
+        menu->selected_frontable_hash = frontables->frontables[i]->hash;
     }
 }
 
@@ -208,24 +208,18 @@ static void menu_layer_setup(FrontableMenu* menu) {
 
 static void action_set_as_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
     FrontableMenu* menu = (FrontableMenu*)context;
-    if (menu->selected_frontable != NULL) {
-        messaging_set_as_front(menu->selected_frontable->hash);
-        window_pop_recursive(menu, true, true);
-    }
+    messaging_set_as_front(menu->selected_frontable_hash);
+    window_pop_recursive(menu, true, true);
 }
 
 static void action_add_to_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
     FrontableMenu* menu = (FrontableMenu*)context;
-    if (menu->selected_frontable != NULL) {
-        messaging_add_to_front(menu->selected_frontable->hash);
-    }
+    messaging_add_to_front(menu->selected_frontable_hash);
 }
 
 static void action_remove_from_front(ActionMenu* action_menu, const ActionMenuItem* action, void* context) {
     FrontableMenu* menu = (FrontableMenu*)context;
-    if (menu->selected_frontable != NULL) {
-        messaging_remove_from_front(menu->selected_frontable->hash);
-    }
+    messaging_remove_from_front(menu->selected_frontable_hash);
 }
 
 static void action_menu_setup(FrontableMenu* menu) {
@@ -359,7 +353,7 @@ static void select_frontable(FrontableMenu* menu, Frontable* frontable) {
     }
 
     // change selected frontable and open menu itself
-    menu->selected_frontable = frontable;
+    menu->selected_frontable_hash = frontable->hash;
     action_menu_open(&menu->action_menu_config);
 }
 

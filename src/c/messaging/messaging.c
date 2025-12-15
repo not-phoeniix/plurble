@@ -188,6 +188,13 @@ static bool handle_api_frontables(DictionaryIterator* iter) {
         APP_LOG(APP_LOG_LEVEL_INFO, "No frontables in message detected!");
     }
 
+    // frontables were specified if this message key is found,
+    //   so we wanna mark the frontables as dirty in the queue and clear them out to zero!
+    if (num_total_frontables != NULL && num_total_frontables->value->int32 == 0) {
+        APP_LOG(APP_LOG_LEVEL_INFO, "Frontables specified to clear to 0 in this message!");
+        return true;
+    }
+
     return false;
 }
 
@@ -358,6 +365,13 @@ static bool handle_api_groups(DictionaryIterator* iter) {
         APP_LOG(APP_LOG_LEVEL_INFO, "No groups recognized in message!");
     }
 
+    // groups were specified if this message key is found,
+    //   so we wanna mark the groups as dirty in the queue and clear them out to zero!
+    if (num_total_groups != NULL && num_total_groups->value->int32 == 0) {
+        APP_LOG(APP_LOG_LEVEL_INFO, "Groups specified to clear to 0 in this message!");
+        return true;
+    }
+
     return false;
 }
 
@@ -377,16 +391,7 @@ static void flush_cache_groups_and_frontables() {
 
 static void flush_cache_current_fronters() {
     cache_queue_flush_current_fronters();
-
-    //! maybe this logic should belong in the main menu itself?
-    //!   rather than in an unrelated messaging file
-    Frontable* first_fronter = cache_get_first_fronter();
-    if (first_fronter != NULL) {
-        main_menu_set_fronters_subtitle(first_fronter->name);
-    } else {
-        main_menu_set_fronters_subtitle("no one is fronting");
-    }
-
+    main_menu_update_fronters_subtitle();
     current_fronters_menu_update_is_empty();
 }
 
@@ -408,7 +413,6 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
     }
     if (handle_api_current_fronts(iter)) {
         current_fronts_dirty = true;
-        *update_colors = true;
     }
 
     // data flushing has two situations:
@@ -421,6 +425,8 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
             flush_cache_groups_and_frontables();
             flush_cache_current_fronters();
 
+            *update_colors = true;
+
             groups_dirty = false;
             frontables_dirty = false;
             current_fronts_dirty = false;
@@ -429,12 +435,17 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
             frontables_being_sent = false;
             current_fronts_being_sent = false;
         }
+
     } else if (current_fronts_being_sent) {
+        printf("why is this printing? faggot");
+
         if (current_fronts_dirty) {
             APP_LOG(APP_LOG_LEVEL_INFO, "Current front messages dirty, flushing cache and updating app data!");
             flush_cache_current_fronters();
             current_fronts_dirty = false;
             current_fronts_being_sent = false;
+
+            *update_colors = true;
         }
     }
 }

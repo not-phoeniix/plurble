@@ -43,12 +43,7 @@ static void init() {
     // push the appropriate menu depending on current watch connection status
     connection_handler(connection_service_peek_pebble_app_connection());
 
-    Frontable* front = cache_get_first_fronter();
-    if (front == NULL) {
-        main_menu_set_fronters_subtitle("no one is fronting");
-    } else {
-        main_menu_set_fronters_subtitle(front->name);
-    }
+    main_menu_update_fronters_subtitle();
 }
 
 static void deinit() {

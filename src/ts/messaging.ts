@@ -12,7 +12,7 @@ const GROUP_NAME_LENGTH = 32;
 const GROUP_LIST_MAX_COUNT = 32;
 const DELIMETER = ';';
 
-export async function sendFrontablesToWatch(frontables: Frontable[], groups: Group[]): Promise<void> {
+function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
     // sort based on frontable type and name alphabetically
     frontables.sort((a, b) => {
         let value = 0;
@@ -38,6 +38,8 @@ export async function sendFrontablesToWatch(frontables: Frontable[], groups: Gro
 
     const numFrontables = frontables.length;
     const numMessages = Math.ceil(numFrontables / FRONTABLES_PER_MESSAGE);
+
+    const messages: AppMessageDesc[] = [];
 
     for (let i = 0; i < numMessages; i++) {
         const batchSize = Math.min(frontables.length, FRONTABLES_PER_MESSAGE);
@@ -107,54 +109,23 @@ export async function sendFrontablesToWatch(frontables: Frontable[], groups: Gro
             msg.NumTotalFrontables = numFrontables;
         }
 
-        console.log(`Sending ${batchSize} frontables in a batch to watch...`);
-
-        await (PebbleTS.sendAppMessage(msg)
-            .then(
-                () => console.log("Frontable data successfully sent !!"),
-                (reason) => console.log("Frontable data sending failed !! reason: " + reason)
-            ));
+        messages.push(msg);
     }
+
+    if (messages.length === 0) {
+        messages.push({ NumTotalFrontables: 0 });
+    }
+
+    return messages;
 }
 
-export async function sendCurrentFrontersToWatch(currentFronters: FrontEntryMessage[]): Promise<void> {
-    const numFronters = currentFronters.length;
-    const numMessages = Math.ceil(numFronters / CURRENT_FRONTS_PER_MESSAGE);
-
-    for (let i = 0; i < numMessages; i++) {
-        const batchSize = Math.min(currentFronters.length, CURRENT_FRONTS_PER_MESSAGE);
-        const toSend = currentFronters.splice(0, batchSize);
-
-        const hashes = utils.toByteArray(
-            toSend.map(entry => utils.genHash(entry.content.member))
-        );
-
-        const msg: AppMessageDesc = {
-            CurrentFronter: hashes,
-            NumCurrentFrontersInBatch: batchSize
-        };
-
-        if (i === 0) {
-            // signal we are at the start of a batch by 
-            //   specifying size only with the first message
-            msg.NumCurrentFronters = numFronters;
-        }
-
-        await PebbleTS.sendAppMessage(msg);
-    }
-
-    if (numFronters === 0) {
-        await PebbleTS.sendAppMessage(<AppMessageDesc>{
-            NumCurrentFronters: 0
-        });
-    }
-}
-
-export async function sendGroupsToWatch(groups: Group[]): Promise<void> {
+function assembleGroupMessages(groups: Group[]) {
     const numGroups = groups.length;
     const numMessages = Math.ceil(numGroups / GROUPS_PER_MESSAGE);
 
     const groupsOriginal: Group[] = JSON.parse(JSON.stringify(groups));
+
+    const messages: AppMessageDesc[] = [];
 
     for (let i = 0; i < numMessages; i++) {
         const batchSize = Math.min(groups.length, GROUPS_PER_MESSAGE);
@@ -207,13 +178,122 @@ export async function sendGroupsToWatch(groups: Group[]): Promise<void> {
             msg.NumTotalGroups = numGroups;
         }
 
-        console.log(`Sending ${batchSize} groups in a batch to watch...`);
+        messages.push(msg);
+    }
 
+    if (messages.length === 0) {
+        messages.push({ NumTotalGroups: 0 });
+    }
+
+    return messages;
+}
+
+function assembleCurrentFrontMessages(currentFronters: FrontEntryMessage[]) {
+    const numFronters = currentFronters.length;
+    const numMessages = Math.ceil(numFronters / CURRENT_FRONTS_PER_MESSAGE);
+
+    const messages: AppMessageDesc[] = [];
+
+    for (let i = 0; i < numMessages; i++) {
+        const batchSize = Math.min(currentFronters.length, CURRENT_FRONTS_PER_MESSAGE);
+        const toSend = currentFronters.splice(0, batchSize);
+
+        const hashes = utils.toByteArray(
+            toSend.map(entry => utils.genHash(entry.content.member))
+        );
+
+        const msg: AppMessageDesc = {
+            CurrentFronter: hashes,
+            NumCurrentFrontersInBatch: batchSize
+        };
+
+        if (i === 0) {
+            // signal we are at the start of a batch by 
+            //   specifying size only with the first message
+            msg.NumCurrentFronters = numFronters;
+        }
+
+        messages.push(msg);
+    }
+
+    if (messages.length === 0) {
+        messages.push({ NumCurrentFronters: 0 });
+    }
+
+    return messages;
+}
+
+export async function sendFrontablesToWatch(frontables: Frontable[], groups: Group[]): Promise<void> {
+    const messages = assembleFrontableMessages(frontables, groups);
+
+    for (let msg of messages) {
+        await (PebbleTS.sendAppMessage(msg)
+            .then(
+                () => console.log("Frontable data successfully sent !!"),
+                (reason) => console.log("Frontable data sending failed !! reason: " + reason)
+            ));
+    }
+}
+
+export async function sendCurrentFrontersToWatch(currentFronters: FrontEntryMessage[]): Promise<void> {
+    const messages = assembleCurrentFrontMessages(currentFronters);
+
+    for (let msg of messages) {
+        await PebbleTS.sendAppMessage(msg)
+            .then(
+                () => console.log("Current front data successfully sent !!"),
+                (reason) => console.log("Current front data sending failed !! reason: " + reason)
+            );
+    }
+}
+
+export async function sendGroupsToWatch(groups: Group[]): Promise<void> {
+    const messages = assembleGroupMessages(groups);
+
+    for (const msg of messages) {
         await PebbleTS.sendAppMessage(msg)
             .then(
                 () => console.log("Group data successfully sent !!"),
                 (reason) => console.log("Group data sending failed !! reason: " + reason)
             );
+    }
+}
+
+export async function sendDataBatchToWatch(
+    frontables: Frontable[],
+    currentFronters: FrontEntryMessage[],
+    groups: Group[],
+): Promise<void> {
+    const messages: AppMessageDesc[] = [];
+
+    // assemble and merge frontable messages
+    const frontableMessages = assembleFrontableMessages(frontables, groups);
+    messages.push(...frontableMessages);
+
+    // assemble and merge all current frontable message data
+    const currentFronterMessages = assembleCurrentFrontMessages(currentFronters);
+    for (let i = 0; i < currentFronterMessages.length; i++) {
+        if (i >= messages.length) {
+            messages.push(currentFronterMessages[i]);
+        } else {
+            // object spreading to merge the properties of both objects
+            messages[i] = { ...messages[i], ...currentFronterMessages[i] };
+        }
+    }
+
+    // assemble and merge all group message data
+    const groupMessages = assembleGroupMessages(groups);
+    for (let i = 0; i < groupMessages.length; i++) {
+        if (i >= messages.length) {
+            messages.push(groupMessages[i]);
+        } else {
+            messages[i] = { ...messages[i], ...groupMessages[i] };
+        }
+    }
+
+    // take all the merged data and send it all :D
+    for (let msg of messages) {
+        await PebbleTS.sendAppMessage(msg);
     }
 }
 

@@ -54,7 +54,6 @@ static void window_load() {
 
     items[0] = (SimpleMenuItem) {
         .title = "Fronters",
-        .subtitle = current_fronters_loaded ? "no one is fronting" : "loading fronters...",
         .icon = NULL,
         .callback = select
     };
@@ -104,6 +103,7 @@ static void window_load() {
 
     layer_add_child(root_layer, simple_menu_layer_get_layer(simple_menu_layer));
     main_menu_update_colors();
+    main_menu_update_fronters_subtitle();
 
     // ~~~ create status bar layers ~~~
 
@@ -195,6 +195,19 @@ void main_menu_mark_fronters_loaded() {
     }
 
     current_fronters_loaded = true;
+}
+
+void main_menu_update_fronters_subtitle() {
+    Frontable* first_fronter = cache_get_first_fronter();
+    if (first_fronter != NULL) {
+        main_menu_set_fronters_subtitle(first_fronter->name);
+    } else {
+        main_menu_set_fronters_subtitle("no one is fronting");
+    }
+
+    if (simple_menu_layer != NULL) {
+        layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
+    }
 }
 
 void main_menu_mark_members_loaded() {
