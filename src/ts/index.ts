@@ -93,11 +93,6 @@ async function fetchFrontables(uid: string, useCache: boolean, groupPromise: Pro
         return null;
     }
 
-    // if (frontables) {
-    //     console.log("Sending frontables to watch...");
-    //     await messaging.sendFrontablesToWatch(frontables, groups);
-    // }
-
     return frontables;
 }
 
@@ -162,19 +157,6 @@ async function fetchGroups(uid: string, useCache: boolean): Promise<Group[] | nu
     } else {
         console.log("Groups found in cache!");
     }
-
-    // const completedPromise = new Promise<void>(async (resolve) => {
-    //     await groupPromise;
-
-    //     if (groups) {
-    //         console.log("Groups found! sending to watch...");
-    //         await messaging.sendGroupsToWatch(groups);
-    //     } else {
-    //         console.error("ERROR: Groups not fetched/cached properly, cannot send to watch!");
-    //     }
-
-    //     resolve();
-    // });
 
     return groups;
 }

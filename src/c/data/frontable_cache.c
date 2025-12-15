@@ -213,21 +213,6 @@ void cache_queue_flush_frontables() {
         cache_add_frontable(frontable_queue[i]);
     }
 
-    // iterate across members and add them to groups
-    // GroupCollection* groups = cache_get_groups();
-    // FrontableList* members = cache_get_members();
-    // for (uint16_t i = 0; i < members->num_stored; i++) {
-    //     Frontable* member = members->frontables[i];
-
-    //     for (uint16_t j = 0; j < groups->num_stored; j++) {
-    //         Group* group = groups->groups[j];
-
-    //         if (((member->group_bit_field >> j) & 1) != 0) {
-    //             frontable_list_add(member, group->frontables);
-    //         }
-    //     }
-    // }
-
     frontable_queue_count = 0;
 }
 
