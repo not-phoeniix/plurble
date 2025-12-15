@@ -48,7 +48,7 @@ void settings_menu_confirm_frontable_fetch() {
     }
 
     items[1].subtitle = "Fetched :D";
-    app_timer_register(3000, reset_fetch_name_callback, NULL);
+    app_timer_register(2000, reset_fetch_name_callback, NULL);
 }
 
 static void reset_cache_confirm(void* data) {

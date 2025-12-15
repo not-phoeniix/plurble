@@ -130,22 +130,10 @@ function fetchAndSendGroups(uid: string, useCache: boolean): {
 
                 console.log("Groups fetched! Sorting...");
 
-                console.log(JSON.stringify(groups));
-
                 // sort group children alphabetically
                 groups.forEach(g => g.members.sort((a, b) => {
-                    console.log(`a: ${a}, b: ${b}`);
-                    console.log(`hashA: ${utils.genHash(a)}, hashB: ${utils.genHash(b)}`);
-
                     const memberA = cache.getFrontable(utils.genHash(a));
-                    if (memberA) {
-                        console.log(`memberA: ${memberA.name}`);
-                    }
-
                     const memberB = cache.getFrontable(utils.genHash(b));
-                    if (memberB) {
-                        console.log(`memberA: ${memberB.name}`);
-                    }
 
                     if (!memberA || !memberB) return 0;
 
@@ -207,17 +195,11 @@ function fetchAndSendGroups(uid: string, useCache: boolean): {
 async function fetchAndSendAllData(uid: string, useCache: boolean) {
     const { completedPromise, groupPromise } = fetchAndSendGroups(uid, useCache);
 
-    await completedPromise;
-    await fetchAndSendFrontables(uid, useCache, groupPromise);
-    await fetchAndSendCurrentFronts();
-
-    // const { completedPromise, groupPromise } = fetchAndSendGroups(uid, true);
-    // await completedPromise;
-    // await Promise.all([
-    //     // completedPromise,
-    //     fetchAndSendFrontables(uid, true, groupPromise),
-    //     fetchAndSendCurrentFronts(),
-    // ]);
+    await Promise.all([
+        completedPromise,
+        fetchAndSendFrontables(uid, useCache, groupPromise),
+        fetchAndSendCurrentFronts(),
+    ]);
 }
 
 Pebble.addEventListener("ready", async (e) => {
