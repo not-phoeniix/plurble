@@ -5,7 +5,7 @@ import * as utils from "./utils";
 //!   frontable.h & group.h <3
 const FRONTABLES_PER_MESSAGE = 32;
 const CURRENT_FRONTS_PER_MESSAGE = 16;
-const GROUPS_PER_MESSAGE = 1;
+const GROUPS_PER_MESSAGE = 32;
 const FRONTABLE_NAME_LENGTH = 32;
 const FRONTABLE_PRONOUNS_LENGTH = 16;
 const GROUP_NAME_LENGTH = 32;
