@@ -20,6 +20,13 @@ void cache_add_group(Group* group);
 GroupCollection* cache_get_groups();
 void cache_clear_groups();
 
+void cache_queue_add_frontable(Frontable* frontable);
+void cache_queue_add_group(Group* group);
+void cache_queue_add_current_fronter(uint32_t hash);
+void cache_queue_flush_frontables();
+void cache_queue_flush_groups();
+void cache_queue_flush_current_fronters();
+
 void cache_persist_store();
 bool cache_persist_load();
 void cache_persist_delete();

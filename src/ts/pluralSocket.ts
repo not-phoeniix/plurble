@@ -114,7 +114,7 @@ function handleFrontHistory(data: FrontEntrySocketMessage) {
                 console.log(`sending list of fronters size ${currentFronts.length} to watch...`);
                 messaging.sendCurrentFrontersToWatch(currentFronts);
             } else {
-                console.warn("Warning: no cached current fronts were found ? not like an issue with the array being empty. like. theres no array in the first place. oh no !!");
+                console.warn("WARNING: no cached current fronts were found ? not like an issue with the array being empty. like. theres no array in the first place. oh no !!");
             }
         },
         SOCKET_BATCH_TIME

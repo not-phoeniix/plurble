@@ -32,7 +32,7 @@ static void init() {
         main_menu_mark_members_loaded();
         main_menu_mark_custom_fronts_loaded();
         main_menu_mark_fronters_loaded();
-        members_menu_refresh_groups();
+        members_menu_create_groups();
         members_menu_refresh_groupless_members();
     }
 

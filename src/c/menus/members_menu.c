@@ -14,6 +14,11 @@ static uint16_t num_groups = 0;
 static bool groups_initialized = false;
 static bool root_initialized = false;
 
+//! you should make this not name-based, save group
+//!   UIDs/hashes if possible in the future
+static char prev_group_name[GROUP_NAME_LENGTH] = {'\0'};
+static uint16_t prev_selected_index = 0;
+
 static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
     FrontableMenu* menu = (FrontableMenu*)context;
     frontable_menu_draw_cell(menu, ctx, cell_layer, cell_index);
@@ -151,13 +156,11 @@ void members_menu_update_colors() {
     }
 }
 
-void members_menu_refresh_groups() {
-    APP_LOG(APP_LOG_LEVEL_INFO, "Refreshing groups...");
+void members_menu_remove_groups() {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Removing members menu groups...");
 
-    //! you should make this not name-based, save group
-    //!   UIDs/hashes if possible in the future
-    char prev_group_name[GROUP_NAME_LENGTH] = {'\0'};
-    uint16_t prev_selected_index = 0;
+    strncpy(prev_group_name, "", sizeof(prev_group_name));
+    prev_selected_index = 0;
 
     if (groups_initialized) {
         FrontableMenu* shown_menu = NULL;
@@ -188,6 +191,7 @@ void members_menu_refresh_groups() {
             );
 
             prev_selected_index = frontable_menu_get_selected_index(shown_menu).row;
+            printf("prev selected index to attempt to restore: %u", prev_selected_index);
 
             frontable_menu_window_pop_to_root(shown_menu, false);
         } else {
@@ -196,6 +200,14 @@ void members_menu_refresh_groups() {
 
         groups_deinit();
     }
+
+    groups_initialized = false;
+
+    APP_LOG(APP_LOG_LEVEL_INFO, "Groups removed!");
+}
+
+void members_menu_create_groups() {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Creating members menu groups...");
 
     groups_init();
 
@@ -229,13 +241,14 @@ void members_menu_refresh_groups() {
             frontable_menu_get_name(menu_to_restore)
         );
 
+        printf("trying to restore menu with index: %u", prev_selected_index);
         frontable_menu_set_selected_index(menu_to_restore, prev_selected_index);
         frontable_menu_window_push(menu_to_restore, true, false);
     }
 
     groups_initialized = true;
 
-    APP_LOG(APP_LOG_LEVEL_INFO, "Groups refreshed!");
+    APP_LOG(APP_LOG_LEVEL_INFO, "Groups created!");
 }
 
 void members_menu_refresh_groupless_members() {
@@ -246,8 +259,8 @@ void members_menu_refresh_groupless_members() {
     }
 
     GroupCollection* group_collection = cache_get_groups();
-
     FrontableList* members = cache_get_members();
+
     for (uint16_t i = 0; i < members->num_stored; i++) {
         Frontable* member = members->frontables[i];
         bool in_group = false;

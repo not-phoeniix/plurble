@@ -9,4 +9,3 @@ void main_menu_mark_fronters_loaded();
 void main_menu_set_members_subtitle(const char* subtitle);
 void main_menu_set_custom_fronts_subtitle(const char* subtitle);
 void main_menu_set_fronters_subtitle(const char* subtitle);
-void main_menu_confirm_frontable_fetch();

@@ -41,7 +41,7 @@ static void fetch_timeout_name_callback(void* data) {
     app_timer_register(4000, reset_fetch_name_callback, NULL);
 }
 
-void main_menu_confirm_frontable_fetch() {
+void settings_menu_confirm_frontable_fetch() {
     if (fetch_timeout_timer != NULL) {
         app_timer_cancel(fetch_timeout_timer);
         fetch_timeout_timer = NULL;
@@ -76,7 +76,8 @@ static void select(int index, void* context) {
                 layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
             }
 
-            members_menu_refresh_groups();
+            members_menu_remove_groups();
+            members_menu_create_groups();
             members_menu_refresh_groupless_members();
             break;
 

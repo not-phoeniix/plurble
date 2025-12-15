@@ -118,6 +118,7 @@ static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex o
         update_selected_highlight(menu, new_index.row);
     }
 
+    menu->index_on_load = new_index.row;
     menu->selected_frontable = NULL;
 
     int16_t i = new_index.row - menu->group_node.num_children;

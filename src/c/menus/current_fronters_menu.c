@@ -64,7 +64,7 @@ void current_fronters_menu_push() {
         menu = frontable_menu_create(callbacks, &group);
     }
 
-    current_fronters_menu_set_is_empty(cache_get_first_fronter() == NULL);
+    current_fronters_menu_update_is_empty();
     frontable_menu_window_push(menu, false, true);
 }
 
@@ -88,15 +88,18 @@ void current_fronters_menu_update_colors() {
     }
 }
 
-void current_fronters_menu_set_is_empty(bool p_empty) {
+void current_fronters_menu_update_is_empty() {
     // don't update anything if text layer doesn't exist lol
     if (text_layer == NULL) {
         return;
     }
 
+    Frontable* first_fronter = cache_get_first_fronter();
+    bool current_is_empty = first_fronter == NULL;
+
     // don't update any states if the empty flag is
-    //   already the same as the inputted state
-    if (empty == p_empty) {
+    //   already the same as the desired state
+    if (empty == current_is_empty) {
         return;
     }
 
@@ -107,13 +110,13 @@ void current_fronters_menu_set_is_empty(bool p_empty) {
 
     // always remove parent so duplicates do not occur, then
     //   if set to show then re-add layer as child of root
-    if (p_empty) {
+    if (current_is_empty) {
         layer_add_child(root_layer, layer);
     } else {
         layer_remove_from_parent(layer);
     }
 
     // mark to redraw every update, update boolean flag
-    empty = p_empty;
+    empty = current_is_empty;
     layer_mark_dirty(root_layer);
 }

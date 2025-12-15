@@ -109,11 +109,11 @@ export async function sendFrontablesToWatch(frontables: Frontable[], groups: Gro
 
         console.log(`Sending ${batchSize} frontables in a batch to watch...`);
 
-        await PebbleTS.sendAppMessage(msg)
+        await (PebbleTS.sendAppMessage(msg)
             .then(
                 () => console.log("Frontable data successfully sent !!"),
                 (reason) => console.log("Frontable data sending failed !! reason: " + reason)
-            );
+            ));
     }
 }
 

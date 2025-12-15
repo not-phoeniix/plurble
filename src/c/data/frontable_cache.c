@@ -16,6 +16,10 @@
 #define COMPRESSED_NAME_LENGTH 20
 #define COMPRESSED_PRONOUNS_LENGTH 11
 
+#define FRONTABLE_QUEUE_SIZE 512
+#define GROUP_QUEUE_SIZE GROUP_LIST_MAX_COUNT
+#define CURRENT_FRONTER_QUEUE_SIZE 512
+
 // ~~~ current memory footprint ~~~
 //
 // max memory taken up by pronoun map:
@@ -55,6 +59,13 @@ static FrontableList members;
 static FrontableList custom_fronts;
 static FrontableList current_fronters;
 static GroupCollection groups;
+
+static Frontable** frontable_queue = NULL;
+static uint16_t frontable_queue_count = 0;
+static Group** group_queue = NULL;
+static uint16_t group_queue_count = 0;
+static uint32_t* current_fronter_queue = NULL;
+static uint16_t current_fronter_queue_count = 0;
 
 FrontableList* cache_get_members() { return &members; }
 FrontableList* cache_get_custom_fronts() { return &custom_fronts; }
@@ -138,6 +149,108 @@ void cache_clear_groups() {
         groups.groups[i] = NULL;
     }
     groups.num_stored = 0;
+}
+
+void cache_queue_add_frontable(Frontable* frontable) {
+    if (frontable_queue_count >= FRONTABLE_QUEUE_SIZE) {
+        APP_LOG(APP_LOG_LEVEL_WARNING, "WARNING: Cannot add to frontable queue, max count has been reached!");
+        return;
+    }
+
+    if (frontable_queue == NULL) {
+        frontable_queue = malloc(sizeof(Frontable*) * FRONTABLE_QUEUE_SIZE);
+    }
+
+    frontable_queue[frontable_queue_count] = frontable;
+    frontable_queue_count++;
+}
+
+void cache_queue_add_group(Group* group) {
+    if (group_queue_count >= GROUP_QUEUE_SIZE) {
+        APP_LOG(APP_LOG_LEVEL_WARNING, "WARNING: Cannot add to group queue, max count has been reached!");
+        return;
+    }
+
+    if (group_queue == NULL) {
+        group_queue = malloc(sizeof(Group*) * GROUP_QUEUE_SIZE);
+    }
+
+    group_queue[group_queue_count] = group;
+    group_queue_count++;
+}
+
+void cache_queue_add_current_fronter(uint32_t hash) {
+    if (current_fronter_queue_count >= CURRENT_FRONTER_QUEUE_SIZE) {
+        APP_LOG(APP_LOG_LEVEL_WARNING, "WARNING: Cannot add to current fronter queue, max count has been reached!");
+        return;
+    }
+
+    if (current_fronter_queue == NULL) {
+        current_fronter_queue = malloc(sizeof(uint32_t) * CURRENT_FRONTER_QUEUE_SIZE);
+    }
+
+    current_fronter_queue[current_fronter_queue_count] = hash;
+    current_fronter_queue_count++;
+}
+
+void cache_queue_flush_frontables() {
+    cache_clear_frontables();
+
+    for (uint16_t i = 0; i < frontable_queue_count; i++) {
+        // if current frontable is a member, add it to its groups
+        Frontable* member = frontable_queue[i];
+        if (!frontable_get_is_custom(member)) {
+            for (uint16_t j = 0; j < groups.num_stored; j++) {
+                // check bit field, if flag at that given index is 1
+                //   add to the group at that index
+                if (((member->group_bit_field >> j) & 1) != 0) {
+                    frontable_list_add(member, groups.groups[j]->frontables);
+                }
+            }
+        }
+
+        printf("adding flush frontable %s", frontable_queue[i]->name);
+        cache_add_frontable(frontable_queue[i]);
+    }
+
+    // iterate across members and add them to groups
+    // GroupCollection* groups = cache_get_groups();
+    // FrontableList* members = cache_get_members();
+    // for (uint16_t i = 0; i < members->num_stored; i++) {
+    //     Frontable* member = members->frontables[i];
+
+    //     for (uint16_t j = 0; j < groups->num_stored; j++) {
+    //         Group* group = groups->groups[j];
+
+    //         if (((member->group_bit_field >> j) & 1) != 0) {
+    //             frontable_list_add(member, group->frontables);
+    //         }
+    //     }
+    // }
+
+    frontable_queue_count = 0;
+}
+
+void cache_queue_flush_groups() {
+    cache_clear_groups();
+
+    for (uint16_t i = 0; i < group_queue_count; i++) {
+        printf("adding flush group %s", group_queue[i]->name);
+        cache_add_group(group_queue[i]);
+    }
+
+    group_queue_count = 0;
+}
+
+void cache_queue_flush_current_fronters() {
+    cache_clear_current_fronters();
+
+    for (uint16_t i = 0; i < current_fronter_queue_count; i++) {
+        printf("adding flush current front %lu", current_fronter_queue[i]);
+        cache_add_current_fronter(current_fronter_queue[i]);
+    }
+
+    current_fronter_queue_count = 0;
 }
 
 static void store_pronoun_map(char* pronoun_map, size_t pronoun_map_size) {
@@ -479,4 +592,22 @@ void frontable_cache_deinit() {
     cache_clear_current_fronters();
     cache_clear_frontables();
     cache_clear_groups();
+
+    if (frontable_queue != NULL) {
+        free(frontable_queue);
+        frontable_queue = NULL;
+    }
+    frontable_queue_count = 0;
+
+    if (group_queue != NULL) {
+        free(group_queue);
+        group_queue = NULL;
+    }
+    group_queue_count = 0;
+
+    if (current_fronter_queue != NULL) {
+        free(current_fronter_queue);
+        current_fronter_queue = NULL;
+    }
+    current_fronter_queue_count = 0;
 }

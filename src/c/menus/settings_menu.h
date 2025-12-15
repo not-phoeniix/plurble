@@ -3,3 +3,4 @@
 void settings_menu_push();
 void settings_menu_update_colors();
 void settings_menu_deinit();
+void settings_menu_confirm_frontable_fetch();
