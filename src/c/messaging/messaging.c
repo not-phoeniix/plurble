@@ -14,6 +14,10 @@
 //!   include paths folder to get rid of the warnings about
 //!   MESSAGE_KEY_WhateverKeys being undefined !!!!
 
+static bool frontables_being_sent = false;
+static bool groups_being_sent = false;
+static bool current_fronts_being_sent = false;
+
 static void handle_settings_inbox(DictionaryIterator* iter, ClaySettings* settings, bool* update_colors) {
     Tuple* accent_color = dict_find(iter, MESSAGE_KEY_AccentColor);
     if (accent_color != NULL) {
@@ -92,7 +96,6 @@ static bool handle_api_frontables(DictionaryIterator* iter) {
     // using regular ints here so APP_LOG printf doesn't yell at me lol
     static int frontable_counter = 0;
     static int total_frontables = 0;
-    // static Frontable** frontables_to_set = NULL;
 
     Tuple* num_total_frontables = dict_find(iter, MESSAGE_KEY_NumTotalFrontables);
     if (num_total_frontables != NULL) {
@@ -105,7 +108,7 @@ static bool handle_api_frontables(DictionaryIterator* iter) {
             total_frontables
         );
 
-        // frontables_to_set = malloc(sizeof(Frontable*) * total_frontables);
+        frontables_being_sent = true;
     }
 
     Tuple* frontable_hash = dict_find(iter, MESSAGE_KEY_FrontableHash);
@@ -156,7 +159,6 @@ static bool handle_api_frontables(DictionaryIterator* iter) {
             );
             f->group_bit_field = bitfield;
 
-            // frontables_to_set[frontable_counter] = f;
             cache_queue_add_frontable(f);
             recieved_frontables = true;
 
@@ -177,40 +179,8 @@ static bool handle_api_frontables(DictionaryIterator* iter) {
     if (frontable_counter >= total_frontables && recieved_frontables) {
         APP_LOG(APP_LOG_LEVEL_INFO, "All frontables recieved!");
 
-        // cache_clear_frontables();
-        // for (int i = 0; i < total_frontables; i++) {
-        //     if (frontables_to_set == NULL) {
-        //         APP_LOG(APP_LOG_LEVEL_WARNING, "WARNING: Trying to add frontable to cache with non-zero frontable sending count but frontable array is null");
-        //         break;
-        //     }
-
-        //     cache_add_frontable(frontables_to_set[i]);
-        // }
-        // free(frontables_to_set);
-        // frontables_to_set = NULL;
         total_frontables = 0;
         frontable_counter = 0;
-
-        // main_menu_mark_custom_fronts_loaded();
-        // main_menu_mark_members_loaded();
-        // main_menu_confirm_frontable_fetch();
-
-        // iterate across members and add them to groups
-        // GroupCollection* groups = cache_get_groups();
-        // FrontableList* members = cache_get_members();
-        // for (uint16_t i = 0; i < members->num_stored; i++) {
-        //     Frontable* member = members->frontables[i];
-
-        //     for (uint16_t j = 0; j < groups->num_stored; j++) {
-        //         Group* group = groups->groups[j];
-
-        //         if (((member->group_bit_field >> j) & 1) != 0) {
-        //             frontable_list_add(member, group->frontables);
-        //         }
-        //     }
-        // }
-
-        // members_menu_refresh_groupless_members();
 
         return true;
 
@@ -238,8 +208,7 @@ static bool handle_api_current_fronts(DictionaryIterator* iter) {
             total_current_fronters
         );
 
-        // cache_clear_current_fronters();
-        // fronters_to_set = malloc(sizeof(uint32_t) * total_current_fronters);
+        current_fronts_being_sent = true;
     }
 
     // handle current fronters byte data being sent
@@ -253,7 +222,6 @@ static bool handle_api_current_fronts(DictionaryIterator* iter) {
         for (int32_t i = 0; i < batch_size; i++) {
             uint32_t hash = uint32_from_byte_arr(hash_byte_arr + (i * sizeof(uint32_t)));
             cache_queue_add_current_fronter(hash);
-            // fronters_to_set[current_front_counter] = hash;
 
             current_front_counter++;
             APP_LOG(
@@ -272,32 +240,8 @@ static bool handle_api_current_fronts(DictionaryIterator* iter) {
     ) {
         APP_LOG(APP_LOG_LEVEL_INFO, "All current fronters recieved!");
 
-        // cache_clear_current_fronters();
-        // for (int i = 0; i < total_current_fronters; i++) {
-        //     if (fronters_to_set == NULL) {
-        //         APP_LOG(APP_LOG_LEVEL_WARNING, "WARNING: Trying to add current frontable to cache with non-zero current fronters count but array is null");
-        //         break;
-        //     }
-
-        //     cache_add_current_fronter(fronters_to_set[i]);
-        // }
-        // free(fronters_to_set);
-        // fronters_to_set = NULL;
         total_current_fronters = 0;
         current_front_counter = 0;
-
-        // APP_LOG(APP_LOG_LEVEL_INFO, "New fronters set!");
-
-        // main_menu_mark_fronters_loaded();
-
-        // Frontable* first_fronter = cache_get_first_fronter();
-        // if (first_fronter != NULL) {
-        //     main_menu_set_fronters_subtitle(first_fronter->name);
-        //     current_fronters_menu_set_is_empty(false);
-        // } else {
-        //     main_menu_set_fronters_subtitle("no one is fronting");
-        //     current_fronters_menu_set_is_empty(true);
-        // }
 
         return true;
     }
@@ -330,6 +274,8 @@ static bool handle_api_groups(DictionaryIterator* iter) {
 
         memset(parent_index_arr, 0, sizeof(uint8_t) * total_groups);
         parent_index_counter = 0;
+
+        groups_being_sent = true;
     }
 
     Tuple* group_name = dict_find(iter, MESSAGE_KEY_GroupName);
@@ -415,6 +361,35 @@ static bool handle_api_groups(DictionaryIterator* iter) {
     return false;
 }
 
+static void flush_cache_groups_and_frontables() {
+    members_menu_remove_groups();
+    cache_queue_flush_groups();
+    cache_queue_flush_frontables();
+    members_menu_create_groups();
+
+    members_menu_refresh_groupless_members();
+
+    main_menu_mark_members_loaded();
+    main_menu_mark_fronters_loaded();
+    main_menu_mark_custom_fronts_loaded();
+    settings_menu_confirm_frontable_fetch();
+}
+
+static void flush_cache_current_fronters() {
+    cache_queue_flush_current_fronters();
+
+    //! maybe this logic should belong in the main menu itself?
+    //!   rather than in an unrelated messaging file
+    Frontable* first_fronter = cache_get_first_fronter();
+    if (first_fronter != NULL) {
+        main_menu_set_fronters_subtitle(first_fronter->name);
+    } else {
+        main_menu_set_fronters_subtitle("no one is fronting");
+    }
+
+    current_fronters_menu_update_is_empty();
+}
+
 static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, bool* update_colors) {
     Tuple* api_key_valid = dict_find(iter, MESSAGE_KEY_ApiKeyValid);
     if (api_key_valid != NULL) {
@@ -436,45 +411,31 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
         *update_colors = true;
     }
 
-    // refresh groups after frontables are received that way we don't
-    //   try to refresh with empty menus w/o frontables
-    //   (which will always result in setting menu selected index to 0)
-    if (groups_dirty && frontables_dirty) {
-        APP_LOG(APP_LOG_LEVEL_INFO, "Member && group messages dirty, updating!");
+    // data flushing has two situations:
+    //   either all data is being sent
+    //   OR
+    //   only current fronts are being sent
+    if (frontables_being_sent && groups_being_sent && current_fronts_being_sent) {
+        if (groups_dirty && frontables_dirty && current_fronts_dirty) {
+            APP_LOG(APP_LOG_LEVEL_INFO, "Member && group && current_front messages dirty, flushing cache and updating app data!");
+            flush_cache_groups_and_frontables();
+            flush_cache_current_fronters();
 
-        members_menu_remove_groups();
-        cache_queue_flush_groups();
-        cache_queue_flush_frontables();
-        members_menu_create_groups();
+            groups_dirty = false;
+            frontables_dirty = false;
+            current_fronts_dirty = false;
 
-        members_menu_refresh_groupless_members();
-
-        main_menu_mark_members_loaded();
-        main_menu_mark_fronters_loaded();
-        main_menu_mark_custom_fronts_loaded();
-        settings_menu_confirm_frontable_fetch();
-
-        groups_dirty = false;
-        frontables_dirty = false;
-    }
-
-    if (current_fronts_dirty) {
-        APP_LOG(APP_LOG_LEVEL_INFO, "Current front messages dirty, updating!");
-
-        cache_queue_flush_current_fronters();
-
-        //! maybe this logic should belong in the main menu itself?
-        //!   rather than in an unrelated messaging file
-        Frontable* first_fronter = cache_get_first_fronter();
-        if (first_fronter != NULL) {
-            main_menu_set_fronters_subtitle(first_fronter->name);
-        } else {
-            main_menu_set_fronters_subtitle("no one is fronting");
+            groups_being_sent = false;
+            frontables_being_sent = false;
+            current_fronts_being_sent = false;
         }
-
-        current_fronters_menu_update_is_empty();
-
-        current_fronts_dirty = false;
+    } else if (current_fronts_being_sent) {
+        if (current_fronts_dirty) {
+            APP_LOG(APP_LOG_LEVEL_INFO, "Current front messages dirty, flushing cache and updating app data!");
+            flush_cache_current_fronters();
+            current_fronts_dirty = false;
+            current_fronts_being_sent = false;
+        }
     }
 }
 
