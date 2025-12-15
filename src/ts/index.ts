@@ -4,7 +4,7 @@ import * as pluralSocket from "./pluralSocket";
 import * as cache from "./cache";
 import * as messaging from "./messaging";
 import * as utils from "./utils";
-import { Member, CustomFront, AppMessageDesc, Frontable, Group } from "./types";
+import { Member, CustomFront, AppMessageDesc, Frontable, Group, FrontEntryMessage } from "./types";
 import { version } from "../../package.json";
 
 // local TS environment variables that won't be pushed... 
@@ -50,7 +50,7 @@ async function setupApi(token: string) {
 }
 
 // sends frontables to watch, depends on groups being fetched first!
-async function fetchAndSendFrontables(uid: string, useCache: boolean, groupPromise: Promise<void>) {
+async function fetchFrontables(uid: string, useCache: boolean, groupPromise: Promise<any>): Promise<Frontable[] | null> {
     // assemble cached fronters to send to watch, fetch if missing
     let frontables: Frontable[] | null = null;
     if (useCache) {
@@ -90,116 +90,115 @@ async function fetchAndSendFrontables(uid: string, useCache: boolean, groupPromi
     const groups = cache.getAllGroups();
     if (!groups) {
         console.error("ERROR: groups could not be found from group promise, frontable fetch failed!");
-        return;
+        return null;
     }
 
-    if (frontables) {
-        console.log("Sending frontables to watch...");
-        console.log(`Groups size?: ${groups.length}`);
-        await messaging.sendFrontablesToWatch(frontables, groups);
-    }
+    // if (frontables) {
+    //     console.log("Sending frontables to watch...");
+    //     await messaging.sendFrontablesToWatch(frontables, groups);
+    // }
+
+    return frontables;
 }
 
-// fetches and sends current fronts to watch, depends on frontables being fetched first!
-async function fetchAndSendCurrentFronts() {
-    // always fetch and send current fronters to 
-    //   watch, don't rely on cache
+async function fetchAndSendCurrentFronts(): Promise<FrontEntryMessage[]> {
     const currentFronters = await pluralApi.getCurrentFronts();
     cache.cacheCurrentFronts(currentFronters);
-    await messaging.sendCurrentFrontersToWatch(currentFronters);
+    return currentFronters;
 }
 
-// fetches and sends groups to watch! no dependencies
-function fetchAndSendGroups(uid: string, useCache: boolean): {
-    completedPromise: Promise<void>,
-    groupPromise: Promise<void>
-} {
+async function fetchGroups(uid: string, useCache: boolean): Promise<Group[] | null> {
     let groups: Group[] | null = null;
 
-    const groupPromise = new Promise<void>(async (resolve) => {
-        if (useCache) {
-            groups = cache.getAllGroups();
-        }
+    if (useCache) {
+        groups = cache.getAllGroups();
+    }
 
-        if (!groups) {
-            if (uid) {
-                console.log("Groups not cached, fetching from API...");
+    if (!groups) {
+        if (uid) {
+            console.log("Groups not cached, fetching from API...");
 
-                groups = (await pluralApi.getGroups(uid))
-                    .map(m => Group.create(m));
+            groups = (await pluralApi.getGroups(uid))
+                .map(m => Group.create(m));
 
-                console.log("Groups fetched! Sorting...");
+            console.log("Groups fetched! Sorting...");
 
-                // sort group children alphabetically
-                groups.forEach(g => g.members.sort((a, b) => {
-                    const memberA = cache.getFrontable(utils.genHash(a));
-                    const memberB = cache.getFrontable(utils.genHash(b));
+            // sort group children alphabetically
+            groups.forEach(g => g.members.sort((a, b) => {
+                const memberA = cache.getFrontable(utils.genHash(a));
+                const memberB = cache.getFrontable(utils.genHash(b));
 
-                    if (!memberA || !memberB) return 0;
+                if (!memberA || !memberB) return 0;
 
-                    if (memberA.name.toLowerCase() > memberB.name.toLowerCase()) {
-                        return 1;
-                    } else if (memberA.name.toLowerCase() < memberB.name.toLowerCase()) {
-                        return -1;
-                    }
+                if (memberA.name.toLowerCase() > memberB.name.toLowerCase()) {
+                    return 1;
+                } else if (memberA.name.toLowerCase() < memberB.name.toLowerCase()) {
+                    return -1;
+                }
 
-                    return 0;
-                }));
+                return 0;
+            }));
 
-                // sort groups themselves too!
-                groups.sort((a, b) => {
-                    if (a.name.toLowerCase() > b.name.toLowerCase()) {
-                        return 1
-                    } else if (a.name.toLowerCase() < b.name.toLowerCase()) {
-                        return -1;
-                    }
+            // sort groups themselves too!
+            groups.sort((a, b) => {
+                if (a.name.toLowerCase() > b.name.toLowerCase()) {
+                    return 1
+                } else if (a.name.toLowerCase() < b.name.toLowerCase()) {
+                    return -1;
+                }
 
-                    return 0;
-                });
+                return 0;
+            });
 
-                console.log("Groups sorted! Caching...");
+            console.log("Groups sorted! Caching...");
 
-                cache.cacheGroups(groups);
+            cache.cacheGroups(groups);
 
-                console.log("Groups fetched, assembled, and cached!");
+            console.log("Groups fetched, assembled, and cached!");
 
-            } else {
-                console.error("Cannot fetch groups from API, UID was never cached!");
-            }
         } else {
-            console.log("Groups found in cache!");
+            console.error("Cannot fetch groups from API, UID was never cached!");
         }
+    } else {
+        console.log("Groups found in cache!");
+    }
 
-        resolve();
-    });
+    // const completedPromise = new Promise<void>(async (resolve) => {
+    //     await groupPromise;
 
-    const completedPromise = new Promise<void>(async (resolve) => {
-        await groupPromise;
+    //     if (groups) {
+    //         console.log("Groups found! sending to watch...");
+    //         await messaging.sendGroupsToWatch(groups);
+    //     } else {
+    //         console.error("ERROR: Groups not fetched/cached properly, cannot send to watch!");
+    //     }
 
-        if (groups) {
-            console.log("Groups found! sending to watch...");
-            await messaging.sendGroupsToWatch(groups);
-        } else {
-            console.error("ERROR: Groups not fetched/cached properly, cannot send to watch!");
-        }
+    //     resolve();
+    // });
 
-        resolve();
-    });
-
-    return {
-        completedPromise,
-        groupPromise
-    };
+    return groups;
 }
 
 async function fetchAndSendAllData(uid: string, useCache: boolean) {
-    const { completedPromise, groupPromise } = fetchAndSendGroups(uid, useCache);
+    const groupPromise = fetchGroups(uid, useCache);
+
+    let frontables: Frontable[] = [];
+    let currentFronters: FrontEntryMessage[] = [];
+    let groups: Group[] = [];
 
     await Promise.all([
-        completedPromise,
-        fetchAndSendFrontables(uid, useCache, groupPromise),
-        fetchAndSendCurrentFronts(),
+        groupPromise.then(g => {
+            if (g) groups = g;
+        }),
+        fetchFrontables(uid, useCache, groupPromise).then(f => {
+            if (f) frontables = f;
+        }),
+        fetchAndSendCurrentFronts().then(c => {
+            if (c) currentFronters = c;
+        }),
     ]);
+
+    await messaging.sendDataBatchToWatch(frontables, currentFronters, groups);
 }
 
 Pebble.addEventListener("ready", async (e) => {
