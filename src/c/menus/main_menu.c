@@ -103,8 +103,6 @@ static void window_load() {
     );
 
     layer_add_child(root_layer, simple_menu_layer_get_layer(simple_menu_layer));
-    main_menu_update_colors();
-    main_menu_update_fronters_subtitle();
 
     // ~~~ create status bar layers ~~~
 
@@ -130,6 +128,9 @@ static void window_load() {
 
     layer_add_child(status_bar_layer, text_layer_get_layer(status_bar_text_layer));
     layer_add_child(root_layer, status_bar_layer);
+
+    main_menu_update_colors();
+    main_menu_update_fronters_subtitle();
 }
 
 static void window_unload() {

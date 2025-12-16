@@ -155,7 +155,6 @@ static void window_load() {
     );
 
     layer_add_child(root_layer, simple_menu_layer_get_layer(simple_menu_layer));
-    settings_menu_update_colors();
 
     // ~~~ create status bar layers ~~~
 
@@ -181,6 +180,8 @@ static void window_load() {
 
     layer_add_child(status_bar_layer, text_layer_get_layer(status_bar_text));
     layer_add_child(root_layer, status_bar_layer);
+
+    settings_menu_update_colors();
 }
 
 static void window_unload() {
