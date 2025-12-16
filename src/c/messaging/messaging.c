@@ -386,6 +386,7 @@ static void flush_cache_groups_and_frontables() {
     main_menu_mark_members_loaded();
     main_menu_mark_fronters_loaded();
     main_menu_mark_custom_fronts_loaded();
+    main_menu_update_fetch_status(false);
     settings_menu_confirm_frontable_fetch();
 }
 
@@ -529,6 +530,7 @@ void messaging_remove_from_front(uint32_t frontable_hash) {
 }
 
 void messaging_fetch_data() {
+    main_menu_update_fetch_status(true);
     bool_message(MESSAGE_KEY_FetchDataRequest, true);
 }
 

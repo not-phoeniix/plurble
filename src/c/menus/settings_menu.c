@@ -15,6 +15,7 @@ static bool can_fetch_members = true;
 static bool confirm_clear_cache = false;
 static AppTimer* confirm_clear_cache_timer = NULL;
 static AppTimer* fetch_timeout_timer = NULL;
+static char fetch_subtitle[64] = "Re-fetch from API...";
 
 static void status_bar_update_proc(Layer* layer, GContext* ctx) {
     graphics_context_set_fill_color(ctx, settings_get()->background_color);
@@ -22,7 +23,7 @@ static void status_bar_update_proc(Layer* layer, GContext* ctx) {
 }
 
 static void reset_fetch_name_callback(void* data) {
-    items[1].subtitle = "Re-fetch from API...";
+    strncpy(fetch_subtitle, "Re-fetch from API...", sizeof(fetch_subtitle));
     can_fetch_members = true;
 
     if (simple_menu_layer != NULL) {
@@ -31,7 +32,7 @@ static void reset_fetch_name_callback(void* data) {
 }
 
 static void fetch_timeout_name_callback(void* data) {
-    items[1].subtitle = "Fetch timed out :(";
+    strncpy(fetch_subtitle, "Fetch timed out :(", sizeof(fetch_subtitle));
     if (simple_menu_layer != NULL) {
         layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
     }
@@ -47,7 +48,7 @@ void settings_menu_confirm_frontable_fetch() {
         fetch_timeout_timer = NULL;
     }
 
-    items[1].subtitle = "Fetched :D";
+    strncpy(fetch_subtitle, "Fetched :D", sizeof(fetch_subtitle));
     app_timer_register(2000, reset_fetch_name_callback, NULL);
 }
 
@@ -84,7 +85,7 @@ static void select(int index, void* context) {
         case 1:
             if (can_fetch_members) {
                 messaging_fetch_data();
-                items[1].subtitle = "Fetching...";
+                strncpy(fetch_subtitle, "Fetching...", sizeof(fetch_subtitle));
                 can_fetch_members = false;
                 fetch_timeout_timer = app_timer_register(10000, fetch_timeout_name_callback, NULL);
             }
@@ -119,7 +120,7 @@ static void window_load() {
 
     items[1] = (SimpleMenuItem) {
         .title = "Refresh Data",
-        .subtitle = "Re-fetch from API...",
+        .subtitle = fetch_subtitle,
         .icon = NULL,
         .callback = select,
     };
