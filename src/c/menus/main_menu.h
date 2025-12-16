@@ -1,5 +1,7 @@
 #pragma once
 
+#include <pebble.h>
+
 void main_menu_push();
 void main_menu_update_colors();
 void main_menu_deinit();
@@ -10,3 +12,4 @@ void main_menu_update_fronters_subtitle();
 void main_menu_set_members_subtitle(const char* subtitle);
 void main_menu_set_custom_fronts_subtitle(const char* subtitle);
 void main_menu_set_fronters_subtitle(const char* subtitle);
+void main_menu_update_fetch_status(bool fetching);

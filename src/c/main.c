@@ -44,6 +44,7 @@ static void init() {
     connection_handler(connection_service_peek_pebble_app_connection());
 
     main_menu_update_fronters_subtitle();
+    main_menu_update_fetch_status(true);
 }
 
 static void deinit() {

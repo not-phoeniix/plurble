@@ -13,11 +13,12 @@ static Window* window = NULL;
 static SimpleMenuLayer* simple_menu_layer = NULL;
 static SimpleMenuItem items[4];
 static SimpleMenuSection sections[1];
-static TextLayer* status_bar_text = NULL;
+static TextLayer* status_bar_text_layer = NULL;
 static Layer* status_bar_layer = NULL;
 static bool members_loaded = false;
 static bool custom_fronts_loaded = false;
 static bool current_fronters_loaded = false;
+static char status_bar_text[64] = "Plurble";
 
 static void select(int index, void* context) {
     switch (index) {
@@ -122,20 +123,20 @@ static void window_load() {
     status_bar_layer = layer_create(status_bar_bounds);
     layer_set_update_proc(status_bar_layer, status_bar_update_proc);
 
-    status_bar_text = text_layer_create(status_bar_text_bounds);
-    text_layer_set_font(status_bar_text, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-    text_layer_set_text_alignment(status_bar_text, GTextAlignmentCenter);
-    text_layer_set_text(status_bar_text, "Plurble");
+    status_bar_text_layer = text_layer_create(status_bar_text_bounds);
+    text_layer_set_font(status_bar_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+    text_layer_set_text_alignment(status_bar_text_layer, GTextAlignmentCenter);
+    text_layer_set_text(status_bar_text_layer, status_bar_text);
 
-    layer_add_child(status_bar_layer, text_layer_get_layer(status_bar_text));
+    layer_add_child(status_bar_layer, text_layer_get_layer(status_bar_text_layer));
     layer_add_child(root_layer, status_bar_layer);
 }
 
 static void window_unload() {
     simple_menu_layer_destroy(simple_menu_layer);
     simple_menu_layer = NULL;
-    text_layer_destroy(status_bar_text);
-    status_bar_text = NULL;
+    text_layer_destroy(status_bar_text_layer);
+    status_bar_text_layer = NULL;
     layer_destroy(status_bar_layer);
     status_bar_layer = NULL;
 }
@@ -171,9 +172,9 @@ void main_menu_update_colors() {
         );
     }
 
-    if (status_bar_text != NULL) {
-        text_layer_set_background_color(status_bar_text, settings->background_color);
-        text_layer_set_text_color(status_bar_text, gcolor_legible_over(settings->background_color));
+    if (status_bar_text_layer != NULL) {
+        text_layer_set_background_color(status_bar_text_layer, settings->background_color);
+        text_layer_set_text_color(status_bar_text_layer, gcolor_legible_over(settings->background_color));
     }
 
     if (window != NULL) {
@@ -244,4 +245,16 @@ void main_menu_set_fronters_subtitle(const char* subtitle) {
     static char s_subtitle[33];
     string_safe_copy(s_subtitle, subtitle, sizeof(s_subtitle));
     items[0].subtitle = s_subtitle;
+}
+
+void main_menu_update_fetch_status(bool fetching) {
+    if (fetching) {
+        strncpy(status_bar_text, "Loading...", sizeof(status_bar_text));
+    } else {
+        strncpy(status_bar_text, "Plurble", sizeof(status_bar_text));
+    }
+
+    if (status_bar_text_layer != NULL) {
+        layer_mark_dirty(text_layer_get_layer(status_bar_text_layer));
+    }
 }
