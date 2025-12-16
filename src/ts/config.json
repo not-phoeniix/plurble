@@ -8,7 +8,7 @@
       },
       {
         "type": "text",
-        "defaultValue": "By Nikki (+ her awesome headmates)"
+        "defaultValue": "By Nikki (+ her awesome headmates <3)"
       }
     ]
   },
@@ -35,7 +35,7 @@
     "items": [
       {
         "type": "heading",
-        "defaultValue": "App Customization"
+        "defaultValue": "Colors"
       },
       {
         "type": "color",
@@ -55,20 +55,6 @@
       },
       {
         "type": "toggle",
-        "messageKey": "CompactMemberList",
-        "label": "Compact Member List",
-        "description": "Makes member list entries more compact, hides pronouns.",
-        "defaultValue": false
-      },
-      {
-        "type": "toggle",
-        "messageKey": "HideMembersInRoot",
-        "label": "Hide Members Who Are In Groups",
-        "description": "Members who are in groups will be hidden from the root view of the member list",
-        "defaultValue": false
-      },
-      {
-        "type": "toggle",
         "messageKey": "MemberColorTag",
         "label": "Member Color Tag",
         "description": "Small tag in the member list of each member's color next to their name.",
@@ -82,7 +68,7 @@
         "type": "toggle",
         "messageKey": "MemberColorHighlight",
         "label": "Member Color Highlight",
-        "description": "Sets the highlight color in the member list when scrolling to that of the currently highlighted member.",
+        "description": "Sets the highlight color in the member list when scrolling to that of the currently selected/hovered member.",
         "defaultValue": false,
         "capabilities": [
           "COLOR"
@@ -92,7 +78,7 @@
         "type": "toggle",
         "messageKey": "GlobalFronterAccent",
         "label": "Global Fronter Color Accent",
-        "description": "Set the app-wide accent color to that of the current first fronting member, uses accent color as fallback.",
+        "description": "Set the app-wide accent color to that of the first currently fronting member, uses accent color as fallback.",
         "defaultValue": false,
         "capabilities": [
           "COLOR"
@@ -107,6 +93,29 @@
         "capabilities": [
           "COLOR"
         ]
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "Layout"
+      },
+      {
+        "type": "toggle",
+        "messageKey": "CompactMemberList",
+        "label": "Compact Member List",
+        "description": "Makes member list entries more compact, hides pronouns.",
+        "defaultValue": false
+      },
+      {
+        "type": "toggle",
+        "messageKey": "HideMembersInRoot",
+        "label": "Hide Members Who Are In Groups",
+        "description": "Members who are in groups will be hidden from the root view of the member list",
+        "defaultValue": false
       }
     ]
   },
