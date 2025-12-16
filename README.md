@@ -5,11 +5,6 @@ A Simply Plural client for Pebble! Plurble is an app designed to help people who
 
 This was an app originally made for the Rebble Hackathon #002!
 
-## Screenshots
-![Main menu](screenshots/basalt/basalt_main.png)
-![Member list](screenshots/basalt/basalt_members.png)
-![Custom front list](screenshots/basalt/basalt_custom_fronts.png)
-
 ## Feature list
 ### Current Features
 - [x] Real-time syncing with the cloud using the Simply Plural API
@@ -35,3 +30,28 @@ This was an app originally made for the Rebble Hackathon #002!
 - [ ] Friend view
   - [ ] View friend fronting statuses
 - [ ] Chat features using dictation (far stretch goal)
+
+## Screenshots
+### Time & Time Steel
+![Main menu](screenshots/basalt/basalt_main.png)
+![Member list with groups](screenshots/basalt/basalt_groups.png)
+![Member list](screenshots/basalt/basalt_members.png)
+![Custom front list](screenshots/basalt/basalt_custom_fronts.png)
+
+### Time 2
+![Main menu](screenshots/emery/emery_main.png)
+![Member list with groups](screenshots/emery/emery_groups.png)
+![Member list](screenshots/emery/emery_members.png)
+![Custom front list](screenshots/emery/emery_custom_fronts.png)
+
+### Time Round
+![Main menu](screenshots/chalk/chalk_main.png)
+![Member list with groups](screenshots/chalk/chalk_groups.png)
+![Member list](screenshots/chalk/chalk_members.png)
+![Custom front list](screenshots/chalk/chalk_custom_fronts.png)
+
+### OG/Steel/2
+![Main menu](screenshots/aplite_diorite/diorite_main.png)
+![Member list with groups](screenshots/aplite_diorite/diorite_groups.png)
+![Member list](screenshots/aplite_diorite/diorite_members.png)
+![Custom front list](screenshots/aplite_diorite/diorite_custom_fronts.png)
