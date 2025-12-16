@@ -6,6 +6,7 @@
 #include "../menus/current_fronters_menu.h"
 #include "../data/frontable_cache.h"
 #include "../menus/setup_prompt_menu.h"
+#include "../menus/settings_menu.h"
 
 #define SETTINGS_KEY 1
 
@@ -30,6 +31,7 @@ static void apply(bool update_colors) {
         members_menu_update_colors();
         custom_fronts_menu_update_colors();
         current_fronters_menu_update_colors();
+        settings_menu_update_colors();
     }
 
     if (settings.api_key_valid && setup_prompt_menu_shown()) {
