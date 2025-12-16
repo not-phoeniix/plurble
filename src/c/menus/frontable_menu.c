@@ -310,7 +310,11 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
         // small color label on frontable
         graphics_context_set_fill_color(ctx, color);
         GRect color_tag_bounds = bounds;
+#ifdef PBL_PLATFORM_EMERY
+        color_tag_bounds.size.w = 6;
+#else
         color_tag_bounds.size.w = 3;
+#endif
         graphics_fill_rect(ctx, color_tag_bounds, 0, GCornerNone);
     }
 
