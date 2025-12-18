@@ -56,7 +56,7 @@ function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
             // store pronouns
             const member = frontable as Member;
             if (member.pronouns) {
-                let pronouns = member.pronouns;
+                let pronouns = member.pronouns.trim();
                 if (pronouns.length > FRONTABLE_PRONOUNS_LENGTH) {
                     pronouns = pronouns.slice(0, FRONTABLE_PRONOUNS_LENGTH);
                 }
@@ -66,7 +66,7 @@ function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
             }
 
             // store name
-            let name = frontable.name;
+            let name = frontable.name.trim();
             if (name.length > FRONTABLE_NAME_LENGTH) {
                 name = name.slice(0, FRONTABLE_NAME_LENGTH);
             }
@@ -137,7 +137,7 @@ function assembleGroupMessages(groups: Group[]) {
 
         toSend.forEach((group) => {
             // store name
-            let name = group.name;
+            let name = group.name.trim();
             if (name.length > GROUP_NAME_LENGTH) {
                 name = name.slice(0, GROUP_NAME_LENGTH);
             }

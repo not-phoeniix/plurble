@@ -32,8 +32,6 @@ export interface Member {
 export namespace Member {
     export function create(jsonData: MemberMessage): Member {
         const member: Member = jsonData.content;
-        member.name = member.name.trim();
-        member.pronouns = member.pronouns.trim();
         member.id = jsonData.id;
         member.hash = utils.genHash(member.id);
         return member;
@@ -53,7 +51,6 @@ export interface CustomFront {
 export namespace CustomFront {
     export function create(jsonData: CustomFrontMessage): CustomFront {
         const customFront: CustomFront = jsonData.content;
-        customFront.name = customFront.name.trim();
         customFront.id = jsonData.id;
         customFront.hash = utils.genHash(customFront.id);
         return customFront;
