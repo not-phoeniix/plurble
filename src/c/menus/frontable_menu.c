@@ -300,7 +300,7 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
 
             color = frontable_get_color(frontable);
             name = frontable->name;
-            if (!frontable_get_is_custom(frontable)) {
+            if (!frontable_get_is_custom(frontable) && frontable->pronouns[0] != '\0') {
                 pronouns = frontable->pronouns;
             }
         }
