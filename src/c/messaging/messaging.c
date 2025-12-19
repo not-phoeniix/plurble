@@ -478,7 +478,7 @@ void messaging_init() {
     app_message_register_outbox_sent(outbox_sent_handler);
     app_message_register_outbox_failed(outbox_failed_callback);
 
-    app_message_open(2048, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
+    app_message_open(4096, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
 }
 
 static void front_message(uint32_t frontable_hash, const uint32_t message_key) {
