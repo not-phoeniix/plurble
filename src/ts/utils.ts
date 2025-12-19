@@ -74,3 +74,26 @@ export function toARGB8Color(hexCode: string): number {
 
     return color;
 }
+
+export function calcByteLen(str: string): number {
+    let len = 0;
+    Array.from(str).forEach(c => len += c.charCodeAt(0) > 255 ? 4 : 1);
+    return len;
+}
+
+export function cleanString(str: string, maxBytes: number): string {
+    str = str.trim();
+
+    let retStr = "";
+    let numBytes = 0;
+
+    Array.from(str).forEach(c => {
+        numBytes += calcByteLen(c);
+
+        if (numBytes <= maxBytes) {
+            retStr += c;
+        }
+    });
+
+    return retStr.trim();
+}
