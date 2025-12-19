@@ -56,20 +56,14 @@ function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
             // store pronouns
             const member = frontable as Member;
             if (member.pronouns) {
-                let pronouns = member.pronouns.trim();
-                if (pronouns.length > FRONTABLE_PRONOUNS_LENGTH) {
-                    pronouns = pronouns.substring(0, FRONTABLE_PRONOUNS_LENGTH - 1);
-                }
+                let pronouns = utils.cleanString(member.pronouns, FRONTABLE_PRONOUNS_LENGTH);
                 pronounsArr.push(pronouns);
             } else {
                 pronounsArr.push("");
             }
 
             // store name
-            let name = frontable.name.trim();
-            if (name.length > FRONTABLE_NAME_LENGTH) {
-                name = name.substring(0, FRONTABLE_NAME_LENGTH - 1);
-            }
+            let name = utils.cleanString(frontable.name, FRONTABLE_NAME_LENGTH);
             namesArr.push(name);
 
             // store colors
@@ -137,10 +131,7 @@ function assembleGroupMessages(groups: Group[]) {
 
         toSend.forEach((group) => {
             // store name
-            let name = group.name.trim();
-            if (name.length > GROUP_NAME_LENGTH) {
-                name = name.substring(0, GROUP_NAME_LENGTH - 1);
-            }
+            let name = utils.cleanString(group.name, GROUP_NAME_LENGTH);
             namesArr.push(name);
 
             // store colors
