@@ -200,12 +200,38 @@ void main_menu_mark_fronters_loaded() {
 }
 
 void main_menu_update_fronters_subtitle() {
-    Frontable* first_fronter = cache_get_first_fronter();
-    if (first_fronter != NULL) {
-        main_menu_set_fronters_subtitle(first_fronter->name);
+    static char s_subtitle[64] = {'\0'};
+
+    FrontableList* current_fronters = cache_get_current_fronters();
+    if (current_fronters->num_stored == 0) {
+        strncpy(s_subtitle, "no one is fronting", sizeof(s_subtitle));
     } else {
-        main_menu_set_fronters_subtitle("no one is fronting");
+        strncpy(s_subtitle, "", sizeof(s_subtitle));
+
+        int32_t remaining_length = sizeof(s_subtitle) - 1;
+        for (uint16_t i = 0; i < current_fronters->num_stored; i++) {
+            // we check for 2 since the separator length is 2
+            if (remaining_length <= 2) break;
+
+            Frontable* f = current_fronters->frontables[i];
+            uint16_t len = strlen(f->name);
+
+            // add comma separator for iterations past the first one
+            if (i != 0) {
+                strcat(s_subtitle, ", ");
+                len += 2;
+            }
+
+            strncat(s_subtitle, f->name, remaining_length);
+
+            remaining_length -= len;
+        }
+
+        // ensure we're null-termiating
+        s_subtitle[sizeof(s_subtitle) - 1] = '\0';
     }
+
+    items[0].subtitle = s_subtitle;
 
     if (simple_menu_layer != NULL) {
         layer_mark_dirty(simple_menu_layer_get_layer(simple_menu_layer));
@@ -228,24 +254,6 @@ void main_menu_mark_custom_fronts_loaded() {
     }
 
     custom_fronts_loaded = true;
-}
-
-void main_menu_set_members_subtitle(const char* subtitle) {
-    static char s_subtitle[33];
-    string_safe_copy(s_subtitle, subtitle, sizeof(s_subtitle));
-    items[1].subtitle = s_subtitle;
-}
-
-void main_menu_set_custom_fronts_subtitle(const char* subtitle) {
-    static char s_subtitle[33];
-    string_safe_copy(s_subtitle, subtitle, sizeof(s_subtitle));
-    items[2].subtitle = s_subtitle;
-}
-
-void main_menu_set_fronters_subtitle(const char* subtitle) {
-    static char s_subtitle[33];
-    string_safe_copy(s_subtitle, subtitle, sizeof(s_subtitle));
-    items[0].subtitle = s_subtitle;
 }
 
 void main_menu_update_fetch_status(bool fetching) {
