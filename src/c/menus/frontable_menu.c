@@ -397,6 +397,9 @@ void frontable_menu_update_colors(FrontableMenu* menu) {
             settings->background_color,
             gcolor_legible_over(settings->background_color)
         );
+
+        uint16_t current_index = menu_layer_get_selected_index(menu->menu_layer).row;
+        update_selected_highlight(menu, current_index);
     }
 
     if (menu->status_bar_text != NULL) {
@@ -538,6 +541,23 @@ void frontable_menu_set_selected_index(FrontableMenu* menu, uint16_t index) {
             (MenuIndex) {.row = index},
             MenuRowAlignCenter,
             false
+        );
+    }
+}
+
+void frontable_menu_clamp_selected_index(FrontableMenu* menu) {
+    if (menu->menu_layer == NULL) return;
+
+    MenuIndex i = menu_layer_get_selected_index(menu->menu_layer);
+    uint16_t num_frontables = menu->group_node.group->frontables->num_stored;
+    uint16_t num_groups = menu->group_node.num_children;
+    if (i.row > 0 && i.row >= num_frontables + num_groups) {
+        i.row = num_frontables + num_groups - 1;
+        menu_layer_set_selected_index(
+            menu->menu_layer,
+            (MenuIndex) {.row = i.row, .section = i.section},
+            MenuRowAlignCenter,
+            true
         );
     }
 }

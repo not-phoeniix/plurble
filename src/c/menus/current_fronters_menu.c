@@ -80,6 +80,7 @@ void current_fronters_menu_update_colors() {
 
     if (menu != NULL) {
         frontable_menu_update_colors(menu);
+        frontable_menu_clamp_selected_index(menu);
     }
 
     if (text_layer != NULL) {

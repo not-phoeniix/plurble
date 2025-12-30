@@ -30,4 +30,5 @@ FrontableList* frontable_menu_get_frontables(FrontableMenu* menu);
 Window* frontable_menu_get_window(FrontableMenu* menu);
 MenuIndex frontable_menu_get_selected_index(FrontableMenu* menu);
 void frontable_menu_set_selected_index(FrontableMenu* menu, uint16_t index);
+void frontable_menu_clamp_selected_index(FrontableMenu* menu);
 const char* frontable_menu_get_name(FrontableMenu* menu);
