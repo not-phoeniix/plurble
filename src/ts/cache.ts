@@ -6,7 +6,9 @@ enum CacheKeys {
     ApiToken = "cachedApiToken",
     SystemId = "cachedSystemId",
     CurrentFronts = "cachedCurrentFrontMessages",
-    AppVersion = "cachedAppVersion"
+    AppVersion = "cachedAppVersion",
+    PrevFetchTime = "cachedPrevFetchTime",
+    FetchInterval = "cachedFetchInterval",
 }
 
 export function cacheFrontables(frontables: Frontable[]) {
@@ -140,6 +142,34 @@ export function cacheAppVersion(version: string) {
     localStorage.setItem(CacheKeys.AppVersion, version);
 }
 
+export function getPrevFetchTime(): number | null {
+    const time = localStorage.getItem(CacheKeys.PrevFetchTime);
+    if (time) {
+        return Number(time);
+    }
+
+    return null;
+}
+
+export function cachePrevFetchTime(time: number) {
+    localStorage.setItem(CacheKeys.PrevFetchTime, time.toString());
+}
+
+export function getFetchInterval(): number | null {
+    const interval = localStorage.getItem(CacheKeys.FetchInterval);
+    if (interval) {
+        return Number(interval);
+    }
+
+    return null;
+}
+
+export function cacheFetchInterval(interval: number) {
+    localStorage.setItem(CacheKeys.FetchInterval, interval.toString());
+}
+
 export function clearAllCache() {
-    localStorage.clear();
+    for (const key in CacheKeys) {
+        localStorage.removeItem(key);
+    }
 }

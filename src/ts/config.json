@@ -101,7 +101,7 @@
     "items": [
       {
         "type": "heading",
-        "defaultValue": "Layout"
+        "defaultValue": "Behavior"
       },
       {
         "type": "toggle",
@@ -116,6 +116,31 @@
         "label": "Hide Members Who Are In Groups",
         "description": "Members who are in groups will be hidden from the root view of the member list",
         "defaultValue": false
+      },
+      {
+        "type": "select",
+        "messageKey": "FetchInterval",
+        "label": "Data fetch interval",
+        "description": "How often to automatically fetch member, custom front, and group data from the server.",
+        "defaultValue": 24,
+        "options": [
+          {
+            "label": "Every 12h",
+            "value": 12
+          },
+          {
+            "label": "Every day (24h)",
+            "value": 24
+          },
+          {
+            "label": "Every 3 days (72h)",
+            "value": 72
+          },
+          {
+            "label": "Every 7 days (168h)",
+            "value": 168
+          }
+        ]
       }
     ]
   },

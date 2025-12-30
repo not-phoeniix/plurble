@@ -209,7 +209,23 @@ Pebble.addEventListener("ready", async (e) => {
         return;
     }
 
-    await fetchAndSendAllData(uid, true);
+    let fetchInterval = cache.getFetchInterval();
+    if (!fetchInterval) {
+        // (24h in MS is a fallback)
+        fetchInterval = (1000 * 60 * 60) * 24;
+    }
+
+    const prevFetchTime = cache.getPrevFetchTime();
+    const timeNow = Date.now();
+
+    let useCache = true;
+    if (!prevFetchTime || timeNow - prevFetchTime >= fetchInterval) {
+        console.log("Time since last fetch exceeded interval, clearing and re-fetching!");
+        useCache = false;
+        cache.cachePrevFetchTime(timeNow);
+    }
+
+    await fetchAndSendAllData(uid, useCache);
 
     console.log("hey! app finished fetching and sending things! :)");
 });
@@ -272,6 +288,7 @@ Pebble.addEventListener("appmessage", async (e) => {
     if (msg.FetchDataRequest) {
         const uid = cache.getSystemId();
         if (uid) {
+            cache.cachePrevFetchTime(Date.now());
             fetchAndSendAllData(uid, false);
         } else {
             console.error("Cannot re-fetch data, system ID is not cached!");
@@ -290,8 +307,17 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
     console.log("web view closed :]");
 
     if (e.response) {
-        // update api key cache
         const settingsDict = clay.getSettings(e.response, false);
+
+        // update interval value cache
+        const grabbedInterval: number = settingsDict.FetchInterval.value;
+        if (grabbedInterval) {
+            const intervalMs = grabbedInterval * 1000 * 60 * 60;
+            console.log(`Fetch interval [${grabbedInterval}h/${intervalMs}ms] grabbed from webviewclosed event!`);
+            cache.cacheFetchInterval(intervalMs);
+        }
+
+        // update api key cache
         const grabbedToken: string = settingsDict.PluralApiKey.value;
         if (grabbedToken) {
             console.log(`API token "${grabbedToken}" grabbed from webviewclosed event!`);
@@ -302,6 +328,7 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
 
             const uid = cache.getSystemId();
             if (uid) {
+                cache.cachePrevFetchTime(Date.now());
                 await fetchAndSendAllData(uid, false);
             } else {
                 console.error("Error, cannot fetch new API data, UID is not cached!");
