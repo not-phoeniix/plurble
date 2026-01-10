@@ -1,7 +1,7 @@
 #include "string_tools.h"
 #include <stdlib.h>
 
-char* string_substr(char* str, uint16_t start_index, uint16_t length) {
+char* string_substr(const char* str, uint16_t start_index, uint16_t length) {
     char* output = (char*)malloc(sizeof(char) * (length + 1));
     memcpy(output, str + start_index, sizeof(char) * length);
 
@@ -10,7 +10,7 @@ char* string_substr(char* str, uint16_t start_index, uint16_t length) {
     return output;
 }
 
-char** string_split(char* input, char delimiter, uint16_t* output_length) {
+char** string_split(const char* input, char delimiter, uint16_t* output_length) {
     // cannot split a string if the delimiter is the null end character
     if (delimiter == '\0') {
         return NULL;
@@ -28,6 +28,8 @@ char** string_split(char* input, char delimiter, uint16_t* output_length) {
         i++;
     }
 
+    // printf("delimeter string to count: '%s'", input);
+
     // allocate memory for an array of char pointers
     char** output = (char**)malloc(sizeof(char*) * length);
 
@@ -37,9 +39,9 @@ char** string_split(char* input, char delimiter, uint16_t* output_length) {
     uint16_t substr_start_index = 0;
     uint16_t substr_len = 0;
     while (input[i] != '\0') {
-        // if delimiter is detected, create a new substring and
-        //   increment counter variables
-        if (input[i] == delimiter) {
+        // if delimiter is detected (or end of string),
+        //   create a new substring and increment counter variables
+        if (input[i] == delimiter || input[i + 1] == '\0') {
             output[output_index] = string_substr(input, substr_start_index, substr_len);
             substr_len = 0;
             substr_start_index = i + 1;
@@ -49,13 +51,13 @@ char** string_split(char* input, char delimiter, uint16_t* output_length) {
             substr_len++;
         }
 
-        // if next character in input is the end of the string,
-        //   create substring (no code should run after this)
-        if (input[i + 1] == '\0') {
-            output[output_index] = string_substr(input, substr_start_index, substr_len);
-        }
-
         i++;
+    }
+
+    // if an empty string was inputted, make sure we put an empty string back
+    if (input[0] == '\0') {
+        output[0] = malloc(sizeof(char) * 1);
+        output[0][0] = '\0';
     }
 
     if (output_length != NULL) {

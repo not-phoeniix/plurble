@@ -320,6 +320,8 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
         // update api key cache
         const grabbedToken: string = settingsDict.PluralApiKey.value;
         if (grabbedToken) {
+            cache.clearAllCache();
+
             console.log(`API token "${grabbedToken}" grabbed from webviewclosed event!`);
             cache.cacheApiToken(grabbedToken);
 

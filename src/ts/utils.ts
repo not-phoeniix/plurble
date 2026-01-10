@@ -82,6 +82,10 @@ export function calcByteLen(str: string): number {
 }
 
 export function cleanString(str: string, maxBytes: number): string {
+    if (!str) {
+        return "";
+    }
+
     str = str.trim();
 
     let retStr = "";

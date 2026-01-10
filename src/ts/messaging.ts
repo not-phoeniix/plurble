@@ -53,14 +53,11 @@ function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
         let groupBitArr: number[] = [];
 
         toSend.forEach((frontable) => {
-            // store pronouns
             const member = frontable as Member;
-            if (member.pronouns) {
-                let pronouns = utils.cleanString(member.pronouns, FRONTABLE_PRONOUNS_LENGTH);
-                pronounsArr.push(pronouns);
-            } else {
-                pronounsArr.push("");
-            }
+
+            // store pronouns
+            let pronouns = utils.cleanString(member.pronouns, FRONTABLE_PRONOUNS_LENGTH);
+            pronounsArr.push(pronouns);
 
             // store name
             let name = utils.cleanString(frontable.name, FRONTABLE_NAME_LENGTH);
