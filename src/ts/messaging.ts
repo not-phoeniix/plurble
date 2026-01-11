@@ -290,3 +290,9 @@ export async function sendApiKeyIsValid(valid: boolean): Promise<void> {
         ApiKeyValid: valid,
     });
 }
+
+export async function sendErrorMessage(message: string): Promise<void> {
+    return PebbleTS.sendAppMessage(<AppMessageDesc>{
+        ErrorMessage: message
+    });
+}

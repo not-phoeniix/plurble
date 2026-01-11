@@ -8,17 +8,22 @@
 #include "menus/current_fronters_menu.h"
 #include "menus/setup_prompt_menu.h"
 #include "menus/settings_menu.h"
-#include "menus/disconnected_menu.h"
+#include "menus/error_menu.h"
 
 static void connection_handler(bool connected) {
-    window_stack_pop_all(false);
-
     if (connected) {
-        APP_LOG(APP_LOG_LEVEL_INFO, "Phone reconnected, pushing main menu!");
-        main_menu_push();
+        window_stack_pop_all(false);
+
+        if (settings_get()->api_key_valid) {
+            APP_LOG(APP_LOG_LEVEL_INFO, "Phone reconnected, pushing main menu!");
+            main_menu_push();
+        } else {
+            APP_LOG(APP_LOG_LEVEL_INFO, "Phone reconnected but api key invalid, pushing setup menu!");
+            setup_prompt_menu_push();
+        }
     } else {
         APP_LOG(APP_LOG_LEVEL_INFO, "Phone disconnected, pushing disconnected menu!");
-        disconnected_menu_push();
+        error_menu_show("phone is not\nconnected :[");
     }
 }
 
@@ -59,7 +64,7 @@ static void deinit() {
     main_menu_deinit();
     frontable_cache_deinit();
     settings_menu_deinit();
-    disconnected_menu_deinit();
+    error_menu_deinit();
 
     setup_prompt_menu_remove();
 }

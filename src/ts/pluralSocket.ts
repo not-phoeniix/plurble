@@ -77,9 +77,13 @@ function onMessage(e: MessageEvent) {
                 messaging.sendApiKeyIsValid(true);
                 console.log("Socket successfully authenticated :D");
                 break;
+
             case "Authentication violation: Token is missing or invalid. Goodbye :)":
                 console.warn("WARNING: Token is invalid! Closing plural socket <//3");
-                messaging.sendApiKeyIsValid(false);
+                (async () => {
+                    await messaging.sendApiKeyIsValid(false);
+                    await messaging.sendErrorMessage("API token invalid!");
+                })();
                 break;
 
             case "update":

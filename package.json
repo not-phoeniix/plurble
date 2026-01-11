@@ -36,6 +36,7 @@
       "PluralApiKey",
       "FetchInterval",
       "ApiKeyValid",
+      "ErrorMessage",
       "AccentColor",
       "BackgroundColor",
       "HideMembersInRoot",
@@ -71,6 +72,11 @@
           "type": "bitmap",
           "name": "ConfigRequired",
           "file": "config-required.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "Warning",
+          "file": "warning.png"
         },
         {
           "type": "bitmap",

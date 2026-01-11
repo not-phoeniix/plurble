@@ -98,10 +98,15 @@ export type AuthSocketMessage = SocketMessage<undefined> & {
     };
 };
 
+export enum ErrorCode {
+    APIKeyInvalid = 1,
+}
+
 // describes all the message keys defined in package.json
 export type AppMessageDesc = {
     PluralApiKey?: string;
     ApiKeyValid?: boolean;
+    ErrorMessage?: string;
 
     NumCurrentFronters?: number;
     NumCurrentFrontersInBatch?: number;

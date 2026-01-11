@@ -34,14 +34,6 @@ static void apply(bool update_colors) {
         settings_menu_update_colors();
     }
 
-    if (settings.api_key_valid && setup_prompt_menu_shown()) {
-        window_stack_pop_all(false);
-        main_menu_push();
-    } else if (!settings.api_key_valid) {
-        window_stack_pop_all(false);
-        setup_prompt_menu_push();
-    }
-
     // always redraw currently shown window when applying config
     Window* top_window = window_stack_get_top_window();
     if (top_window != NULL) {

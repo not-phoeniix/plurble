@@ -7,8 +7,13 @@
 #include "../menus/members_menu.h"
 #include "../menus/settings_menu.h"
 #include "../tools/string_tools.h"
+#include "../menus/error_menu.h"
+#include "../menus/setup_prompt_menu.h"
 
 #define DELIMETER ';'
+
+// make sure these defines match the enum type in types.ts
+#define ERROR_CODE_API_KEY_INVALID 1
 
 //! NOTE: add "${workspaceFolder}/build/include/" to your
 //!   include paths folder to get rid of the warnings about
@@ -172,8 +177,12 @@ static bool handle_api_frontables(DictionaryIterator* iter) {
             );
         }
 
+        // TODO: FIX PLEASE IT'S STILL BREAKING BUT ON MY API TOKEN THIS TIME :(
+        printf("freeing names string arr");
         string_array_free(names, names_length);
+        printf("freeing pronouns string arr");
         string_array_free(pronouns, pronouns_length);
+        printf("string arrays freed!");
     }
 
     if (frontable_counter >= total_frontables && recieved_frontables) {
@@ -397,11 +406,6 @@ static void flush_cache_current_fronters() {
 }
 
 static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, bool* update_colors) {
-    Tuple* api_key_valid = dict_find(iter, MESSAGE_KEY_ApiKeyValid);
-    if (api_key_valid != NULL) {
-        settings->api_key_valid = api_key_valid->value->int16;
-    }
-
     static bool groups_dirty = false;
     static bool frontables_dirty = false;
     static bool current_fronts_dirty = false;
@@ -449,6 +453,25 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
     }
 }
 
+static void handle_error_inbox(DictionaryIterator* iter, ClaySettings* settings) {
+    Tuple* api_key_valid = dict_find(iter, MESSAGE_KEY_ApiKeyValid);
+    if (api_key_valid != NULL) {
+        settings->api_key_valid = api_key_valid->value->int16;
+
+        window_stack_pop_all(false);
+        if (settings->api_key_valid) {
+            main_menu_push();
+        } else {
+            setup_prompt_menu_push();
+        }
+    }
+
+    Tuple* error_message = dict_find(iter, MESSAGE_KEY_ErrorMessage);
+    if (error_message != NULL) {
+        error_menu_show(error_message->value->cstring);
+    }
+}
+
 static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
     ClaySettings* settings = settings_get();
 
@@ -456,6 +479,7 @@ static void inbox_recieved_handler(DictionaryIterator* iter, void* context) {
 
     handle_settings_inbox(iter, settings, &should_update_menu_colors);
     handle_api_inbox(iter, settings, &should_update_menu_colors);
+    handle_error_inbox(iter, settings);
 
     settings_save(should_update_menu_colors);
 }
