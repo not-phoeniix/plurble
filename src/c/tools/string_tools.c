@@ -1,67 +1,47 @@
 #include "string_tools.h"
 #include <stdlib.h>
 
-char* string_substr(const char* str, uint16_t start_index, uint16_t length) {
-    char* output = (char*)malloc(sizeof(char) * (length + 1));
-    memcpy(output, str + start_index, sizeof(char) * length);
-
-    output[length] = '\0';
-
-    return output;
-}
-
 char** string_split(const char* input, char delimiter, uint16_t* output_length) {
     // cannot split a string if the delimiter is the null end character
     if (delimiter == '\0') {
         return NULL;
     }
 
-    uint16_t length = 1;
+    uint16_t arr_len = 1;
     uint16_t i = 0;
 
     // count length of output array by counting number of delimiters
     while (input[i] != '\0') {
         if (input[i] == delimiter) {
-            length++;
+            arr_len++;
         }
 
         i++;
     }
 
-    // printf("delimeter string to count: '%s'", input);
+    char** output = (char**)malloc(sizeof(char*) * arr_len);
 
-    // allocate memory for an array of char pointers
-    char** output = (char**)malloc(sizeof(char*) * length);
-
-    // iterate a second time, creating/saving substrings as we go
-    i = 0;
-    uint16_t output_index = 0;
-    uint16_t substr_start_index = 0;
-    uint16_t substr_len = 0;
-    while (input[i] != '\0') {
-        // if delimiter is detected (or end of string),
-        //   create a new substring and increment counter variables
-        if (input[i] == delimiter || input[i + 1] == '\0') {
-            output[output_index] = string_substr(input, substr_start_index, substr_len);
-            substr_len = 0;
-            substr_start_index = i + 1;
-            output_index++;
-        } else {
-            // otherwise, just increase the substring length counter
-            substr_len++;
+    // iterate a second time, creating & copying substrings as we go
+    uint16_t str_start_index = 0;
+    for (i = 0; i < arr_len; i++) {
+        // determine size of string to copy
+        uint16_t str_len = 0;
+        while (input[str_start_index + str_len] != delimiter && input[str_start_index + str_len] != '\0') {
+            str_len++;
         }
 
-        i++;
-    }
+        // allocate string and copy
+        output[i] = (char*)malloc(sizeof(char) * (str_len + 1));
+        strncpy(output[i], &input[str_start_index], str_len);
+        output[i][str_len] = '\0';
 
-    // if an empty string was inputted, make sure we put an empty string back
-    if (input[0] == '\0') {
-        output[0] = malloc(sizeof(char) * 1);
-        output[0][0] = '\0';
+        // move forward for next iteration
+        //   (skip an index to avoid delimiter we just found)
+        str_start_index += str_len + 1;
     }
 
     if (output_length != NULL) {
-        *output_length = length;
+        *output_length = arr_len;
     }
     return output;
 }

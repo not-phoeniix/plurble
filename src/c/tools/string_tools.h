@@ -2,13 +2,6 @@
 
 #include <pebble.h>
 
-/// @brief Creates/allocates a substring from a given string
-/// @param str Input string to create substring from
-/// @param start_index Starting index of substring
-/// @param length Length of substring
-/// @return A pointer to a new substring in memory
-char* string_substr(const char* str, uint16_t start_index, uint16_t length);
-
 /// @brief Splits a string into an array of strings via a delimiter
 /// @param input Input string
 /// @param delimiter Delimiter character to split string with
