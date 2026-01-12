@@ -11,6 +11,7 @@ const FRONTABLE_PRONOUNS_LENGTH = 16;
 const GROUP_NAME_LENGTH = 32;
 const GROUP_LIST_MAX_COUNT = 32;
 const DELIMETER = ';';
+const DEFAULT_COLOR = "#000000";
 
 function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
     // sort based on frontable type and name alphabetically
@@ -18,11 +19,9 @@ function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
         let value = 0;
 
         // sort members first
-        const aIsMember = "pronouns" in a;
-        const bIsMember = "pronouns" in b;
-        if (aIsMember && !bIsMember) {
+        if (!a.isCustom && b.isCustom) {
             value -= 5;
-        } else if (!aIsMember && bIsMember) {
+        } else if (a.isCustom && !b.isCustom) {
             value += 5;
         }
 
@@ -56,7 +55,10 @@ function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
             const member = frontable as Member;
 
             // store pronouns
-            let pronouns = utils.cleanString(member.pronouns, FRONTABLE_PRONOUNS_LENGTH);
+            let pronouns = "";
+            if (member.pronouns) {
+                pronouns = utils.cleanString(member.pronouns, FRONTABLE_PRONOUNS_LENGTH);
+            }
             pronounsArr.push(pronouns);
 
             // store name
@@ -64,10 +66,14 @@ function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
             namesArr.push(name);
 
             // store colors
-            colorsArr.push(utils.toARGB8Color(frontable.color));
+            let color = DEFAULT_COLOR;
+            if (frontable.color) {
+                color = frontable.color;
+            }
+            colorsArr.push(utils.toARGB8Color(color));
 
             // store is custom
-            isCustomArr.push(!("pronouns" in member));
+            isCustomArr.push(frontable.isCustom);
 
             // store hashes
             hashesArr.push(frontable.hash);
@@ -111,7 +117,7 @@ function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
 }
 
 function assembleGroupMessages(groups: Group[]) {
-    const numGroups = groups.length;
+    const numGroups = Math.min(groups.length, GROUP_LIST_MAX_COUNT);
     const numMessages = Math.ceil(numGroups / GROUPS_PER_MESSAGE);
 
     const groupsOriginal: Group[] = JSON.parse(JSON.stringify(groups));
@@ -132,11 +138,15 @@ function assembleGroupMessages(groups: Group[]) {
             namesArr.push(name);
 
             // store colors
-            colorsArr.push(utils.toARGB8Color(group.color));
+            let color = DEFAULT_COLOR;
+            if (group.color) {
+                color = group.color;
+            }
+            colorsArr.push(utils.toARGB8Color(color));
 
             // store parent indices
             let index = -1;
-            for (let j = 0; j < groupsOriginal.length; j++) {
+            for (let j = 0; j < numGroups; j++) {
                 // don't use indices that won't fit in 8 bits
                 if (j >= 255) break;
 

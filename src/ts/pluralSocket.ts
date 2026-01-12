@@ -54,8 +54,10 @@ function onOpen(e: Event) {
                 // restart socket if it somehow closed
                 console.log("web socket closed, attempting to restart it...")
                 startSocket();
-            } else {
+            } else if (socket.readyState === WebSocket.OPEN) {
                 socket.send("ping");
+            } else {
+                console.warn(`WARNING: WebSocket state not recognized! state: ${socket.readyState}`);
             }
         },
         9_000

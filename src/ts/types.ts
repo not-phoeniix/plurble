@@ -21,17 +21,19 @@ export interface Member {
     name: string;
     uid: string;
     id: string;
-    avatarUrl: string;
-    desc: string;
-    color: string;
-    pronouns: string;
+    avatarUrl?: string;
+    desc?: string;
+    color?: string;
+    pronouns?: string;
     archived: boolean;
     hash: number;
+    isCustom: false;
 };
 
 export namespace Member {
     export function create(jsonData: MemberMessage): Member {
         const member: Member = jsonData.content;
+        member.isCustom = false;
         member.id = jsonData.id;
         member.hash = utils.genHash(member.id);
         return member;
@@ -42,15 +44,17 @@ export interface CustomFront {
     name: string;
     uid: string;
     id: string;
-    avatarUrl: string;
-    desc: string;
-    color: string;
+    avatarUrl?: string;
+    desc?: string;
+    color?: string;
     hash: number;
+    isCustom: true;
 };
 
 export namespace CustomFront {
     export function create(jsonData: CustomFrontMessage): CustomFront {
         const customFront: CustomFront = jsonData.content;
+        customFront.isCustom = true;
         customFront.id = jsonData.id;
         customFront.hash = utils.genHash(customFront.id);
         return customFront;
@@ -71,7 +75,7 @@ export type Frontable = Member | CustomFront;
 export interface Group {
     id: string;
     name: string;
-    color: string;
+    color?: string;
     parent: string;
     members: string[];
 }

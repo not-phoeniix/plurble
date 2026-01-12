@@ -50,7 +50,7 @@ async function setupApi(token: string) {
 }
 
 // sends frontables to watch, depends on groups being fetched first!
-async function fetchFrontables(uid: string, useCache: boolean, groupPromise: Promise<any>): Promise<Frontable[] | null> {
+async function fetchFrontables(uid: string, useCache: boolean, groupPromise: Promise<any>): Promise<Frontable[]> {
     // assemble cached fronters to send to watch, fetch if missing
     let frontables: Frontable[] | null = null;
     if (useCache) {
@@ -80,7 +80,7 @@ async function fetchFrontables(uid: string, useCache: boolean, groupPromise: Pro
             console.log("Frontables fetched, assembled, and cached!");
 
         } else {
-            console.error("Cannot fetch members from API, UID was never cached!");
+            throw new Error("Cannot fetch members from API, UID was never cached!");
         }
     } else {
         console.log("Frontables found in cache!");
@@ -89,8 +89,7 @@ async function fetchFrontables(uid: string, useCache: boolean, groupPromise: Pro
     await groupPromise;
     const groups = cache.getAllGroups();
     if (!groups) {
-        console.error("ERROR: groups could not be found from group promise, frontable fetch failed!");
-        return null;
+        throw new Error("Groups could not be found from group promise, frontable fetch failed!");
     }
 
     return frontables;
@@ -102,7 +101,7 @@ async function fetchAndSendCurrentFronts(): Promise<FrontEntryMessage[]> {
     return currentFronters;
 }
 
-async function fetchGroups(uid: string, useCache: boolean): Promise<Group[] | null> {
+async function fetchGroups(uid: string, useCache: boolean): Promise<Group[]> {
     let groups: Group[] | null = null;
 
     if (useCache) {
@@ -152,7 +151,7 @@ async function fetchGroups(uid: string, useCache: boolean): Promise<Group[] | nu
             console.log("Groups fetched, assembled, and cached!");
 
         } else {
-            console.error("Cannot fetch groups from API, UID was never cached!");
+            throw new Error("Cannot fetch groups from API, UID was never cached!");
         }
     } else {
         console.log("Groups found in cache!");
@@ -170,13 +169,19 @@ async function fetchAndSendAllData(uid: string, useCache: boolean) {
 
     await Promise.all([
         groupPromise.then(g => {
-            if (g) groups = g;
+            groups = g;
         }),
         fetchFrontables(uid, useCache, groupPromise).then(f => {
-            if (f) frontables = f;
+            frontables = f.filter(frontable => {
+                if ((frontable as Member).archived) {
+                    return false;
+                }
+
+                return true;
+            });
         }),
         fetchAndSendCurrentFronts().then(c => {
-            if (c) currentFronters = c;
+            currentFronters = c;
         }),
     ]);
 
@@ -225,7 +230,12 @@ Pebble.addEventListener("ready", async (e) => {
         cache.cachePrevFetchTime(timeNow);
     }
 
-    await fetchAndSendAllData(uid, useCache);
+    try {
+        await fetchAndSendAllData(uid, useCache);
+    } catch (err) {
+        console.error(`ERROR: fetchAndSendAllData failed from ready event! err: "${err}"`);
+        await messaging.sendErrorMessage("Unknown fetch error!");
+    }
 
     console.log("hey! app finished fetching and sending things! :)");
 });
@@ -289,7 +299,14 @@ Pebble.addEventListener("appmessage", async (e) => {
         const uid = cache.getSystemId();
         if (uid) {
             cache.cachePrevFetchTime(Date.now());
-            fetchAndSendAllData(uid, false);
+            (async () => {
+                try {
+                    await fetchAndSendAllData(uid, false);
+                } catch {
+                    console.error("ERROR: fetchAndSendAllData failed from appmessage event!");
+                    await messaging.sendErrorMessage("Unknown fetch error!");
+                }
+            })();
         } else {
             console.error("Cannot re-fetch data, system ID is not cached!");
         }
@@ -322,8 +339,8 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
         if (grabbedToken) {
             cache.clearAllCache();
 
-            console.log(`API token "${grabbedToken}" grabbed from webviewclosed event!`);
-            cache.cacheApiToken(grabbedToken);
+            console.log(`API token "${grabbedToken.trim()}" grabbed from webviewclosed event!`);
+            cache.cacheApiToken(grabbedToken.trim());
 
             console.log("Setting up API and socket again after grabbing new token!");
             await setupApi(grabbedToken);
@@ -331,7 +348,12 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
             const uid = cache.getSystemId();
             if (uid) {
                 cache.cachePrevFetchTime(Date.now());
-                await fetchAndSendAllData(uid, false);
+                try {
+                    await fetchAndSendAllData(uid, false);
+                } catch (err) {
+                    console.error(`ERROR: fetchAndSendAllData failed from webviewclosed event! err: "${err}"`);
+                    await messaging.sendErrorMessage("Unknown crash/error!");
+                }
             } else {
                 console.error("Error, cannot fetch new API data, UID is not cached!");
             }

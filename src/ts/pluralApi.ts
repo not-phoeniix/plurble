@@ -48,7 +48,7 @@ export async function addToFront(frontable: Frontable): Promise<void> {
     if (!cache.isFronting(frontable)) {
         const entry: FrontEntry = {
             customStatus: "",
-            custom: !("pronouns" in frontable),
+            custom: frontable.isCustom,
             live: true,
             startTime: Date.now(),
             member: frontable.id
