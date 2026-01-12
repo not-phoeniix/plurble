@@ -71,17 +71,7 @@ static uint8_t colors[NUM_COLORS] = {
 };
 
 Frontable* frontable_create(uint32_t hash, const char* name, const char* pronouns, bool is_custom, GColor color) {
-    printf("hello?");
-
-    printf(
-        "about to allocate [%lu] bytes on heap... current free memory: [%lu] bytes",
-        (uint32_t)sizeof(Frontable),
-        (uint32_t)heap_bytes_free()
-    );
-
     Frontable* f = malloc(sizeof(Frontable));
-    printf("hi.....");
-
     *f = (Frontable) {
         .hash = hash,
         .packed_data = frontable_make_packed_data(false, is_custom, color),
@@ -89,9 +79,6 @@ Frontable* frontable_create(uint32_t hash, const char* name, const char* pronoun
         .group_bit_field = 0
     };
 
-    printf("waow!");
-
-    printf("about to copy name string: '%s'", name);
     string_safe_copy(f->name, name, FRONTABLE_NAME_LENGTH);
 
     if (pronouns != NULL) {

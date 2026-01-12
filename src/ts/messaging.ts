@@ -9,6 +9,7 @@ const GROUPS_PER_MESSAGE = 32;
 const FRONTABLE_NAME_LENGTH = 32;
 const FRONTABLE_PRONOUNS_LENGTH = 16;
 const GROUP_NAME_LENGTH = 32;
+const FRONTABLES_MAX_COUNT = 256;
 const GROUP_LIST_MAX_COUNT = 32;
 const DELIMETER = ';';
 const DEFAULT_COLOR = "#000000";
@@ -35,13 +36,14 @@ function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
         return value;
     });
 
-    const numFrontables = frontables.length;
+    const numFrontables = Math.min(frontables.length, FRONTABLES_MAX_COUNT);
     const numMessages = Math.ceil(numFrontables / FRONTABLES_PER_MESSAGE);
 
     const messages: AppMessageDesc[] = [];
 
+    let frontablesRemaining = numFrontables;
     for (let i = 0; i < numMessages; i++) {
-        const batchSize = Math.min(frontables.length, FRONTABLES_PER_MESSAGE);
+        const batchSize = Math.min(frontablesRemaining, FRONTABLES_PER_MESSAGE);
         const toSend = frontables.splice(0, batchSize);
 
         let namesArr: string[] = [];
@@ -107,6 +109,7 @@ function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
         }
 
         messages.push(msg);
+        frontablesRemaining -= batchSize;
     }
 
     if (messages.length === 0) {
@@ -124,8 +127,9 @@ function assembleGroupMessages(groups: Group[]) {
 
     const messages: AppMessageDesc[] = [];
 
+    let groupsRemaining = numGroups;
     for (let i = 0; i < numMessages; i++) {
-        const batchSize = Math.min(groups.length, GROUPS_PER_MESSAGE);
+        const batchSize = Math.min(groupsRemaining, GROUPS_PER_MESSAGE);
         const toSend = groups.splice(0, batchSize);
 
         let namesArr: string[] = [];
@@ -177,6 +181,7 @@ function assembleGroupMessages(groups: Group[]) {
         }
 
         messages.push(msg);
+        groupsRemaining -= batchSize;
     }
 
     if (messages.length === 0) {
@@ -187,13 +192,14 @@ function assembleGroupMessages(groups: Group[]) {
 }
 
 function assembleCurrentFrontMessages(currentFronters: FrontEntryMessage[]) {
-    const numFronters = currentFronters.length;
+    const numFronters = Math.min(currentFronters.length, FRONTABLES_MAX_COUNT);
     const numMessages = Math.ceil(numFronters / CURRENT_FRONTS_PER_MESSAGE);
 
     const messages: AppMessageDesc[] = [];
 
+    let frontersRemaining = numFronters;
     for (let i = 0; i < numMessages; i++) {
-        const batchSize = Math.min(currentFronters.length, CURRENT_FRONTS_PER_MESSAGE);
+        const batchSize = Math.min(frontersRemaining, CURRENT_FRONTS_PER_MESSAGE);
         const toSend = currentFronters.splice(0, batchSize);
 
         const hashes = utils.toByteArray(
@@ -212,6 +218,7 @@ function assembleCurrentFrontMessages(currentFronters: FrontEntryMessage[]) {
         }
 
         messages.push(msg);
+        frontersRemaining -= batchSize;
     }
 
     if (messages.length === 0) {

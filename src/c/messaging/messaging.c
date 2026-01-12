@@ -177,12 +177,8 @@ static bool handle_api_frontables(DictionaryIterator* iter) {
             );
         }
 
-        // TODO: FIX PLEASE IT'S STILL BREAKING BUT ON MY API TOKEN THIS TIME :(
-        printf("freeing names string arr");
         string_array_free(names, names_length);
-        printf("freeing pronouns string arr");
         string_array_free(pronouns, pronouns_length);
-        printf("string arrays freed!");
     }
 
     if (frontable_counter >= total_frontables && recieved_frontables) {
