@@ -31,6 +31,10 @@ static void init() {
     // baha thanks for checking out the source code too <3
     APP_LOG(APP_LOG_LEVEL_INFO, "Hi friend, thank you for using plurble! I hope you are having a lovely day <3");
 
+    // debug functions for testing different memory setups
+    // cache_persist_print_footprint();
+    // cache_persist_delete();
+
     messaging_init();
     settings_load();
     if (cache_persist_load()) {

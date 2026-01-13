@@ -11,6 +11,8 @@ const FRONTABLE_PRONOUNS_LENGTH = 16;
 const GROUP_NAME_LENGTH = 32;
 const FRONTABLES_MAX_COUNT = 256;
 const GROUP_LIST_MAX_COUNT = 32;
+// const FRONTABLES_MAX_COUNT = 128;
+// const GROUP_LIST_MAX_COUNT = 64;
 const DELIMETER = ';';
 const DEFAULT_COLOR = "#000000";
 
@@ -80,16 +82,26 @@ function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
             // store hashes
             hashesArr.push(frontable.hash);
 
-            // make and store bit fields
-            let bitField = 0;
-            if (groups) {
-                for (let i = 0; i < Math.min(groups.length, GROUP_LIST_MAX_COUNT); i++) {
-                    if (groups[i].members.find(m => m === frontable.id)) {
-                        bitField |= (1 << i);
+            // make and store bit fields dynamically
+            //   (hardcoding 32 bit integers here)
+            const numBitFields = Math.ceil(GROUP_LIST_MAX_COUNT / 32);
+            const groupCount = Math.min(groups.length, GROUP_LIST_MAX_COUNT);
+            for (let i = 0; i < numBitFields; i++) {
+                let bitField = 0;
+
+                if (groups) {
+                    // iterate from the current 32 bits to the next 32 bits
+                    for (let j = (i * 32); j < ((i + 1) * 32); j++) {
+                        if (j >= groupCount) break;
+
+                        if (groups[j].members.find(m => m === frontable.id)) {
+                            bitField |= (1 << (j % 32));
+                        }
                     }
                 }
+
+                groupBitArr.push(bitField);
             }
-            groupBitArr.push(bitField);
         });
 
         const msg: AppMessageDesc = {

@@ -30,5 +30,6 @@ void cache_queue_flush_current_fronters();
 void cache_persist_store();
 bool cache_persist_load();
 void cache_persist_delete();
+void cache_persist_print_footprint();
 
 void frontable_cache_deinit();

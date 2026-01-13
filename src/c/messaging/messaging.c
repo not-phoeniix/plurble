@@ -152,6 +152,8 @@ static bool handle_api_frontables(DictionaryIterator* iter) {
         for (int32_t i = 0; i < batch_size; i++) {
             uint32_t hash = uint32_from_byte_arr(hash_byte_arr + (i * sizeof(uint32_t)));
             uint32_t bitfield = uint32_from_byte_arr(group_bits_byte_arr + (i * sizeof(uint32_t)));
+            // uint32_t bitfield_one = uint32_from_byte_arr(group_bits_byte_arr + ((i * 2) * sizeof(uint32_t)));
+            // uint32_t bitfield_two = uint32_from_byte_arr(group_bits_byte_arr + ((i * 2 + 1) * sizeof(uint32_t)));
             uint8_t is_custom = is_custom_byte_arr[i];
             uint8_t color = color_byte_arr[i];
 
@@ -163,6 +165,7 @@ static bool handle_api_frontables(DictionaryIterator* iter) {
                 (GColor) {.argb = color}
             );
             f->group_bit_field = bitfield;
+            // f->group_bit_field = (uint64_t)bitfield_one | ((uint64_t)bitfield_two << 32);
 
             cache_queue_add_frontable(f);
             recieved_frontables = true;

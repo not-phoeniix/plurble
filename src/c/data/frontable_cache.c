@@ -10,15 +10,19 @@
 #define GROUPS_KEY_MAX 30
 
 // tweak these to adjust how much memory is allocated
+// #define MAX_CACHED_FRONTABLES 64
 #define MAX_CACHED_FRONTABLES 96
 #define MAX_CACHED_PRONOUNS 16
 #define MAX_CACHED_GROUPS GROUP_LIST_MAX_COUNT
 #define COMPRESSED_NAME_LENGTH 20
+// #define COMPRESSED_NAME_LENGTH 16
 #define COMPRESSED_PRONOUNS_LENGTH 11
 
 #define FRONTABLE_QUEUE_SIZE 256
+// #define FRONTABLE_QUEUE_SIZE 128
 #define GROUP_QUEUE_SIZE GROUP_LIST_MAX_COUNT
 #define CURRENT_FRONTER_QUEUE_SIZE 256
+// #define CURRENT_FRONTER_QUEUE_SIZE 128
 
 // ~~~ current memory footprint ~~~
 //
@@ -571,6 +575,19 @@ void cache_persist_delete() {
     for (uint32_t key = GROUPS_KEY_MIN; key <= GROUPS_KEY_MAX; key++) {
         persist_delete(key);
     }
+}
+
+void cache_persist_print_footprint() {
+    size_t pronoun_map_size = (sizeof(char) * COMPRESSED_PRONOUNS_LENGTH) * MAX_CACHED_PRONOUNS;
+    size_t frontables_size = sizeof(CompressedFrontable) * MAX_CACHED_FRONTABLES;
+    size_t groups_size = sizeof(CompressedGroup) * MAX_CACHED_GROUPS;
+    size_t total_size = pronoun_map_size + frontables_size + groups_size;
+
+    APP_LOG(APP_LOG_LEVEL_INFO, "PERSRISTENT CACHE FOOTPRINT:");
+    APP_LOG(APP_LOG_LEVEL_INFO, "  pronoun map size: %lu b", (uint32_t)pronoun_map_size);
+    APP_LOG(APP_LOG_LEVEL_INFO, "  total frontables size: %lu b", (uint32_t)frontables_size);
+    APP_LOG(APP_LOG_LEVEL_INFO, "  total groups size: %lu b", (uint32_t)groups_size);
+    APP_LOG(APP_LOG_LEVEL_INFO, "  TOTAL FOOTPRINT: %lu b", (uint32_t)(total_size));
 }
 
 void frontable_cache_deinit() {
