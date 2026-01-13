@@ -18,11 +18,9 @@
 // #define COMPRESSED_NAME_LENGTH 16
 #define COMPRESSED_PRONOUNS_LENGTH 11
 
-#define FRONTABLE_QUEUE_SIZE 256
-// #define FRONTABLE_QUEUE_SIZE 128
+#define FRONTABLE_QUEUE_SIZE 200
 #define GROUP_QUEUE_SIZE GROUP_LIST_MAX_COUNT
-#define CURRENT_FRONTER_QUEUE_SIZE 256
-// #define CURRENT_FRONTER_QUEUE_SIZE 128
+#define CURRENT_FRONTER_QUEUE_SIZE 200
 
 // ~~~ current memory footprint ~~~
 //
@@ -213,7 +211,6 @@ void cache_queue_flush_frontables() {
             }
         }
 
-        printf("adding flush frontable %s", frontable_queue[i]->name);
         cache_add_frontable(frontable_queue[i]);
     }
 
@@ -224,7 +221,6 @@ void cache_queue_flush_groups() {
     cache_clear_groups();
 
     for (uint16_t i = 0; i < group_queue_count; i++) {
-        printf("adding flush group %s", group_queue[i]->name);
         cache_add_group(group_queue[i]);
     }
 
@@ -235,7 +231,6 @@ void cache_queue_flush_current_fronters() {
     cache_clear_current_fronters();
 
     for (uint16_t i = 0; i < current_fronter_queue_count; i++) {
-        printf("adding flush current front %lu", current_fronter_queue[i]);
         cache_add_current_fronter(current_fronter_queue[i]);
     }
 

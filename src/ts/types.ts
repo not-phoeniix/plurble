@@ -28,7 +28,7 @@ export interface Member {
     archived: boolean;
     hash: number;
     isCustom: false;
-};
+}
 
 export namespace Member {
     export function create(jsonData: MemberMessage): Member {
@@ -107,7 +107,7 @@ export enum ErrorCode {
 }
 
 // describes all the message keys defined in package.json
-export type AppMessageDesc = {
+export interface AppMessageDesc {
     PluralApiKey?: string;
     ApiKeyValid?: boolean;
     ErrorMessage?: string;
@@ -136,4 +136,4 @@ export type AppMessageDesc = {
     RemoveFrontRequest?: number;
     FetchDataRequest?: boolean;
     ClearCacheRequest?: boolean;
-};
+}

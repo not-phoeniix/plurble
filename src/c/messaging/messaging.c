@@ -426,6 +426,8 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
     if (frontables_being_sent && groups_being_sent && current_fronts_being_sent) {
         if (groups_dirty && frontables_dirty && current_fronts_dirty) {
             APP_LOG(APP_LOG_LEVEL_INFO, "Member && group && current_front messages dirty, flushing cache and updating app data!");
+
+            printf("free memory on heap before flush: %lu", (uint32_t)heap_bytes_free());
             flush_cache_groups_and_frontables();
             flush_cache_current_fronters();
 
@@ -438,16 +440,22 @@ static void handle_api_inbox(DictionaryIterator* iter, ClaySettings* settings, b
             groups_being_sent = false;
             frontables_being_sent = false;
             current_fronts_being_sent = false;
+
+            printf("free memory on heap after flush: %lu", (uint32_t)heap_bytes_free());
         }
 
     } else if (current_fronts_being_sent) {
         if (current_fronts_dirty) {
             APP_LOG(APP_LOG_LEVEL_INFO, "Current front messages dirty, flushing cache and updating app data!");
+
+            printf("free memory on heap before flush: %lu", (uint32_t)heap_bytes_free());
             flush_cache_current_fronters();
             current_fronts_dirty = false;
             current_fronts_being_sent = false;
 
             *update_colors = true;
+
+            printf("free memory on heap after flush: %lu", (uint32_t)heap_bytes_free());
         }
     }
 }

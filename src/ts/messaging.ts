@@ -1,5 +1,6 @@
 import { AppMessageDesc, Frontable, FrontEntryMessage, Group, Member } from "./types";
 import * as utils from "./utils";
+import * as sorting from "./sorting";
 
 //! NOTE: make sure these match up with the #defines in 
 //!   frontable.h & group.h <3
@@ -17,26 +18,7 @@ const DELIMETER = ';';
 const DEFAULT_COLOR = "#000000";
 
 function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
-    // sort based on frontable type and name alphabetically
-    frontables.sort((a, b) => {
-        let value = 0;
-
-        // sort members first
-        if (!a.isCustom && b.isCustom) {
-            value -= 5;
-        } else if (a.isCustom && !b.isCustom) {
-            value += 5;
-        }
-
-        // sort alphabetically
-        if (a.name.toLowerCase() > b.name.toLowerCase()) {
-            value += 1;
-        } else if (a.name.toLowerCase() < b.name.toLowerCase()) {
-            value -= 1;
-        }
-
-        return value;
-    });
+    frontables = sorting.sortFrontables(frontables);
 
     const numFrontables = Math.min(frontables.length, FRONTABLES_MAX_COUNT);
     const numMessages = Math.ceil(numFrontables / FRONTABLES_PER_MESSAGE);
@@ -132,6 +114,8 @@ function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
 }
 
 function assembleGroupMessages(groups: Group[]) {
+    groups = sorting.sortGroups(groups);
+
     const numGroups = Math.min(groups.length, GROUP_LIST_MAX_COUNT);
     const numMessages = Math.ceil(numGroups / GROUPS_PER_MESSAGE);
 
