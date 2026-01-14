@@ -1,4 +1,6 @@
-import { Frontable, Group } from "./types";
+import { Frontable, FrontEntryMessage, Group } from "./types";
+import * as cache from "./cache";
+import * as utils from "./utils";
 
 export function sortFrontables(frontables: Frontable[]): Frontable[] {
     let output: Frontable[] = JSON.parse(JSON.stringify(frontables));
@@ -7,10 +9,10 @@ export function sortFrontables(frontables: Frontable[]): Frontable[] {
     output.sort((a, b) => {
         let value = 0;
 
-        // sort members first
-        if (!a.isCustom && b.isCustom) {
+        // sort custom fronts first
+        if (a.isCustom && !b.isCustom) {
             value -= 5;
-        } else if (a.isCustom && !b.isCustom) {
+        } else if (!a.isCustom && b.isCustom) {
             value += 5;
         }
 
@@ -89,6 +91,34 @@ export function sortGroups(groups: Group[]): Group[] {
     for (const node of rootChildren) {
         addNode(node);
     }
+
+    // sort group children alphabetically
+    groups.forEach(g => g.members.sort((a, b) => {
+        const memberA = cache.getFrontable(utils.genHash(a));
+        const memberB = cache.getFrontable(utils.genHash(b));
+
+        if (!memberA || !memberB) return 0;
+
+        if (memberA.name.toLowerCase() > memberB.name.toLowerCase()) {
+            return 1;
+        } else if (memberA.name.toLowerCase() < memberB.name.toLowerCase()) {
+            return -1;
+        }
+
+        return 0;
+    }));
+
+    return output;
+}
+
+export function sortCurrentFronts(currentFronts: FrontEntryMessage[]): FrontEntryMessage[] {
+    let output: FrontEntryMessage[] = JSON.parse(JSON.stringify(currentFronts));
+
+    output.sort((a, b) => {
+        const aStart = a.content.startTime ?? 0;
+        const bStart = b.content.startTime ?? 0;
+        return bStart - aStart;
+    });
 
     return output;
 }

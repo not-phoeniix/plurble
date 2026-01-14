@@ -3,7 +3,7 @@ import * as pluralApi from "./pluralApi";
 import * as pluralSocket from "./pluralSocket";
 import * as cache from "./cache";
 import * as messaging from "./messaging";
-import * as utils from "./utils";
+import * as sorting from "./sorting";
 import { Member, CustomFront, AppMessageDesc, Frontable, Group, FrontEntryMessage } from "./types";
 import { version } from "../../package.json";
 
@@ -75,6 +75,8 @@ async function fetchFrontables(uid: string, useCache: boolean, groupPromise: Pro
                     ))
             ]);
 
+            frontables = sorting.sortFrontables(frontables);
+
             cache.cacheFrontables(frontables);
 
             console.log("Frontables fetched, assembled, and cached!");
@@ -96,7 +98,8 @@ async function fetchFrontables(uid: string, useCache: boolean, groupPromise: Pro
 }
 
 async function fetchAndSendCurrentFronts(): Promise<FrontEntryMessage[]> {
-    const currentFronters = await pluralApi.getCurrentFronts();
+    let currentFronters = await pluralApi.getCurrentFronts();
+    currentFronters = sorting.sortCurrentFronts(currentFronters);
     cache.cacheCurrentFronts(currentFronters);
     return currentFronters;
 }
@@ -117,32 +120,7 @@ async function fetchGroups(uid: string, useCache: boolean): Promise<Group[]> {
 
             console.log("Groups fetched! Sorting...");
 
-            // sort group children alphabetically
-            groups.forEach(g => g.members.sort((a, b) => {
-                const memberA = cache.getFrontable(utils.genHash(a));
-                const memberB = cache.getFrontable(utils.genHash(b));
-
-                if (!memberA || !memberB) return 0;
-
-                if (memberA.name.toLowerCase() > memberB.name.toLowerCase()) {
-                    return 1;
-                } else if (memberA.name.toLowerCase() < memberB.name.toLowerCase()) {
-                    return -1;
-                }
-
-                return 0;
-            }));
-
-            // sort groups themselves too!
-            groups.sort((a, b) => {
-                if (a.name.toLowerCase() > b.name.toLowerCase()) {
-                    return 1
-                } else if (a.name.toLowerCase() < b.name.toLowerCase()) {
-                    return -1;
-                }
-
-                return 0;
-            });
+            groups = sorting.sortGroups(groups);
 
             console.log("Groups sorted! Caching...");
 
