@@ -8,6 +8,8 @@ static Group group;
 static bool empty = false;
 
 static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
+    // TODO: draw elapsed time fronting for each member
+
     frontable_menu_draw_cell(menu, ctx, cell_layer, cell_index);
 }
 
