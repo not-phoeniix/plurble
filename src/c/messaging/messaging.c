@@ -465,10 +465,11 @@ static void handle_error_inbox(DictionaryIterator* iter, ClaySettings* settings)
     if (api_key_valid != NULL) {
         settings->api_key_valid = api_key_valid->value->int16;
 
-        window_stack_pop_all(false);
-        if (settings->api_key_valid) {
+        if (settings->api_key_valid && setup_prompt_menu_shown()) {
+            window_stack_pop_all(false);
             main_menu_push();
-        } else {
+        } else if (!settings->api_key_valid && !setup_prompt_menu_shown()) {
+            window_stack_pop_all(false);
             setup_prompt_menu_push();
         }
     }
