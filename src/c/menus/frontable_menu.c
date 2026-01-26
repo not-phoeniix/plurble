@@ -285,8 +285,11 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
     bool compact = settings_get()->compact_member_list;
 
     char* name = NULL;
-    char* pronouns = NULL;
+    // char* pronouns = NULL;
     GColor color = GColorBlack;
+
+    static char waow[64] = {'\0'};
+    strncpy(waow, "", sizeof(waow));
 
     if (cell_index->row < menu->group_node.num_children) {
         Group* group = menu->group_node.children[cell_index->row]->group;
@@ -298,10 +301,12 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
         if (i >= 0 && i < frontables->num_stored) {
             Frontable* frontable = frontables->frontables[i];
 
+            snprintf(waow, sizeof(waow), "%lu", frontable->time_started_fronting);
+
             color = frontable_get_color(frontable);
             name = frontable->name;
             if (!frontable_get_is_custom(frontable) && frontable->pronouns[0] != '\0') {
-                pronouns = frontable->pronouns;
+                // pronouns = frontable->pronouns;
             }
         }
     }
@@ -330,7 +335,8 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
         ctx,
         cell_layer,
         name,
-        compact ? NULL : pronouns,
+        // compact ? NULL : pronouns,
+        compact ? NULL : waow,
         NULL
     );
 }

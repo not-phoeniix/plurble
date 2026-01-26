@@ -228,15 +228,25 @@ static bool handle_api_current_fronts(DictionaryIterator* iter) {
 
     // handle current fronters byte data being sent
     Tuple* current_fronter = dict_find(iter, MESSAGE_KEY_CurrentFronter);
+    Tuple* current_fronter_start_time = dict_find(iter, MESSAGE_KEY_CurrentFrontStartTime);
     Tuple* current_fronter_batch_size = dict_find(iter, MESSAGE_KEY_NumCurrentFrontersInBatch);
-    if (current_fronter != NULL && current_fronter_batch_size != NULL) {
+    if (
+        current_fronter != NULL &&
+        current_fronter_start_time != NULL &&
+        current_fronter_batch_size != NULL
+    ) {
         int32_t batch_size = current_fronter_batch_size->value->int32;
 
         uint8_t* hash_byte_arr = current_fronter->value->data;
+        uint8_t* start_time_byte_arr = current_fronter_start_time->value->data;
 
         for (int32_t i = 0; i < batch_size; i++) {
             uint32_t hash = uint32_from_byte_arr(hash_byte_arr + (i * sizeof(uint32_t)));
-            cache_queue_add_current_fronter(hash);
+            uint32_t time_started_fronting = uint32_from_byte_arr(
+                start_time_byte_arr + (i * sizeof(uint32_t))
+            );
+
+            cache_queue_add_current_fronter(hash, time_started_fronting);
 
             current_front_counter++;
             APP_LOG(

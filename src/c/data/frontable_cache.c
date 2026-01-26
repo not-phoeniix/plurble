@@ -20,7 +20,7 @@
 
 #define FRONTABLE_QUEUE_SIZE 200
 #define GROUP_QUEUE_SIZE GROUP_LIST_MAX_COUNT
-#define CURRENT_FRONTER_QUEUE_SIZE 200
+#define CURRENT_FRONTER_QUEUE_SIZE 100
 
 // ~~~ current memory footprint ~~~
 //
@@ -36,7 +36,7 @@
 //
 // total memory footprint: 3952 bytes <3
 
-typedef struct {
+typedef struct CompressedFrontable {
     char name[COMPRESSED_NAME_LENGTH];
     uint32_t hash;
     uint32_t group_bit_field;
@@ -44,11 +44,16 @@ typedef struct {
     uint8_t packed_data;
 } CompressedFrontable;
 
-typedef struct {
+typedef struct CompressedGroup {
     char name[COMPRESSED_NAME_LENGTH];
     uint8_t color;
     uint8_t parent_index;
 } CompressedGroup;
+
+typedef struct CurrentFrontData {
+    uint32_t hash;
+    uint32_t start_time;
+} CurrentFrontData;
 
 // TODO: command cache for frontable tracking for when phone gets disconnected
 // typedef struct {
@@ -66,7 +71,7 @@ static Frontable** frontable_queue = NULL;
 static uint16_t frontable_queue_count = 0;
 static Group** group_queue = NULL;
 static uint16_t group_queue_count = 0;
-static uint32_t* current_fronter_queue = NULL;
+static CurrentFrontData* current_fronter_queue = NULL;
 static uint16_t current_fronter_queue_count = 0;
 
 FrontableList* cache_get_members() { return &members; }
@@ -115,8 +120,9 @@ void cache_clear_frontables() {
     frontable_list_deep_clear(&custom_fronts);
 }
 
-void cache_add_current_fronter(uint32_t frontable_hash) {
-    Frontable* frontable = cache_get_frontable(frontable_hash);
+void cache_add_current_fronter(uint32_t hash, uint32_t start_time) {
+    Frontable* frontable = cache_get_frontable(hash);
+    frontable->time_started_fronting = start_time;
     if (frontable != NULL) {
         frontable_set_is_fronting(frontable, true);
         frontable_list_add(frontable, &current_fronters);
@@ -181,17 +187,21 @@ void cache_queue_add_group(Group* group) {
     group_queue_count++;
 }
 
-void cache_queue_add_current_fronter(uint32_t hash) {
+void cache_queue_add_current_fronter(uint32_t hash, uint32_t start_time) {
     if (current_fronter_queue_count >= CURRENT_FRONTER_QUEUE_SIZE) {
         APP_LOG(APP_LOG_LEVEL_WARNING, "WARNING: Cannot add to current fronter queue, max count has been reached!");
         return;
     }
 
     if (current_fronter_queue == NULL) {
-        current_fronter_queue = malloc(sizeof(uint32_t) * CURRENT_FRONTER_QUEUE_SIZE);
+        current_fronter_queue = malloc(sizeof(CurrentFrontData) * CURRENT_FRONTER_QUEUE_SIZE);
     }
 
-    current_fronter_queue[current_fronter_queue_count] = hash;
+    current_fronter_queue[current_fronter_queue_count] = (CurrentFrontData) {
+        .hash = hash,
+        .start_time = start_time
+    };
+
     current_fronter_queue_count++;
 }
 
@@ -231,7 +241,8 @@ void cache_queue_flush_current_fronters() {
     cache_clear_current_fronters();
 
     for (uint16_t i = 0; i < current_fronter_queue_count; i++) {
-        cache_add_current_fronter(current_fronter_queue[i]);
+        CurrentFrontData data = current_fronter_queue[i];
+        cache_add_current_fronter(data.hash, data.start_time);
     }
 
     current_fronter_queue_count = 0;
@@ -433,6 +444,8 @@ static void load_frontables(char* pronoun_map) {
 
         f->packed_data = cached->packed_data;
         f->group_bit_field = cached->group_bit_field;
+        // TODO: cache time started fronting too
+        f->time_started_fronting = 0;
 
         if (cached->pronoun_index > 0) {
             uint16_t index = cached->pronoun_index - 1;
@@ -445,7 +458,7 @@ static void load_frontables(char* pronoun_map) {
 
         cache_add_frontable(f);
         if (frontable_get_is_fronting(f)) {
-            cache_add_current_fronter(f->hash);
+            cache_add_current_fronter(f->hash, f->time_started_fronting);
         }
     }
 

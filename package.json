@@ -43,6 +43,7 @@
       "NumCurrentFronters",
       "NumCurrentFrontersInBatch",
       "CurrentFronter",
+      "CurrentFrontStartTime",
 
       "NumTotalFrontables",
       "NumFrontablesInBatch",

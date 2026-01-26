@@ -27,12 +27,12 @@ function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
         const batchSize = Math.min(frontablesRemaining, FRONTABLES_PER_MESSAGE);
         const toSend = frontables.splice(0, batchSize);
 
-        let namesArr: string[] = [];
-        let pronounsArr: string[] = [];
-        let colorsArr: number[] = [];
-        let isCustomArr: boolean[] = [];
-        let hashesArr: number[] = [];
-        let groupBitArr: number[] = [];
+        const namesArr: string[] = [];
+        const pronounsArr: string[] = [];
+        const colorsArr: number[] = [];
+        const isCustomArr: boolean[] = [];
+        const hashesArr: number[] = [];
+        const groupBitArr: number[] = [];
 
         toSend.forEach((frontable) => {
             const member = frontable as Member;
@@ -123,9 +123,9 @@ function assembleGroupMessages(groups: Group[]) {
         const batchSize = Math.min(groupsRemaining, GROUPS_PER_MESSAGE);
         const toSend = groups.splice(0, batchSize);
 
-        let namesArr: string[] = [];
-        let colorsArr: number[] = [];
-        let parentIndicesArr: number[] = [];
+        const namesArr: string[] = [];
+        const colorsArr: number[] = [];
+        const parentIndicesArr: number[] = [];
 
         toSend.forEach((group) => {
             // store name
@@ -197,8 +197,20 @@ function assembleCurrentFrontMessages(currentFronters: FrontEntryMessage[]) {
             toSend.map(entry => utils.genHash(entry.content.member))
         );
 
+        const times = utils.toByteArray(
+            toSend.map(entry => {
+                if (entry.content.startTime) {
+                    // convert to seconds to fit within 32-bit uints
+                    return Math.floor(entry.content.startTime / 1000);
+                } else {
+                    return 0;
+                }
+            })
+        );
+
         const msg: AppMessageDesc = {
             CurrentFronter: hashes,
+            CurrentFrontStartTime: times,
             NumCurrentFrontersInBatch: batchSize
         };
 

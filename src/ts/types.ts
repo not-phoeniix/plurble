@@ -115,6 +115,7 @@ export interface AppMessageDesc {
     NumCurrentFronters?: number;
     NumCurrentFrontersInBatch?: number;
     CurrentFronter?: number[];
+    CurrentFrontStartTime?: number[];
 
     NumTotalFrontables?: number;
     NumFrontablesInBatch?: number;

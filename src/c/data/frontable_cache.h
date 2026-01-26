@@ -13,7 +13,7 @@ Frontable* cache_get_frontable(uint32_t hash);
 
 void cache_add_frontable(Frontable* frontable);
 void cache_clear_frontables();
-void cache_add_current_fronter(uint32_t frontable_hash);
+void cache_add_current_fronter(uint32_t hash, uint32_t start_time);
 void cache_clear_current_fronters();
 
 void cache_add_group(Group* group);
@@ -22,7 +22,7 @@ void cache_clear_groups();
 
 void cache_queue_add_frontable(Frontable* frontable);
 void cache_queue_add_group(Group* group);
-void cache_queue_add_current_fronter(uint32_t hash);
+void cache_queue_add_current_fronter(uint32_t hash, uint32_t start_time);
 void cache_queue_flush_frontables();
 void cache_queue_flush_groups();
 void cache_queue_flush_current_fronters();
