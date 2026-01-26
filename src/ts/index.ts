@@ -120,9 +120,13 @@ async function fetchGroups(uid: string, useCache: boolean): Promise<Group[]> {
 
             console.log("Groups fetched! Sorting...");
 
-            groups = sorting.sortGroups(groups);
-
-            console.log("Groups sorted! Caching...");
+            const frontables = cache.getAllFrontables();
+            if (frontables) {
+                groups = sorting.sortGroups(groups, frontables);
+                console.log("Groups sorted! Caching...");
+            } else {
+                console.warn("WARNING: Frontables not found in cache, groups remain unsorted!");
+            }
 
             cache.cacheGroups(groups);
 

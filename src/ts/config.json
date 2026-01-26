@@ -67,8 +67,8 @@
       {
         "type": "toggle",
         "messageKey": "MemberColorHighlight",
-        "label": "Member Color Highlight",
-        "description": "Sets the highlight color in the member list when scrolling to that of the currently selected/hovered member.",
+        "label": "Hovered Color Highlight",
+        "description": "Sets the highlight color in the member list when scrolling to that of the currently hovered/selected member.",
         "defaultValue": false,
         "capabilities": [
           "COLOR"

@@ -1,5 +1,4 @@
 import { Frontable, FrontEntryMessage, Group } from "./types";
-import * as cache from "./cache";
 import * as utils from "./utils";
 
 export function sortFrontables(frontables: Frontable[]): Frontable[] {
@@ -39,7 +38,7 @@ interface NodeDictionary {
     [key: string]: GroupNode
 }
 
-export function sortGroups(groups: Group[]): Group[] {
+export function sortGroups(groups: Group[], frontables: Frontable[]): Group[] {
     // create and assemble dictionary that maps group id's to new nodes
     const nodeMap: NodeDictionary = {};
     groups.forEach(g => {
@@ -94,8 +93,10 @@ export function sortGroups(groups: Group[]): Group[] {
 
     // sort group children alphabetically
     groups.forEach(g => g.members.sort((a, b) => {
-        const memberA = cache.getFrontable(utils.genHash(a));
-        const memberB = cache.getFrontable(utils.genHash(b));
+        const aHash = utils.genHash(a);
+        const bHash = utils.genHash(b);
+        const memberA = frontables.find(f => f.hash === aHash);
+        const memberB = frontables.find(f => f.hash === bHash);
 
         if (!memberA || !memberB) return 0;
 

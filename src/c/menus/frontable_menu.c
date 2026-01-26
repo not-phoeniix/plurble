@@ -35,7 +35,7 @@ struct FrontableMenu {
 // ~~~ HELPER FUNCTIONS ~~~
 
 static void update_selected_highlight(FrontableMenu* menu, uint16_t index) {
-    GColor color = settings_get()->accent_color;
+    GColor color = settings_get_global_accent();
 
     FrontableList* frontables = menu->group_node.group->frontables;
 

@@ -1,4 +1,5 @@
 import { Frontable, FrontEntryMessage, Group } from "./types";
+import * as sorting from "./sorting";
 
 enum CacheKeys {
     Frontables = "cachedFrontables",
@@ -86,6 +87,8 @@ export function addFrontToCache(message: FrontEntryMessage) {
         currentFronts = [message];
     }
 
+    currentFronts = sorting.sortCurrentFronts(currentFronts);
+
     cacheCurrentFronts(currentFronts);
 }
 
@@ -103,6 +106,8 @@ export function removeFrontFromCache(message: FrontEntryMessage) {
         currentFronts = [];
     }
 
+    currentFronts = sorting.sortCurrentFronts(currentFronts);
+
     cacheCurrentFronts(currentFronts);
 }
 
@@ -118,6 +123,8 @@ export function removeFrontFromCacheViaId(frontableId: string): FrontEntryMessag
     } else {
         currentFronts = [];
     }
+
+    currentFronts = sorting.sortCurrentFronts(currentFronts);
 
     cacheCurrentFronts(currentFronts);
     return message;
