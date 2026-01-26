@@ -7,10 +7,78 @@ static TextLayer* text_layer = NULL;
 static Group group;
 static bool empty = false;
 
+static void tick_handler(struct tm* tick_time, TimeUnits units_changed) {
+    if (menu != NULL) {
+        Window* window = frontable_menu_get_window(menu);
+        Layer* root = window_get_root_layer(window);
+        layer_mark_dirty(root);
+    }
+}
+
 static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
     // TODO: draw elapsed time fronting for each member
 
-    frontable_menu_draw_cell(menu, ctx, cell_layer, cell_index);
+    // frontable_menu_draw_cell(menu, ctx, cell_layer, cell_index);
+
+    GRect bounds = layer_get_bounds(cell_layer);
+    bool compact = settings_get()->compact_member_list;
+
+    char* name = NULL;
+    // char* pronouns = NULL;
+    GColor color = GColorBlack;
+
+    time_t time_now = 0;
+    time_ms(&time_now, NULL);
+
+    // HH:MM:SS
+    char time_fronting_str[16] = {'\0'};
+
+    uint16_t i = cell_index->row;
+    FrontableList* frontables = cache_get_current_fronters();
+    if (i < frontables->num_stored) {
+        Frontable* frontable = frontables->frontables[i];
+
+        uint32_t diff = time_now - frontable->time_started_fronting;
+        uint32_t hours = diff / 60 / 60;
+        uint32_t minutes = (diff - (hours * 60 * 60)) / 60;
+        uint32_t seconds = (diff - (minutes * 60) - (hours * 60 * 60));
+        snprintf(
+            time_fronting_str,
+            sizeof(time_fronting_str),
+            "%lu:%02lu:%02lu",
+            hours,
+            minutes,
+            seconds
+        );
+
+        color = frontable_get_color(frontable);
+        name = frontable->name;
+        if (!frontable_get_is_custom(frontable) && frontable->pronouns[0] != '\0') {
+            // pronouns = frontable->pronouns;
+        }
+    }
+
+    if (settings_get()->member_color_tag) {
+        // small color label on frontable
+        graphics_context_set_fill_color(ctx, color);
+        GRect color_tag_bounds = bounds;
+#ifdef PBL_PLATFORM_EMERY
+        color_tag_bounds.size.w = 6;
+#else
+        color_tag_bounds.size.w = 3;
+#endif
+        graphics_fill_rect(ctx, color_tag_bounds, 0, GCornerNone);
+    }
+
+    // draw label text itself
+    menu_cell_basic_draw(
+        ctx,
+        cell_layer,
+        name,
+        // compact ? NULL : pronouns,
+        compact ? NULL : time_fronting_str,
+        NULL
+    );
 }
 
 static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
@@ -43,11 +111,15 @@ static void window_load(Window* window) {
     } else {
         empty = false;
     }
+
+    tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
 }
 
 static void window_unload(Window* window) {
     text_layer_destroy(text_layer);
     text_layer = NULL;
+
+    tick_timer_service_unsubscribe();
 }
 
 void current_fronters_menu_push() {
