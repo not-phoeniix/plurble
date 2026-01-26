@@ -8,9 +8,11 @@ This was an app originally made for the Rebble Hackathon #002!
 ## Feature list
 ### Current Features
 - [x] Real-time syncing with the cloud using the Simply Plural API
-- [x] Member list
-  - [x] Optional groups view
-- [x] Custom front list
+- [x] Member + Custom Front lists
+  - [x] Up to 200 combined members + custom fronts supported at a time
+- [x] Groups view
+  - [x] Up to 32 groups supported
+  - [x] Nested groups are supported! (Groups inside groups)
 - [x] Display/management of currently fronting members/custom fronts
   - [x] Add to front
   - [x] Set as front
@@ -18,15 +20,17 @@ This was an app originally made for the Rebble Hackathon #002!
 - [x] App customization
   - [x] Customizable colors
   - [x] Per-member accent colors
+  - [x] Customizable layout and behavior
 - [x] Local watch-side data caching for fast startup
   - [x] 96 Members + custom fronts
   - [x] 32 Groups
 
 ### Future features
-- [ ] Poll viewing/voting
-- [ ] Basic front history viewing
 - [ ] Enhanced member info
   - [ ] Card info view with descriptions
+  - [ ] Shown fronting durations
+- [ ] Poll viewing/voting
+- [ ] Basic front history viewing
 - [ ] Friend view
   - [ ] View friend fronting statuses
 - [ ] Chat features using dictation (far stretch goal)
