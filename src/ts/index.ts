@@ -155,11 +155,7 @@ async function fetchAndSendAllData(uid: string, useCache: boolean) {
         }),
         fetchFrontables(uid, useCache, groupPromise).then(f => {
             frontables = f.filter(frontable => {
-                if ((frontable as Member).archived) {
-                    return false;
-                }
-
-                return true;
+                return !((frontable as Member).archived);
             });
         }),
         fetchAndSendCurrentFronts().then(c => {
