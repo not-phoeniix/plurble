@@ -2,6 +2,8 @@
 #include "frontable_menu.h"
 #include "../data/frontable_cache.h"
 
+static const bool DRAW_TIME = false;
+
 static FrontableMenu* menu = NULL;
 static TextLayer* text_layer = NULL;
 static Group group;

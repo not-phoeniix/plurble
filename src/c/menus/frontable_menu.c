@@ -344,7 +344,11 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
     // text parameters
     static const char* NAME_FONT = FONT_KEY_GOTHIC_24_BOLD;
     static const char* SUBTITLE_FONT = FONT_KEY_GOTHIC_18;
+#ifdef PBL_PLATFORM_EMERY
+    static const uint16_t PADDING = 10;
+#else
     static const uint16_t PADDING = 5;
+#endif
     static const uint16_t TEXT_SEPARATION = 1;
 
     // text sizes ...
@@ -360,7 +364,7 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
     );
 
     GSize pronouns_size = {0, 0};
-    if (pronouns != NULL) {
+    if (pronouns != NULL && !compact) {
         pronouns_size = graphics_text_layout_get_content_size(
             pronouns,
             fonts_get_system_font(SUBTITLE_FONT),
@@ -372,7 +376,7 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
 
     GRect name_box = {{0, 0}, name_size};
     GRect pronouns_box = {{0, 0}, pronouns_size};
-    if (pronouns == NULL) {
+    if (pronouns == NULL || compact) {
         grect_align(&name_box, &padded_bounds, GAlignLeft, false);
         // center-align
         name_box.origin.y -= (name_size.h / 4);
@@ -399,7 +403,7 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
         GTextAlignmentLeft,
         NULL
     );
-    if (pronouns != NULL) {
+    if (pronouns != NULL && !compact) {
         graphics_draw_text(
             ctx,
             pronouns,
