@@ -332,25 +332,84 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
 
     // set the new highlight color before draw
     GColor highlight = frontable_menu_get_current_highlight_color(menu);
+    GColor text_color = gcolor_legible_over(highlight);
     menu_layer_set_highlight_colors(
         frontable_menu_get_menu_layer(menu),
         highlight,
-        gcolor_legible_over(highlight)
+        text_color
     );
 
-    // TODO: tweak to be custom draw code
-    //   won't be too hard, just align GRect's to the center of a layer's bounds
-    //   and modify to allow other things (like time fronting) to be drawn nearby
-    //   (allow pronouns width to be truncated a little)
+    // ~~~ DRAW CODE ~~~
 
-    // draw label text itself
-    menu_cell_basic_draw(
-        ctx,
-        cell_layer,
+    // text parameters
+    static const char* NAME_FONT = FONT_KEY_GOTHIC_24_BOLD;
+    static const char* SUBTITLE_FONT = FONT_KEY_GOTHIC_18;
+    static const uint16_t PADDING = 5;
+    static const uint16_t TEXT_SEPARATION = 1;
+
+    // text sizes ...
+
+    // limit text to our padded bounds
+    GRect padded_bounds = grect_inset(bounds, GEdgeInsets1(PADDING));
+    GSize name_size = graphics_text_layout_get_content_size(
         name,
-        compact ? NULL : pronouns,
+        fonts_get_system_font(NAME_FONT),
+        padded_bounds,
+        GTextOverflowModeTrailingEllipsis,
+        GTextAlignmentLeft
+    );
+
+    GSize pronouns_size = {0, 0};
+    if (pronouns != NULL) {
+        pronouns_size = graphics_text_layout_get_content_size(
+            pronouns,
+            fonts_get_system_font(SUBTITLE_FONT),
+            padded_bounds,
+            GTextOverflowModeTrailingEllipsis,
+            GTextAlignmentLeft
+        );
+    }
+
+    GRect name_box = {{0, 0}, name_size};
+    GRect pronouns_box = {{0, 0}, pronouns_size};
+    if (pronouns == NULL) {
+        grect_align(&name_box, &padded_bounds, GAlignLeft, false);
+        // center-align
+        name_box.origin.y -= (name_size.h / 4);
+    } else {
+        int16_t middle = padded_bounds.origin.y + (padded_bounds.size.h / 2);
+
+        name_box.origin.x = padded_bounds.origin.x;
+        name_box.origin.y = middle - name_box.size.h;
+
+        pronouns_box.origin.x = padded_bounds.origin.x;
+        pronouns_box.origin.y = middle - (pronouns_size.h / 4);
+
+        name_box.origin.y -= TEXT_SEPARATION;
+        pronouns_box.origin.y += TEXT_SEPARATION;
+    }
+
+    // text drawing itself
+    graphics_draw_text(
+        ctx,
+        name,
+        fonts_get_system_font(NAME_FONT),
+        name_box,
+        GTextOverflowModeTrailingEllipsis,
+        GTextAlignmentLeft,
         NULL
     );
+    if (pronouns != NULL) {
+        graphics_draw_text(
+            ctx,
+            pronouns,
+            fonts_get_system_font(SUBTITLE_FONT),
+            pronouns_box,
+            GTextOverflowModeTrailingEllipsis,
+            GTextAlignmentLeft,
+            NULL
+        );
+    }
 }
 
 static void select_frontable(FrontableMenu* menu, Frontable* frontable) {
