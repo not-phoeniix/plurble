@@ -6,10 +6,6 @@
 static FrontableMenu* menu = NULL;
 static Group group;
 
-static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
-    frontable_menu_draw_cell(menu, ctx, cell_layer, cell_index);
-}
-
 static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
     frontable_menu_select(menu, cell_index);
 }
@@ -17,7 +13,7 @@ static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) 
 void custom_fronts_menu_push() {
     if (menu == NULL) {
         MemberMenuCallbacks callbacks = {
-            .draw_row = draw_row,
+            .draw_row = frontable_menu_draw_cell,
             .select = select,
             .window_load = NULL,
             .window_unload = NULL

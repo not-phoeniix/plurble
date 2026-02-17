@@ -8,14 +8,22 @@
 struct FrontableMenu;
 typedef struct FrontableMenu FrontableMenu;
 
+typedef void (*FrontableMenuDrawRowCallback)(
+    FrontableMenu* menu,
+    GContext* ctx,
+    const Layer* cell_layer,
+    Frontable* selected_frontable,
+    Group* selected_group
+);
+
 typedef struct {
     MenuLayerSelectCallback select;
-    MenuLayerDrawRowCallback draw_row;
+    FrontableMenuDrawRowCallback draw_row;
     WindowHandler window_load;
     WindowHandler window_unload;
 } MemberMenuCallbacks;
 
-void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index);
+void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* cell_layer, Frontable* selected_frontable, Group* selected_group);
 void frontable_menu_select(FrontableMenu* menu, MenuIndex* cell_index);
 void frontable_menu_update_colors(FrontableMenu* menu);
 FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, Group* group);
@@ -29,6 +37,8 @@ void frontable_menu_clear_children(FrontableMenu* menu);
 FrontableList* frontable_menu_get_frontables(FrontableMenu* menu);
 Window* frontable_menu_get_window(FrontableMenu* menu);
 MenuIndex frontable_menu_get_selected_index(FrontableMenu* menu);
+MenuLayer* frontable_menu_get_menu_layer(FrontableMenu* menu);
+GColor frontable_menu_get_current_highlight_color(FrontableMenu* menu);
 void frontable_menu_set_selected_index(FrontableMenu* menu, uint16_t index);
 void frontable_menu_clamp_selected_index(FrontableMenu* menu);
 const char* frontable_menu_get_name(FrontableMenu* menu);

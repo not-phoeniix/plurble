@@ -111,6 +111,25 @@ static uint16_t get_num_sections(MenuLayer* menu_layer, void* context) {
     return 1;
 }
 
+static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
+    FrontableMenu* menu = (FrontableMenu*)context;
+
+    Group* group = NULL;
+    Frontable* frontable = NULL;
+
+    if (cell_index->row < menu->group_node.num_children) {
+        group = menu->group_node.children[cell_index->row]->group;
+    } else {
+        int16_t i = cell_index->row - menu->group_node.num_children;
+        FrontableList* frontables = menu->group_node.group->frontables;
+        if (i >= 0 && i < frontables->num_stored) {
+            frontable = frontables->frontables[i];
+        }
+    }
+
+    menu->callbacks.draw_row(menu, ctx, cell_layer, frontable, group);
+}
+
 static void selection_changed(MenuLayer* layer, MenuIndex new_index, MenuIndex old_index, void* context) {
     FrontableMenu* menu = (FrontableMenu*)context;
 
@@ -160,7 +179,7 @@ static void menu_layer_setup(FrontableMenu* menu) {
         menu,
         (MenuLayerCallbacks) {
             .get_num_rows = get_num_rows,
-            .draw_row = menu->callbacks.draw_row,
+            .draw_row = draw_row,
             .get_num_sections = get_num_sections,
             .get_cell_height = get_cell_height,
             .select_click = menu->callbacks.select,
@@ -280,7 +299,7 @@ static void window_unload(Window* window) {
 
 // ~~~ PUBLIC HELPERS ~~~
 
-void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index) {
+void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* cell_layer, Frontable* selected_frontable, Group* selected_group) {
     GRect bounds = layer_get_bounds(cell_layer);
     bool compact = settings_get()->compact_member_list;
 
@@ -288,21 +307,14 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
     char* pronouns = NULL;
     GColor color = GColorBlack;
 
-    if (cell_index->row < menu->group_node.num_children) {
-        Group* group = menu->group_node.children[cell_index->row]->group;
-        name = group->name;
-        color = group->color;
-    } else {
-        int16_t i = cell_index->row - menu->group_node.num_children;
-        FrontableList* frontables = menu->group_node.group->frontables;
-        if (i >= 0 && i < frontables->num_stored) {
-            Frontable* frontable = frontables->frontables[i];
-
-            color = frontable_get_color(frontable);
-            name = frontable->name;
-            if (!frontable_get_is_custom(frontable) && frontable->pronouns[0] != '\0') {
-                pronouns = frontable->pronouns;
-            }
+    if (selected_group != NULL) {
+        name = selected_group->name;
+        color = selected_group->color;
+    } else if (selected_frontable != NULL) {
+        color = frontable_get_color(selected_frontable);
+        name = selected_frontable->name;
+        if (!frontable_get_is_custom(selected_frontable) && selected_frontable->pronouns[0] != '\0') {
+            pronouns = selected_frontable->pronouns;
         }
     }
 
@@ -319,11 +331,17 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
     }
 
     // set the new highlight color before draw
+    GColor highlight = frontable_menu_get_current_highlight_color(menu);
     menu_layer_set_highlight_colors(
-        menu->menu_layer,
-        menu->highlight_color,
-        gcolor_legible_over(menu->highlight_color)
+        frontable_menu_get_menu_layer(menu),
+        highlight,
+        gcolor_legible_over(highlight)
     );
+
+    // TODO: tweak to be custom draw code
+    //   won't be too hard, just align GRect's to the center of a layer's bounds
+    //   and modify to allow other things (like time fronting) to be drawn nearby
+    //   (allow pronouns width to be truncated a little)
 
     // draw label text itself
     menu_cell_basic_draw(
@@ -531,6 +549,14 @@ Window* frontable_menu_get_window(FrontableMenu* menu) {
 
 MenuIndex frontable_menu_get_selected_index(FrontableMenu* menu) {
     return menu_layer_get_selected_index(menu->menu_layer);
+}
+
+MenuLayer* frontable_menu_get_menu_layer(FrontableMenu* menu) {
+    return menu->menu_layer;
+}
+
+GColor frontable_menu_get_current_highlight_color(FrontableMenu* menu) {
+    return menu->highlight_color;
 }
 
 void frontable_menu_set_selected_index(FrontableMenu* menu, uint16_t index) {

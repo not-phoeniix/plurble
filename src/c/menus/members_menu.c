@@ -19,11 +19,6 @@ static bool root_initialized = false;
 static char prev_group_name[GROUP_NAME_LENGTH] = {'\0'};
 static uint16_t prev_selected_index = 0;
 
-static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
-    FrontableMenu* menu = (FrontableMenu*)context;
-    frontable_menu_draw_cell(menu, ctx, cell_layer, cell_index);
-}
-
 static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
     FrontableMenu* menu = (FrontableMenu*)context;
     frontable_menu_select(menu, cell_index);
@@ -42,7 +37,7 @@ static void root_init() {
     }
 
     MemberMenuCallbacks callbacks = {
-        .draw_row = draw_row,
+        .draw_row = frontable_menu_draw_cell,
         .select = select,
         .window_load = NULL,
         .window_unload = NULL
@@ -63,7 +58,7 @@ static void groups_init() {
     num_groups = group_collection->num_stored;
 
     MemberMenuCallbacks callbacks = {
-        .draw_row = draw_row,
+        .draw_row = frontable_menu_draw_cell,
         .select = select,
         .window_load = NULL,
         .window_unload = NULL

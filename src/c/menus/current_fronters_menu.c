@@ -15,17 +15,21 @@ static void tick_handler(struct tm* tick_time, TimeUnits units_changed) {
     }
 }
 
-static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* context) {
-    // TODO: draw elapsed time fronting for each member
-
-    // frontable_menu_draw_cell(menu, ctx, cell_layer, cell_index);
-
+static void draw_time(
+    GContext* ctx,
+    const Layer* cell_layer,
+    const Frontable* frontable,
+    const char* font_key,
+    GTextAlignment text_alignment,
+    GAlign box_align,
+    GSize padding
+) {
     GRect bounds = layer_get_bounds(cell_layer);
     bool compact = settings_get()->compact_member_list;
 
-    char* name = NULL;
-    // char* pronouns = NULL;
-    GColor color = GColorBlack;
+    if (compact) {
+        return;
+    }
 
     time_t time_now = 0;
     time_ms(&time_now, NULL);
@@ -33,52 +37,67 @@ static void draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_ind
     // HH:MM:SS
     char time_fronting_str[16] = {'\0'};
 
-    uint16_t i = cell_index->row;
-    FrontableList* frontables = cache_get_current_fronters();
-    if (i < frontables->num_stored) {
-        Frontable* frontable = frontables->frontables[i];
+    uint32_t diff = time_now - frontable->time_started_fronting;
+    uint32_t hours = diff / 60 / 60;
+    uint32_t minutes = (diff - (hours * 60 * 60)) / 60;
+    uint32_t seconds = (diff - (minutes * 60) - (hours * 60 * 60));
+    snprintf(
+        time_fronting_str,
+        sizeof(time_fronting_str),
+        "%lu:%02lu:%02lu",
+        hours,
+        minutes,
+        seconds
+    );
 
-        uint32_t diff = time_now - frontable->time_started_fronting;
-        uint32_t hours = diff / 60 / 60;
-        uint32_t minutes = (diff - (hours * 60 * 60)) / 60;
-        uint32_t seconds = (diff - (minutes * 60) - (hours * 60 * 60));
-        snprintf(
-            time_fronting_str,
-            sizeof(time_fronting_str),
-            "%lu:%02lu:%02lu",
-            hours,
-            minutes,
-            seconds
-        );
+    GSize text_size = graphics_text_layout_get_content_size(
+        time_fronting_str,
+        fonts_get_system_font(font_key),
+        bounds,
+        GTextOverflowModeTrailingEllipsis,
+        text_alignment
+    );
 
-        color = frontable_get_color(frontable);
-        name = frontable->name;
-        if (!frontable_get_is_custom(frontable) && frontable->pronouns[0] != '\0') {
-            // pronouns = frontable->pronouns;
-        }
-    }
+    GRect time_bounds = {{0, 0}, text_size};
+    GRect padded_bounds = {{0, 0}, text_size};
+    padded_bounds.size.w += padding.w * 2;
+    padded_bounds.size.h += padding.h * 2;
+    grect_align(&padded_bounds, &bounds, box_align, false);
+    grect_align(&time_bounds, &padded_bounds, GAlignCenter, false);
 
-    if (settings_get()->member_color_tag) {
-        // small color label on frontable
-        graphics_context_set_fill_color(ctx, color);
-        GRect color_tag_bounds = bounds;
-#ifdef PBL_PLATFORM_EMERY
-        color_tag_bounds.size.w = 6;
-#else
-        color_tag_bounds.size.w = 3;
-#endif
-        graphics_fill_rect(ctx, color_tag_bounds, 0, GCornerNone);
-    }
-
-    // draw label text itself
-    menu_cell_basic_draw(
+    graphics_context_set_fill_color(ctx, GColorBlack);
+    graphics_fill_rect(ctx, time_bounds, 0, GCornerNone);
+    graphics_draw_text(
         ctx,
-        cell_layer,
-        name,
-        // compact ? NULL : pronouns,
-        compact ? NULL : time_fronting_str,
+        time_fronting_str,
+        fonts_get_system_font(font_key),
+        time_bounds,
+        GTextOverflowModeTrailingEllipsis,
+        text_alignment,
         NULL
     );
+}
+
+static void draw_row(
+    FrontableMenu* menu,
+    GContext* ctx,
+    const Layer* cell_layer,
+    Frontable* selected_frontable,
+    Group* selected_group
+) {
+    frontable_menu_draw_cell(menu, ctx, cell_layer, selected_frontable, selected_group);
+
+    if (selected_frontable != NULL) {
+        draw_time(
+            ctx,
+            cell_layer,
+            selected_frontable,
+            FONT_KEY_GOTHIC_18,
+            GTextAlignmentRight,
+            GAlignBottomRight,
+            (GSize) {6, 6}
+        );
+    }
 }
 
 static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
