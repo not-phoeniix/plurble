@@ -37,7 +37,7 @@ static void root_init() {
     }
 
     MemberMenuCallbacks callbacks = {
-        .draw_row = frontable_menu_draw_cell,
+        .draw_row = frontable_menu_draw_cell_default,
         .select = select,
         .window_load = NULL,
         .window_unload = NULL
@@ -58,7 +58,7 @@ static void groups_init() {
     num_groups = group_collection->num_stored;
 
     MemberMenuCallbacks callbacks = {
-        .draw_row = frontable_menu_draw_cell,
+        .draw_row = frontable_menu_draw_cell_default,
         .select = select,
         .window_load = NULL,
         .window_unload = NULL

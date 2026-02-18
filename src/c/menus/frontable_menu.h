@@ -23,7 +23,8 @@ typedef struct {
     WindowHandler window_unload;
 } MemberMenuCallbacks;
 
-void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* cell_layer, Frontable* selected_frontable, Group* selected_group);
+void frontable_menu_draw_cell_custom(FrontableMenu* menu, GContext* ctx, const Layer* cell_layer, const char* main_text, const char* bottom_left_text, const char* bottom_right_text, GColor tag_color);
+void frontable_menu_draw_cell_default(FrontableMenu* menu, GContext* ctx, const Layer* cell_layer, Frontable* selected_frontable, Group* selected_group);
 void frontable_menu_select(FrontableMenu* menu, MenuIndex* cell_index);
 void frontable_menu_update_colors(FrontableMenu* menu);
 FrontableMenu* frontable_menu_create(MemberMenuCallbacks callbacks, Group* group);

@@ -299,28 +299,20 @@ static void window_unload(Window* window) {
 
 // ~~~ PUBLIC HELPERS ~~~
 
-void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* cell_layer, Frontable* selected_frontable, Group* selected_group) {
+void frontable_menu_draw_cell_custom(
+    FrontableMenu* menu,
+    GContext* ctx,
+    const Layer* cell_layer,
+    const char* main_text,
+    const char* bottom_left_text,
+    const char* bottom_right_text,
+    GColor tag_color
+) {
     GRect bounds = layer_get_bounds(cell_layer);
-    bool compact = settings_get()->compact_member_list;
-
-    char* name = NULL;
-    char* pronouns = NULL;
-    GColor color = GColorBlack;
-
-    if (selected_group != NULL) {
-        name = selected_group->name;
-        color = selected_group->color;
-    } else if (selected_frontable != NULL) {
-        color = frontable_get_color(selected_frontable);
-        name = selected_frontable->name;
-        if (!frontable_get_is_custom(selected_frontable) && selected_frontable->pronouns[0] != '\0') {
-            pronouns = selected_frontable->pronouns;
-        }
-    }
 
     if (settings_get()->member_color_tag) {
         // small color label on frontable
-        graphics_context_set_fill_color(ctx, color);
+        graphics_context_set_fill_color(ctx, tag_color);
         GRect color_tag_bounds = bounds;
 #ifdef PBL_PLATFORM_EMERY
         color_tag_bounds.size.w = 6;
@@ -355,18 +347,19 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
 
     // limit text to our padded bounds
     GRect padded_bounds = grect_inset(bounds, GEdgeInsets1(PADDING));
-    GSize name_size = graphics_text_layout_get_content_size(
-        name,
+
+    GSize main_size = graphics_text_layout_get_content_size(
+        main_text,
         fonts_get_system_font(NAME_FONT),
         padded_bounds,
         GTextOverflowModeTrailingEllipsis,
         GTextAlignmentLeft
     );
 
-    GSize pronouns_size = {0, 0};
-    if (pronouns != NULL && !compact) {
-        pronouns_size = graphics_text_layout_get_content_size(
-            pronouns,
+    GSize bottom_left_size = {0, 0};
+    if (bottom_left_text != NULL) {
+        bottom_left_size = graphics_text_layout_get_content_size(
+            bottom_left_text,
             fonts_get_system_font(SUBTITLE_FONT),
             padded_bounds,
             GTextOverflowModeTrailingEllipsis,
@@ -374,46 +367,110 @@ void frontable_menu_draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* c
         );
     }
 
-    GRect name_box = {{0, 0}, name_size};
-    GRect pronouns_box = {{0, 0}, pronouns_size};
-    if (pronouns == NULL || compact) {
-        grect_align(&name_box, &padded_bounds, GAlignLeft, false);
+    GSize bottom_right_size = {0, 0};
+    if (bottom_right_text != NULL) {
+        bottom_right_size = graphics_text_layout_get_content_size(
+            bottom_right_text,
+            fonts_get_system_font(SUBTITLE_FONT),
+            padded_bounds,
+            GTextOverflowModeTrailingEllipsis,
+            GTextAlignmentRight
+        );
+    }
+
+    // adjust sizes so bottom left and right boxes don't overlap
+    if (bottom_left_size.w + bottom_right_size.w > padded_bounds.size.w) {
+        bottom_left_size.w = padded_bounds.size.w - bottom_right_size.w;
+    }
+
+    // create target drawing boxes
+    GRect main_box = {{0, 0}, main_size};
+    GRect bottom_left_box = {{0, 0}, bottom_left_size};
+    GRect bottom_right_box = {{0, 0}, bottom_right_size};
+    if (bottom_left_text == NULL && bottom_right_text == NULL) {
+        grect_align(&main_box, &padded_bounds, GAlignLeft, false);
         // center-align
-        name_box.origin.y -= (name_size.h / 4);
+        main_box.origin.y -= (main_size.h / 4);
     } else {
         int16_t middle = padded_bounds.origin.y + (padded_bounds.size.h / 2);
 
-        name_box.origin.x = padded_bounds.origin.x;
-        name_box.origin.y = middle - name_box.size.h;
+        // main box aligned on top of middle line
+        main_box.origin.x = padded_bounds.origin.x;
+        main_box.origin.y = middle - main_size.h;
 
-        pronouns_box.origin.x = padded_bounds.origin.x;
-        pronouns_box.origin.y = middle - (pronouns_size.h / 4);
+        // bottom boxes aligned right below the middle line
+        bottom_left_box.origin.x = padded_bounds.origin.x;
+        bottom_left_box.origin.y = middle - (bottom_left_size.h / 4);
+        bottom_right_box.origin.x = padded_bounds.origin.x + padded_bounds.size.w - bottom_right_size.w;
+        bottom_right_box.origin.y = middle - (bottom_right_size.h / 4);
 
-        name_box.origin.y -= TEXT_SEPARATION;
-        pronouns_box.origin.y += TEXT_SEPARATION;
+        // separate text
+        main_box.origin.y -= TEXT_SEPARATION;
+        bottom_left_box.origin.y += TEXT_SEPARATION;
+        bottom_right_box.origin.y += TEXT_SEPARATION;
     }
 
     // text drawing itself
     graphics_draw_text(
         ctx,
-        name,
+        main_text,
         fonts_get_system_font(NAME_FONT),
-        name_box,
+        main_box,
         GTextOverflowModeTrailingEllipsis,
         GTextAlignmentLeft,
         NULL
     );
-    if (pronouns != NULL && !compact) {
+    if (bottom_left_text != NULL) {
         graphics_draw_text(
             ctx,
-            pronouns,
+            bottom_left_text,
             fonts_get_system_font(SUBTITLE_FONT),
-            pronouns_box,
+            bottom_left_box,
             GTextOverflowModeTrailingEllipsis,
             GTextAlignmentLeft,
             NULL
         );
     }
+    if (bottom_right_text != NULL) {
+        graphics_draw_text(
+            ctx,
+            bottom_right_text,
+            fonts_get_system_font(SUBTITLE_FONT),
+            bottom_right_box,
+            GTextOverflowModeTrailingEllipsis,
+            GTextAlignmentRight,
+            NULL
+        );
+    }
+}
+
+void frontable_menu_draw_cell_default(FrontableMenu* menu, GContext* ctx, const Layer* cell_layer, Frontable* selected_frontable, Group* selected_group) {
+    bool compact = settings_get()->compact_member_list;
+
+    char* name = NULL;
+    char* pronouns = NULL;
+    GColor color = GColorBlack;
+
+    if (selected_group != NULL) {
+        name = selected_group->name;
+        color = selected_group->color;
+    } else if (selected_frontable != NULL) {
+        color = frontable_get_color(selected_frontable);
+        name = selected_frontable->name;
+        if (!frontable_get_is_custom(selected_frontable) && selected_frontable->pronouns[0] != '\0') {
+            pronouns = selected_frontable->pronouns;
+        }
+    }
+
+    frontable_menu_draw_cell_custom(
+        menu,
+        ctx,
+        cell_layer,
+        name,
+        !compact ? pronouns : NULL,
+        NULL,
+        color
+    );
 }
 
 static void select_frontable(FrontableMenu* menu, Frontable* frontable) {

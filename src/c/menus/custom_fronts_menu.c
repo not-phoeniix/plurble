@@ -13,7 +13,7 @@ static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) 
 void custom_fronts_menu_push() {
     if (menu == NULL) {
         MemberMenuCallbacks callbacks = {
-            .draw_row = frontable_menu_draw_cell,
+            .draw_row = frontable_menu_draw_cell_default,
             .select = select,
             .window_load = NULL,
             .window_unload = NULL
