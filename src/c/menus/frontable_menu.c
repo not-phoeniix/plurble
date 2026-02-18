@@ -444,35 +444,6 @@ void frontable_menu_draw_cell_custom(
     }
 }
 
-void frontable_menu_draw_cell_default(FrontableMenu* menu, GContext* ctx, const Layer* cell_layer, Frontable* selected_frontable, Group* selected_group) {
-    bool compact = settings_get()->compact_member_list;
-
-    char* name = NULL;
-    char* pronouns = NULL;
-    GColor color = GColorBlack;
-
-    if (selected_group != NULL) {
-        name = selected_group->name;
-        color = selected_group->color;
-    } else if (selected_frontable != NULL) {
-        color = frontable_get_color(selected_frontable);
-        name = selected_frontable->name;
-        if (!frontable_get_is_custom(selected_frontable) && selected_frontable->pronouns[0] != '\0') {
-            pronouns = selected_frontable->pronouns;
-        }
-    }
-
-    frontable_menu_draw_cell_custom(
-        menu,
-        ctx,
-        cell_layer,
-        name,
-        !compact ? pronouns : NULL,
-        NULL,
-        color
-    );
-}
-
 static void select_frontable(FrontableMenu* menu, Frontable* frontable) {
     // make accent be the color of the frontable, and change it
     //   if it matches the color of the background

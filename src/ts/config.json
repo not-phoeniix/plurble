@@ -106,14 +106,39 @@
       {
         "type": "toggle",
         "messageKey": "CompactMemberList",
-        "label": "Compact Member List",
-        "description": "Makes member list entries more compact, hides pronouns.",
+        "label": "Compact frontable list",
+        "description": "Makes current fronters, member, and custom front lists be smaller (hides pronouns & front time)",
         "defaultValue": false
       },
       {
         "type": "toggle",
+        "messageKey": "ShowPronouns",
+        "label": "Show member pronouns",
+        "description": "Whether or not to show member pronouns",
+        "defaultValue": true
+      },
+      {
+        "type": "toggle",
+        "messageKey": "ShowTimeFronting",
+        "label": "Show time fronting",
+        "description": "Whether or not to show total time fronting in current fronters menu",
+        "defaultValue": true
+      },
+      {
+        "type": "input",
+        "messageKey": "CustomFrontText",
+        "label": "Custom front label text",
+        "description": "Label text to display in place of pronouns for custom fronts (empty text to disable)",
+        "defaultValue": "[custom]",
+        "attributes": {
+          "placeholder": "empty...",
+          "limit": 16
+        }
+      },
+      {
+        "type": "toggle",
         "messageKey": "HideMembersInRoot",
-        "label": "Hide Members Who Are In Groups",
+        "label": "Hide members who are in groups",
         "description": "Members who are in groups will be hidden from the root view of the member list",
         "defaultValue": false
       },

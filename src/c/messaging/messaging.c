@@ -85,6 +85,21 @@ static void handle_settings_inbox(DictionaryIterator* iter, ClaySettings* settin
         members_menu_remove_groups();
         members_menu_create_groups();
     }
+
+    Tuple* show_pronouns = dict_find(iter, MESSAGE_KEY_ShowPronouns);
+    if (show_pronouns != NULL) {
+        settings->show_pronouns = show_pronouns->value->int16;
+    }
+
+    Tuple* show_time_fronting = dict_find(iter, MESSAGE_KEY_ShowTimeFronting);
+    if (show_time_fronting != NULL) {
+        settings->show_time_fronting = show_time_fronting->value->int16;
+    }
+
+    Tuple* custom_front_text = dict_find(iter, MESSAGE_KEY_CustomFrontText);
+    if (custom_front_text != NULL) {
+        strncpy(settings->custom_front_text, custom_front_text->value->cstring, sizeof(settings->custom_front_text) - 1);
+    }
 }
 
 static uint32_t uint32_from_byte_arr(uint8_t* start) {

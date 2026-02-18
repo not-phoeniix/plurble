@@ -23,6 +23,9 @@ static void set_defaults() {
     settings.group_title_accent = false;
     settings.show_groups = true;
     settings.hide_members_in_root = false;
+    settings.show_pronouns = true;
+    settings.show_time_fronting = true;
+    strncpy(settings.custom_front_text, "[custom]", sizeof(settings.custom_front_text));
 }
 
 static void apply(bool update_colors) {

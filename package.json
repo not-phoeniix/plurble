@@ -39,6 +39,9 @@
       "AccentColor",
       "BackgroundColor",
       "HideMembersInRoot",
+      "ShowPronouns",
+      "ShowTimeFronting",
+      "CustomFrontText",
 
       "NumCurrentFronters",
       "NumCurrentFrontersInBatch",

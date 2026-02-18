@@ -24,6 +24,36 @@ static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) 
     frontable_menu_select(menu, cell_index);
 }
 
+static void draw_cell(FrontableMenu* menu, GContext* ctx, const Layer* cell_layer, Frontable* selected_frontable, Group* selected_group) {
+    bool compact = settings_get()->compact_member_list;
+    bool show_pronouns = settings_get()->show_pronouns;
+
+    char* name = NULL;
+    char* pronouns = NULL;
+    GColor color = GColorBlack;
+
+    if (selected_group != NULL) {
+        name = selected_group->name;
+        color = selected_group->color;
+    } else if (selected_frontable != NULL) {
+        color = frontable_get_color(selected_frontable);
+        name = selected_frontable->name;
+        if (selected_frontable->pronouns[0] != '\0') {
+            pronouns = selected_frontable->pronouns;
+        }
+    }
+
+    frontable_menu_draw_cell_custom(
+        menu,
+        ctx,
+        cell_layer,
+        name,
+        (!compact && show_pronouns) ? pronouns : NULL,
+        NULL,
+        color
+    );
+}
+
 static void root_init() {
     hidden_root_list = frontable_list_create();
 
@@ -37,7 +67,7 @@ static void root_init() {
     }
 
     MemberMenuCallbacks callbacks = {
-        .draw_row = frontable_menu_draw_cell_default,
+        .draw_row = draw_cell,
         .select = select,
         .window_load = NULL,
         .window_unload = NULL
@@ -58,7 +88,7 @@ static void groups_init() {
     num_groups = group_collection->num_stored;
 
     MemberMenuCallbacks callbacks = {
-        .draw_row = frontable_menu_draw_cell_default,
+        .draw_row = draw_cell,
         .select = select,
         .window_load = NULL,
         .window_unload = NULL

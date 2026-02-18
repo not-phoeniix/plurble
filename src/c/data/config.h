@@ -14,6 +14,9 @@ typedef struct {
     bool api_key_valid;
     bool show_groups;
     bool hide_members_in_root;
+    bool show_pronouns;
+    bool show_time_fronting;
+    char custom_front_text[FRONTABLE_PRONOUNS_LENGTH];
 } ClaySettings;
 
 ClaySettings* settings_get();

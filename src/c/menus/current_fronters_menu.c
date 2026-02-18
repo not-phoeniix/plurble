@@ -29,6 +29,7 @@ static void draw_row(
     }
 
     bool compact = settings_get()->compact_member_list;
+    bool show_time = settings_get()->show_time_fronting;
 
     time_t time_now = 0;
     time_ms(&time_now, NULL);
@@ -49,9 +50,13 @@ static void draw_row(
         seconds
     );
 
-    char* bl_text = selected_frontable->pronouns;
+    char* bl_text = NULL;
     if (frontable_get_is_custom(selected_frontable)) {
-        bl_text = "[custom]";
+        if (settings_get()->custom_front_text[0] != '\0') {
+            bl_text = settings_get()->custom_front_text;
+        }
+    } else if (settings_get()->show_pronouns) {
+        bl_text = selected_frontable->pronouns;
     }
 
     frontable_menu_draw_cell_custom(
@@ -60,7 +65,7 @@ static void draw_row(
         cell_layer,
         selected_frontable->name,
         !compact ? bl_text : NULL,
-        !compact ? time_fronting_str : NULL,
+        (!compact && show_time) ? time_fronting_str : NULL,
         frontable_get_color(selected_frontable)
     );
 }
