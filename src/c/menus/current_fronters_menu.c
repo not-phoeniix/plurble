@@ -59,6 +59,11 @@ static void draw_row(
         bl_text = selected_frontable->pronouns;
     }
 
+    // placeholder "..." for when time hasn't loaded yet
+    if (selected_frontable->time_started_fronting == 0) {
+        strncpy(time_fronting_str, "...", sizeof(time_fronting_str));
+    }
+
     frontable_menu_draw_cell_custom(
         menu,
         ctx,
@@ -101,7 +106,9 @@ static void window_load(Window* window) {
         empty = false;
     }
 
-    tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
+    if (settings_get()->show_time_fronting) {
+        tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
+    }
 }
 
 static void window_unload(Window* window) {
