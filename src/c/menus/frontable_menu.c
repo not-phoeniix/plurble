@@ -353,19 +353,9 @@ void frontable_menu_draw_cell_custom(
         fonts_get_system_font(NAME_FONT),
         padded_bounds,
         GTextOverflowModeTrailingEllipsis,
-        GTextAlignmentLeft
+        PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentLeft)
     );
-
-    GSize bottom_left_size = {0, 0};
-    if (bottom_left_text != NULL) {
-        bottom_left_size = graphics_text_layout_get_content_size(
-            bottom_left_text,
-            fonts_get_system_font(SUBTITLE_FONT),
-            padded_bounds,
-            GTextOverflowModeTrailingEllipsis,
-            GTextAlignmentLeft
-        );
-    }
+    main_size.w = padded_bounds.size.w;
 
     GSize bottom_right_size = {0, 0};
     if (bottom_right_text != NULL) {
@@ -374,20 +364,38 @@ void frontable_menu_draw_cell_custom(
             fonts_get_system_font(SUBTITLE_FONT),
             padded_bounds,
             GTextOverflowModeTrailingEllipsis,
-            GTextAlignmentRight
+            GTextAlignmentCenter
         );
     }
 
-    // adjust sizes so bottom left and right boxes don't overlap
-    if (bottom_left_size.w + bottom_right_size.w > padded_bounds.size.w) {
+    GSize bottom_left_size = {0, 0};
+    if (bottom_left_text != NULL) {
+        bottom_left_size = graphics_text_layout_get_content_size(
+            bottom_left_text,
+            fonts_get_system_font(SUBTITLE_FONT),
+            padded_bounds,
+            GTextOverflowModeTrailingEllipsis,
+            GTextAlignmentCenter
+        );
+    }
+    if (bottom_left_size.w > padded_bounds.size.w - bottom_right_size.w) {
         bottom_left_size.w = padded_bounds.size.w - bottom_right_size.w;
     }
+
+    uint16_t main_actual_height = main_size.h * 3 / 4;
+    uint16_t bl_actual_height = bottom_left_size.h * 3 / 4;
+    uint16_t br_actual_height = bottom_right_size.h * 3 / 4;
+    bool space_for_subtitles =
+        (bl_actual_height + main_actual_height + (TEXT_SEPARATION * 2) <= padded_bounds.size.h) &&
+        (br_actual_height + main_actual_height + (TEXT_SEPARATION * 2) <= padded_bounds.size.h);
+    bool draw_bl = bottom_left_text != NULL && space_for_subtitles;
+    bool draw_br = bottom_right_text != NULL && space_for_subtitles;
 
     // create target drawing boxes
     GRect main_box = {{0, 0}, main_size};
     GRect bottom_left_box = {{0, 0}, bottom_left_size};
     GRect bottom_right_box = {{0, 0}, bottom_right_size};
-    if (bottom_left_text == NULL && bottom_right_text == NULL) {
+    if (!draw_bl && !draw_br) {
         grect_align(&main_box, &padded_bounds, GAlignLeft, false);
         // center-align
         main_box.origin.y -= (main_size.h / 4);
@@ -410,6 +418,29 @@ void frontable_menu_draw_cell_custom(
         bottom_right_box.origin.y += TEXT_SEPARATION;
     }
 
+#ifdef PBL_ROUND
+    static const uint16_t HORIZ_SEPARATION = 3;
+
+    // align the subtitle boxes for round watches
+    if (draw_bl && !draw_br) {
+        bottom_left_box.size.w = padded_bounds.size.w;
+    } else if (draw_br && !draw_bl) {
+        bottom_right_box.size.w = padded_bounds.size.w;
+    } else if (draw_bl && draw_br) {
+        // align both boxes next to each other and centered in total
+        int16_t total_width = bottom_left_box.size.w + bottom_right_box.size.w;
+        int16_t combined_start_x = padded_bounds.origin.x +
+                                   (padded_bounds.size.w / 2) -
+                                   (total_width / 2);
+        bottom_left_box.origin.x = combined_start_x;
+        bottom_right_box.origin.x = combined_start_x + bottom_left_box.size.w;
+
+        // separate draw boxes a little if both are drawn
+        bottom_left_box.origin.x -= HORIZ_SEPARATION;
+        bottom_right_box.origin.x += HORIZ_SEPARATION;
+    }
+#endif
+
     // text drawing itself
     graphics_draw_text(
         ctx,
@@ -417,28 +448,38 @@ void frontable_menu_draw_cell_custom(
         fonts_get_system_font(NAME_FONT),
         main_box,
         GTextOverflowModeTrailingEllipsis,
-        GTextAlignmentLeft,
+        PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentLeft),
         NULL
     );
-    if (bottom_left_text != NULL) {
+    if (draw_bl) {
         graphics_draw_text(
             ctx,
             bottom_left_text,
             fonts_get_system_font(SUBTITLE_FONT),
             bottom_left_box,
             GTextOverflowModeTrailingEllipsis,
-            GTextAlignmentLeft,
+            // PBL_IF_ROUND_ELSE(
+            //     draw_br ? GTextAlignmentRight : GTextAlignmentCenter,
+            //     GTextAlignmentLeft
+            // ),
+            // GTextAlignmentLeft,
+            GTextAlignmentCenter,
             NULL
         );
     }
-    if (bottom_right_text != NULL) {
+    if (draw_br) {
         graphics_draw_text(
             ctx,
             bottom_right_text,
             fonts_get_system_font(SUBTITLE_FONT),
             bottom_right_box,
             GTextOverflowModeTrailingEllipsis,
-            GTextAlignmentRight,
+            // PBL_IF_ROUND_ELSE(
+            //     draw_bl ? GTextAlignmentLeft : GTextAlignmentCenter,
+            //     GTextAlignmentRight
+            // ),
+            // GTextAlignmentRight,
+            GTextAlignmentCenter,
             NULL
         );
     }
