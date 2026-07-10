@@ -1,4 +1,4 @@
-import { Frontable, FrontEntryMessage, Group } from "./types";
+import { Frontable, FrontEntry2, FrontEntryMessage, Group } from "./types";
 import * as utils from "./utils";
 
 export function sortFrontables(frontables: Frontable[]): Frontable[] {
@@ -39,6 +39,8 @@ interface NodeDictionary {
 }
 
 export function sortGroups(groups: Group[], frontables: Frontable[]): Group[] {
+    let counter = 0;
+
     // create and assemble dictionary that maps group id's to new nodes
     const nodeMap: NodeDictionary = {};
     groups.forEach(g => {
@@ -74,7 +76,6 @@ export function sortGroups(groups: Group[], frontables: Frontable[]): Group[] {
         return 0;
     }
 
-
     const output: Group[] = [];
 
     function addNode(node: GroupNode) {
@@ -92,11 +93,9 @@ export function sortGroups(groups: Group[], frontables: Frontable[]): Group[] {
     }
 
     // sort group children alphabetically
-    groups.forEach(g => g.members.sort((a, b) => {
-        const aHash = utils.genHash(a);
-        const bHash = utils.genHash(b);
-        const memberA = frontables.find(f => f.hash === aHash);
-        const memberB = frontables.find(f => f.hash === bHash);
+    groups.forEach(g => g.memberHashes.sort((a, b) => {
+        const memberA = frontables.find(f => f.hash === a);
+        const memberB = frontables.find(f => f.hash === b);
 
         if (!memberA || !memberB) return 0;
 
@@ -109,15 +108,17 @@ export function sortGroups(groups: Group[], frontables: Frontable[]): Group[] {
         return 0;
     }));
 
+    console.log(counter++);
+
     return output;
 }
 
-export function sortCurrentFronts(currentFronts: FrontEntryMessage[]): FrontEntryMessage[] {
-    let output: FrontEntryMessage[] = JSON.parse(JSON.stringify(currentFronts));
+export function sortCurrentFronts(currentFronts: FrontEntry2[]): FrontEntry2[] {
+    let output: FrontEntry2[] = JSON.parse(JSON.stringify(currentFronts));
 
     output.sort((a, b) => {
-        const aStart = a.content.startTime ?? 0;
-        const bStart = b.content.startTime ?? 0;
+        const aStart = a.startTime ?? 0;
+        const bStart = b.startTime ?? 0;
         return bStart - aStart;
     });
 

@@ -1,16 +1,13 @@
 import config from "./config.json";
-import * as pluralApi from "./pluralApi";
-import * as pluralSocket from "./pluralSocket";
 import * as cache from "./cache";
 import * as messaging from "./messaging";
 import * as sorting from "./sorting";
-import { Member, CustomFront, AppMessageDesc, Frontable, Group, FrontEntryMessage } from "./types";
+import * as backends from "./backends";
+import { Member, AppMessageDesc, Frontable, Group, APIImpl, FrontEntry2 } from "./types";
 import { version } from "../../package.json";
 
-// local TS environment variables that won't be pushed... 
-//   if you're getting errors just make an "env.json" 
-//   file in the ts folder <3
-import env from "./env.json";
+// TODO: make backends dynamic?
+let backend: APIImpl = backends.pluralKit;
 
 // i gotta use node CommonJS requires unfortunately, it's not a TS module
 const Clay = require("pebble-clay");
@@ -19,28 +16,27 @@ const clay = new Clay(config);
 async function setupApi(token: string) {
     console.log("setting up API and socket...");
 
-    try {
-        const useDevServer = ((env as any).usePretestingServer) ?? false;
-        if (useDevServer) {
-            console.log("Using pretesting servers!");
-        } else {
-            console.log("Using normal servers!");
-        }
+    backend.setToken(token);
 
-        pluralApi.init(token, useDevServer);
-        pluralSocket.init(token, useDevServer);
+    try {
+        console.log(`using backend: [${backend.name}]...`);
 
         console.log("API and socket set up!");
 
         let uid = cache.getSystemId();
         if (!uid) {
             console.log("system ID not cached, fetching from API...");
-            uid = await pluralApi.getSystemId();
+            uid = await backend.endpoints.fetchGetUID();
             console.log(`system id ${uid} fetched! caching now...`);
             cache.cacheSystemId(uid);
         } else {
             console.log("system id cached, continuing but fetching up-to-date id asynchronously anyways...");
-            pluralApi.getSystemId().then(cache.cacheSystemId);
+            backend.endpoints.fetchGetUID()
+                .then(fetchedUid => {
+                    uid = fetchedUid;
+                    return fetchedUid;
+                })
+                .then(cache.cacheSystemId)
         }
 
         console.log("api set up!!");
@@ -61,22 +57,8 @@ async function fetchFrontables(uid: string, useCache: boolean, groupPromise: Pro
         if (uid) {
             console.log("Frontables not cached, fetching from API...");
 
-            frontables = [];
-
-            // fetch data from api
-            await Promise.all([
-                pluralApi.getAllMembers(uid)
-                    .then(members => members.forEach(
-                        m => frontables!.push(Member.create(m))
-                    )),
-                pluralApi.getAllCustomFronts(uid)
-                    .then(customFronts => customFronts.forEach(
-                        c => frontables!.push(CustomFront.create(c))
-                    ))
-            ]);
-
+            frontables = await backend.endpoints.fetchGetAllFrontables(uid);
             frontables = sorting.sortFrontables(frontables);
-
             cache.cacheFrontables(frontables);
 
             console.log("Frontables fetched, assembled, and cached!");
@@ -97,8 +79,8 @@ async function fetchFrontables(uid: string, useCache: boolean, groupPromise: Pro
     return frontables;
 }
 
-async function fetchAndSendCurrentFronts(): Promise<FrontEntryMessage[]> {
-    let currentFronters = await pluralApi.getCurrentFronts();
+async function fetchAndSendCurrentFronts(uid: string): Promise<FrontEntry2[]> {
+    let currentFronters = await backend.endpoints.fetchGetCurrentFronters(uid);
     currentFronters = sorting.sortCurrentFronts(currentFronters);
     cache.cacheCurrentFronts(currentFronters);
     return currentFronters;
@@ -112,11 +94,10 @@ async function fetchGroups(uid: string, useCache: boolean): Promise<Group[]> {
     }
 
     if (!groups) {
-        if (uid) {
+        if (uid && backend.endpoints.fetchGetGroups) {
             console.log("Groups not cached, fetching from API...");
 
-            groups = (await pluralApi.getGroups(uid))
-                .map(m => Group.create(m));
+            groups = await backend.endpoints.fetchGetGroups(uid);
 
             console.log("Groups fetched! Sorting...");
 
@@ -146,7 +127,7 @@ async function fetchAndSendAllData(uid: string, useCache: boolean) {
     const groupPromise = fetchGroups(uid, useCache);
 
     let frontables: Frontable[] = [];
-    let currentFronters: FrontEntryMessage[] = [];
+    let currentFronters: FrontEntry2[] = [];
     let groups: Group[] = [];
 
     await Promise.all([
@@ -158,7 +139,7 @@ async function fetchAndSendAllData(uid: string, useCache: boolean) {
                 return !((frontable as Member).archived);
             });
         }),
-        fetchAndSendCurrentFronts().then(c => {
+        fetchAndSendCurrentFronts(uid).then(c => {
             currentFronters = c;
         }),
     ]);
@@ -234,8 +215,9 @@ Pebble.addEventListener("appmessage", async (e) => {
         const frontable = cache.getFrontable(hash);
         if (frontable) {
             console.log(`Adding frontable ${frontable.name} to front...`);
-            pluralApi.addToFront(frontable)
-                .then(null, console.log);
+            console.log(`JUST KIDDING that has yet to be implemented...`);
+            // pluralApi.addToFront(frontable)
+            //     .then(null, console.log);
         } else {
             console.error(`Cannot add member to front! Member hash ${hash} was not cached!`);
         }
@@ -250,8 +232,9 @@ Pebble.addEventListener("appmessage", async (e) => {
         const frontable = cache.getFrontable(hash);
         if (frontable) {
             console.log(`Setting frontable ${frontable.name} as front...`);
-            pluralApi.setAsFront(frontable)
-                .then(null, console.log);
+            console.log(`JUST KIDDING that has yet to be implemented...`);
+            // pluralApi.setAsFront(frontable)
+            //     .then(null, console.log);
         } else {
             console.error(`Cannot set member as front! Member hash ${hash} was not cached!`);
         }
@@ -266,8 +249,9 @@ Pebble.addEventListener("appmessage", async (e) => {
         const frontable = cache.getFrontable(hash);
         if (frontable) {
             console.log(`Removing frontable ${frontable.name} from front...`);
-            pluralApi.removeFromFront(frontable)
-                .then(null, console.log);
+            console.log(`JUST KIDDING that has yet to be implemented...`);
+            // pluralApi.removeFromFront(frontable)
+            //     .then(null, console.log);
         } else {
             console.error(`Cannot remove member from front! Member hash ${hash} was not cached!`);
         }
@@ -300,6 +284,9 @@ Pebble.addEventListener("appmessage", async (e) => {
 //   in the syntax linting but it works i swear
 Pebble.addEventListener("webviewclosed", async (e: any) => {
     console.log("web view closed :]");
+
+    // TODO: figure out more robust way to validate API keys
+    messaging.sendApiKeyIsValid(true);
 
     if (e.response) {
         const settingsDict = clay.getSettings(e.response, false);

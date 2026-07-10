@@ -1,5 +1,3 @@
-import * as utils from "./utils";
-
 export interface ApiMessage<T = any> {
     exists: boolean;
     id: string;
@@ -19,10 +17,7 @@ export interface SocketMessage<T = any> {
 
 export interface Member {
     name: string;
-    uid: string;
-    id: string;
     avatarUrl?: string;
-    desc?: string;
     color?: string;
     pronouns?: string;
     archived: boolean;
@@ -30,42 +25,25 @@ export interface Member {
     isCustom: false;
 }
 
-export namespace Member {
-    export function create(jsonData: MemberMessage): Member {
-        const member: Member = jsonData.content;
-        member.isCustom = false;
-        member.id = jsonData.id;
-        member.hash = utils.genHash(member.id);
-        return member;
-    }
-}
-
 export interface CustomFront {
     name: string;
-    uid: string;
-    id: string;
     avatarUrl?: string;
-    desc?: string;
     color?: string;
     hash: number;
     isCustom: true;
 };
-
-export namespace CustomFront {
-    export function create(jsonData: CustomFrontMessage): CustomFront {
-        const customFront: CustomFront = jsonData.content;
-        customFront.isCustom = true;
-        customFront.id = jsonData.id;
-        customFront.hash = utils.genHash(customFront.id);
-        return customFront;
-    }
-}
 
 export interface FrontEntry {
     live: boolean;
     member: string;
     custom: boolean;
     customStatus: string;
+    startTime?: number;
+    endTime?: number;
+}
+
+export interface FrontEntry2 {
+    frontableHash: number;
     startTime?: number;
     endTime?: number;
 }
@@ -77,15 +55,7 @@ export interface Group {
     name: string;
     color?: string;
     parent: string;
-    members: string[];
-}
-
-export namespace Group {
-    export function create(jsonData: GroupMessage): Group {
-        const group: Group = jsonData.content;
-        group.id = jsonData.id;
-        return group;
-    }
+    memberHashes: number[];
 }
 
 // message types
@@ -137,4 +107,24 @@ export interface AppMessageDesc {
     RemoveFrontRequest?: number;
     FetchDataRequest?: boolean;
     ClearCacheRequest?: boolean;
+}
+
+export interface EndpointImpl {
+    fetchGetUID: () => Promise<string>;
+    fetchGetAllFrontables: (uid: string) => Promise<Frontable[]>;
+    fetchGetCurrentFronters: (uid: string) => Promise<FrontEntry2[]>;
+    fetchGetGroups?: (uid: string) => Promise<Group[]>;
+    fetchSetCurrentFronters?: (toSet: Frontable[]) => Promise<void>;
+}
+
+export interface SocketImpl {
+    onFrontUpdate: (newFronts: Frontable[]) => void;
+    onApiValid: (isValid: boolean) => void;
+}
+
+export interface APIImpl {
+    name: string;
+    setToken: (token: string) => void;
+    endpoints: EndpointImpl;
+    socket?: SocketImpl;
 }

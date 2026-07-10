@@ -101,3 +101,46 @@ export function cleanString(str: string, maxBytes: number): string {
 
     return retStr.trim();
 }
+
+interface RouteDescription {
+    url: string;
+    method: "GET" | "POST" | "PATCH" | "DELETE";
+    body?: any;
+    auth?: {
+        headerName: string;
+        token: string;
+    };
+}
+
+export async function fetch<T = any>(routeDesc: RouteDescription): Promise<{ status: number, jsonData?: T }> {
+    const xhr = await new Promise((resolve: (xhr: XMLHttpRequest) => void, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                resolve(xhr);
+            } else {
+                reject(new Error(`Request failed with status ${xhr.status}!`));
+            }
+        };
+        xhr.onerror = () => reject(new Error("Network error!"));
+        xhr.ontimeout = () => reject(new Error("Fetch timeout!"));
+
+        xhr.open(routeDesc.method, routeDesc.url, true);
+        if (routeDesc.auth) {
+            // xhr.setRequestHeader("Authorization", token);
+            const { headerName, token } = routeDesc.auth;
+            xhr.setRequestHeader(headerName, token);
+        }
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.send(routeDesc.body ? JSON.stringify(routeDesc.body) : null);
+    });
+
+    return {
+        status: xhr.status,
+        jsonData: (xhr.status === 200)
+            ? JSON.parse(xhr.responseText)
+            : undefined,
+    }
+}

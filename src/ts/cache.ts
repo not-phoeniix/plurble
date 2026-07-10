@@ -1,4 +1,4 @@
-import { Frontable, FrontEntryMessage, Group } from "./types";
+import { Frontable, FrontEntry2, FrontEntryMessage, Group } from "./types";
 import * as sorting from "./sorting";
 
 enum CacheKeys {
@@ -61,30 +61,30 @@ export function cacheSystemId(id: string) {
     localStorage.setItem(CacheKeys.SystemId, id);
 }
 
-export function getCurrentFronts(): FrontEntryMessage[] | null {
+export function getCurrentFronts(): FrontEntry2[] | null {
     const cachedFronts = localStorage.getItem(CacheKeys.CurrentFronts);
     if (cachedFronts) {
-        return JSON.parse(cachedFronts) as FrontEntryMessage[];
+        return JSON.parse(cachedFronts) as FrontEntry2[];
     }
 
     return null;
 }
 
-export function cacheCurrentFronts(messages: FrontEntryMessage[]) {
-    localStorage.setItem(CacheKeys.CurrentFronts, JSON.stringify(messages));
+export function cacheCurrentFronts(entries: FrontEntry2[]) {
+    localStorage.setItem(CacheKeys.CurrentFronts, JSON.stringify(entries));
 }
 
-export function addFrontToCache(message: FrontEntryMessage) {
-    console.log(`adding ${message.content.member} to front cache...`);
+export function addFrontToCache(entry: FrontEntry2) {
+    console.log(`adding ${entry.frontableHash} to front cache...`);
 
     let currentFronts = getCurrentFronts();
     if (currentFronts) {
         // only add fronts if they don't already exist
-        if (!currentFronts.find(f => f.id === message.id)) {
-            currentFronts.push(message);
+        if (!currentFronts.find(f => f.frontableHash === entry.frontableHash)) {
+            currentFronts.push(entry);
         }
     } else {
-        currentFronts = [message];
+        currentFronts = [entry];
     }
 
     currentFronts = sorting.sortCurrentFronts(currentFronts);
@@ -92,13 +92,13 @@ export function addFrontToCache(message: FrontEntryMessage) {
     cacheCurrentFronts(currentFronts);
 }
 
-export function removeFrontFromCache(message: FrontEntryMessage) {
-    console.log(`removing ${message.content.member} from front cache...`);
+export function removeFrontFromCache(entry: FrontEntry2) {
+    console.log(`removing ${entry.frontableHash} from front cache...`);
 
     let currentFronts = getCurrentFronts();
     if (currentFronts) {
         // only remove fronts if they exist
-        const idx = currentFronts.findIndex(f => f.id === message.id);
+        const idx = currentFronts.findIndex(f => f.frontableHash === entry.frontableHash);
         if (idx >= 0) {
             currentFronts.splice(idx, 1);
         }
@@ -111,12 +111,14 @@ export function removeFrontFromCache(message: FrontEntryMessage) {
     cacheCurrentFronts(currentFronts);
 }
 
-export function removeFrontFromCacheViaId(frontableId: string): FrontEntryMessage | null {
+export function removeFrontFromCacheViaHash(hash: number): FrontEntry2 | null {
+    console.log(`removing ${hash} from front cache...`);
+
     let currentFronts = getCurrentFronts();
-    let message: FrontEntryMessage | null = null;
+    let message: FrontEntry2 | null = null;
     if (currentFronts) {
         // only remove fronts if they exist
-        const idx = currentFronts.findIndex(f => f.content.member === frontableId);
+        const idx = currentFronts.findIndex(f => f.frontableHash === hash);
         if (idx >= 0) {
             [message] = currentFronts.splice(idx, 1);
         }
@@ -135,7 +137,7 @@ export function isFronting(frontable: Frontable): boolean {
     if (currentFrontMessages) {
         // "!!" turns this into a boolean lol
         //   (it's a double boolean NOT lol)
-        return !!currentFrontMessages.find(m => m.content.member === frontable.id);
+        return !!currentFrontMessages.find(m => m.frontableHash === frontable.hash);
     }
 
     return false;

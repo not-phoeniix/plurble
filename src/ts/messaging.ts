@@ -1,4 +1,4 @@
-import { AppMessageDesc, Frontable, FrontEntryMessage, Group, Member } from "./types";
+import { AppMessageDesc, Frontable, FrontEntry2, FrontEntryMessage, Group, Member } from "./types";
 import * as utils from "./utils";
 
 //! NOTE: make sure these match up with the #defines in 
@@ -73,7 +73,7 @@ function assembleFrontableMessages(frontables: Frontable[], groups: Group[]) {
                     for (let j = (i * 32); j < ((i + 1) * 32); j++) {
                         if (j >= groupCount) break;
 
-                        if (groups[j].members.find(m => m === frontable.id)) {
+                        if (groups[j].memberHashes.find(m => m === frontable.hash)) {
                             bitField |= (1 << (j % 32));
                         }
                     }
@@ -182,7 +182,7 @@ function assembleGroupMessages(groups: Group[]) {
     return messages;
 }
 
-function assembleCurrentFrontMessages(currentFronters: FrontEntryMessage[]) {
+function assembleCurrentFrontMessages(currentFronters: FrontEntry2[]) {
     const numFronters = Math.min(currentFronters.length, FRONTABLES_MAX_COUNT);
     const numMessages = Math.ceil(numFronters / CURRENT_FRONTS_PER_MESSAGE);
 
@@ -193,15 +193,13 @@ function assembleCurrentFrontMessages(currentFronters: FrontEntryMessage[]) {
         const batchSize = Math.min(frontersRemaining, CURRENT_FRONTS_PER_MESSAGE);
         const toSend = currentFronters.splice(0, batchSize);
 
-        const hashes = utils.toByteArray(
-            toSend.map(entry => utils.genHash(entry.content.member))
-        );
+        const hashes = utils.toByteArray(toSend.map(entry => entry.frontableHash));
 
         const times = utils.toByteArray(
             toSend.map(entry => {
-                if (entry.content.startTime) {
+                if (entry.startTime) {
                     // convert to seconds to fit within 32-bit uints
-                    return Math.floor(entry.content.startTime / 1000);
+                    return Math.floor(entry.startTime / 1000);
                 } else {
                     return 0;
                 }
@@ -243,7 +241,7 @@ export async function sendFrontablesToWatch(frontables: Frontable[], groups: Gro
     }
 }
 
-export async function sendCurrentFrontersToWatch(currentFronters: FrontEntryMessage[]): Promise<void> {
+export async function sendCurrentFrontersToWatch(currentFronters: FrontEntry2[]): Promise<void> {
     const messages = assembleCurrentFrontMessages(currentFronters);
 
     for (let msg of messages) {
@@ -269,7 +267,7 @@ export async function sendGroupsToWatch(groups: Group[]): Promise<void> {
 
 export async function sendDataBatchToWatch(
     frontables: Frontable[],
-    currentFronters: FrontEntryMessage[],
+    currentFronters: FrontEntry2[],
     groups: Group[],
 ): Promise<void> {
     const messages: AppMessageDesc[] = [];
