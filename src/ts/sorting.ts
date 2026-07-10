@@ -1,5 +1,4 @@
-import { Frontable, FrontEntry2, FrontEntryMessage, Group } from "./types";
-import * as utils from "./utils";
+import { Frontable, FrontEntry, Group } from "./types";
 
 export function sortFrontables(frontables: Frontable[]): Frontable[] {
     let output: Frontable[] = JSON.parse(JSON.stringify(frontables));
@@ -113,8 +112,8 @@ export function sortGroups(groups: Group[], frontables: Frontable[]): Group[] {
     return output;
 }
 
-export function sortCurrentFronts(currentFronts: FrontEntry2[]): FrontEntry2[] {
-    let output: FrontEntry2[] = JSON.parse(JSON.stringify(currentFronts));
+export function sortCurrentFronts(currentFronts: FrontEntry[]): FrontEntry[] {
+    let output: FrontEntry[] = JSON.parse(JSON.stringify(currentFronts));
 
     output.sort((a, b) => {
         const aStart = a.startTime ?? 0;

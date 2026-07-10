@@ -1,4 +1,4 @@
-import { AppMessageDesc, Frontable, FrontEntry2, FrontEntryMessage, Group, Member } from "./types";
+import { AppMessageDesc, Frontable, FrontEntry, Group, Member } from "./types";
 import * as utils from "./utils";
 
 //! NOTE: make sure these match up with the #defines in 
@@ -182,7 +182,7 @@ function assembleGroupMessages(groups: Group[]) {
     return messages;
 }
 
-function assembleCurrentFrontMessages(currentFronters: FrontEntry2[]) {
+function assembleCurrentFrontMessages(currentFronters: FrontEntry[]) {
     const numFronters = Math.min(currentFronters.length, FRONTABLES_MAX_COUNT);
     const numMessages = Math.ceil(numFronters / CURRENT_FRONTS_PER_MESSAGE);
 
@@ -241,7 +241,7 @@ export async function sendFrontablesToWatch(frontables: Frontable[], groups: Gro
     }
 }
 
-export async function sendCurrentFrontersToWatch(currentFronters: FrontEntry2[]): Promise<void> {
+export async function sendCurrentFrontersToWatch(currentFronters: FrontEntry[]): Promise<void> {
     const messages = assembleCurrentFrontMessages(currentFronters);
 
     for (let msg of messages) {
@@ -267,7 +267,7 @@ export async function sendGroupsToWatch(groups: Group[]): Promise<void> {
 
 export async function sendDataBatchToWatch(
     frontables: Frontable[],
-    currentFronters: FrontEntry2[],
+    currentFronters: FrontEntry[],
     groups: Group[],
 ): Promise<void> {
     const messages: AppMessageDesc[] = [];

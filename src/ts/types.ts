@@ -1,20 +1,3 @@
-export interface ApiMessage<T = any> {
-    exists: boolean;
-    id: string;
-    content: T
-}
-
-export interface SocketMessage<T = any> {
-    msg: "Successfully authenticated" | "update" | "Authentication violation: Token is missing or invalid. Goodbye :)";
-    target?: "frontHistory";
-    results: {
-        exists: boolean;
-        id: string;
-        operationType: "update" | "insert";
-        content: T;
-    }[];
-}
-
 export interface Member {
     name: string;
     avatarUrl?: string;
@@ -34,15 +17,6 @@ export interface CustomFront {
 };
 
 export interface FrontEntry {
-    live: boolean;
-    member: string;
-    custom: boolean;
-    customStatus: string;
-    startTime?: number;
-    endTime?: number;
-}
-
-export interface FrontEntry2 {
     frontableHash: number;
     startTime?: number;
     endTime?: number;
@@ -57,20 +31,6 @@ export interface Group {
     parent: string;
     memberHashes: number[];
 }
-
-// message types
-export type FrontEntryMessage = ApiMessage<FrontEntry>;
-export type MemberMessage = ApiMessage<Member>;
-export type CustomFrontMessage = ApiMessage<CustomFront>;
-export type FrontEntrySocketMessage = SocketMessage<FrontEntry>;
-export type GroupMessage = ApiMessage<Group>;
-export type AuthSocketMessage = SocketMessage<undefined> & {
-    resolvedToken: {
-        uid: string;
-        accessType: number;
-        jwt: false;
-    };
-};
 
 export enum ErrorCode {
     APIKeyInvalid = 1,
@@ -112,7 +72,7 @@ export interface AppMessageDesc {
 export interface EndpointImpl {
     fetchGetUID: () => Promise<string>;
     fetchGetAllFrontables: (uid: string) => Promise<Frontable[]>;
-    fetchGetCurrentFronters: (uid: string) => Promise<FrontEntry2[]>;
+    fetchGetCurrentFronters: (uid: string) => Promise<FrontEntry[]>;
     fetchGetGroups?: (uid: string) => Promise<Group[]>;
     fetchSetCurrentFronters?: (toSet: Frontable[]) => Promise<void>;
 }

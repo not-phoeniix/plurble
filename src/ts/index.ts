@@ -3,7 +3,7 @@ import * as cache from "./cache";
 import * as messaging from "./messaging";
 import * as sorting from "./sorting";
 import * as backends from "./backends";
-import { Member, AppMessageDesc, Frontable, Group, APIImpl, FrontEntry2 } from "./types";
+import { Member, AppMessageDesc, Frontable, Group, APIImpl, FrontEntry } from "./types";
 import { version } from "../../package.json";
 
 // TODO: make backends dynamic?
@@ -79,7 +79,7 @@ async function fetchFrontables(uid: string, useCache: boolean, groupPromise: Pro
     return frontables;
 }
 
-async function fetchAndSendCurrentFronts(uid: string): Promise<FrontEntry2[]> {
+async function fetchAndSendCurrentFronts(uid: string): Promise<FrontEntry[]> {
     let currentFronters = await backend.endpoints.fetchGetCurrentFronters(uid);
     currentFronters = sorting.sortCurrentFronts(currentFronters);
     cache.cacheCurrentFronts(currentFronters);
@@ -127,7 +127,7 @@ async function fetchAndSendAllData(uid: string, useCache: boolean) {
     const groupPromise = fetchGroups(uid, useCache);
 
     let frontables: Frontable[] = [];
-    let currentFronters: FrontEntry2[] = [];
+    let currentFronters: FrontEntry[] = [];
     let groups: Group[] = [];
 
     await Promise.all([

@@ -1,4 +1,4 @@
-import { Frontable, FrontEntry2, FrontEntryMessage, Group } from "./types";
+import { Frontable, FrontEntry, Group } from "./types";
 import * as sorting from "./sorting";
 
 enum CacheKeys {
@@ -61,20 +61,20 @@ export function cacheSystemId(id: string) {
     localStorage.setItem(CacheKeys.SystemId, id);
 }
 
-export function getCurrentFronts(): FrontEntry2[] | null {
+export function getCurrentFronts(): FrontEntry[] | null {
     const cachedFronts = localStorage.getItem(CacheKeys.CurrentFronts);
     if (cachedFronts) {
-        return JSON.parse(cachedFronts) as FrontEntry2[];
+        return JSON.parse(cachedFronts) as FrontEntry[];
     }
 
     return null;
 }
 
-export function cacheCurrentFronts(entries: FrontEntry2[]) {
+export function cacheCurrentFronts(entries: FrontEntry[]) {
     localStorage.setItem(CacheKeys.CurrentFronts, JSON.stringify(entries));
 }
 
-export function addFrontToCache(entry: FrontEntry2) {
+export function addFrontToCache(entry: FrontEntry) {
     console.log(`adding ${entry.frontableHash} to front cache...`);
 
     let currentFronts = getCurrentFronts();
@@ -92,7 +92,7 @@ export function addFrontToCache(entry: FrontEntry2) {
     cacheCurrentFronts(currentFronts);
 }
 
-export function removeFrontFromCache(entry: FrontEntry2) {
+export function removeFrontFromCache(entry: FrontEntry) {
     console.log(`removing ${entry.frontableHash} from front cache...`);
 
     let currentFronts = getCurrentFronts();
@@ -111,11 +111,11 @@ export function removeFrontFromCache(entry: FrontEntry2) {
     cacheCurrentFronts(currentFronts);
 }
 
-export function removeFrontFromCacheViaHash(hash: number): FrontEntry2 | null {
+export function removeFrontFromCacheViaHash(hash: number): FrontEntry | null {
     console.log(`removing ${hash} from front cache...`);
 
     let currentFronts = getCurrentFronts();
-    let message: FrontEntry2 | null = null;
+    let message: FrontEntry | null = null;
     if (currentFronts) {
         // only remove fronts if they exist
         const idx = currentFronts.findIndex(f => f.frontableHash === hash);
