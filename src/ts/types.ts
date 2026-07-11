@@ -4,6 +4,7 @@ export interface Member {
     color?: string;
     pronouns?: string;
     archived: boolean;
+    apiUid: string;
     hash: number;
     isCustom: false;
 }
@@ -12,11 +13,13 @@ export interface CustomFront {
     name: string;
     avatarUrl?: string;
     color?: string;
+    apiUid: string;
     hash: number;
     isCustom: true;
 };
 
 export interface FrontEntry {
+    frontableApiUid: string;
     frontableHash: number;
     startTime?: number;
     endTime?: number;
@@ -74,7 +77,7 @@ export interface EndpointImpl {
     fetchGetAllFrontables: (uid: string) => Promise<Frontable[]>;
     fetchGetCurrentFronters: (uid: string) => Promise<FrontEntry[]>;
     fetchGetGroups?: (uid: string) => Promise<Group[]>;
-    fetchSetCurrentFronters?: (toSet: Frontable[]) => Promise<void>;
+    fetchSetCurrentFronters: (uid: string, toSetApiUids: string[]) => Promise<FrontEntry[] | undefined>;
 }
 
 export interface SocketImpl {

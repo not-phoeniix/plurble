@@ -206,6 +206,16 @@ Pebble.addEventListener("appmessage", async (e) => {
 
     const convertHash = (msgHash: number) => msgHash + Math.floor(0xFFFFFFFF / 2);
 
+    let currentFronterUids = cache.getCurrentFronts()
+        ?.map(e => e.frontableApiUid) ?? [];
+    let frontersModified = false;
+
+    // TODO: replace the three separate 
+    //   "AddFrontRequest", "SetFrontRequest", and "RemoveFrontRequest" 
+    //   messages keys with a single "set front request" that sets
+    //   a new array of hashes as the current fronters
+    //   (determined and calculated on the watch rather than on the ts)
+
     if (msg.AddFrontRequest) {
         // re-offset hash to ensure full unsigned range
         const hash = convertHash(msg.AddFrontRequest);
@@ -215,9 +225,8 @@ Pebble.addEventListener("appmessage", async (e) => {
         const frontable = cache.getFrontable(hash);
         if (frontable) {
             console.log(`Adding frontable ${frontable.name} to front...`);
-            console.log(`JUST KIDDING that has yet to be implemented...`);
-            // pluralApi.addToFront(frontable)
-            //     .then(null, console.log);
+            currentFronterUids.push(frontable.apiUid);
+            frontersModified = true;
         } else {
             console.error(`Cannot add member to front! Member hash ${hash} was not cached!`);
         }
@@ -232,9 +241,8 @@ Pebble.addEventListener("appmessage", async (e) => {
         const frontable = cache.getFrontable(hash);
         if (frontable) {
             console.log(`Setting frontable ${frontable.name} as front...`);
-            console.log(`JUST KIDDING that has yet to be implemented...`);
-            // pluralApi.setAsFront(frontable)
-            //     .then(null, console.log);
+            currentFronterUids = [frontable.apiUid];
+            frontersModified = true;
         } else {
             console.error(`Cannot set member as front! Member hash ${hash} was not cached!`);
         }
@@ -249,11 +257,32 @@ Pebble.addEventListener("appmessage", async (e) => {
         const frontable = cache.getFrontable(hash);
         if (frontable) {
             console.log(`Removing frontable ${frontable.name} from front...`);
-            console.log(`JUST KIDDING that has yet to be implemented...`);
-            // pluralApi.removeFromFront(frontable)
-            //     .then(null, console.log);
+
+            const idx = currentFronterUids.findIndex(uid => uid === frontable.apiUid);
+            if (idx >= 0) {
+                currentFronterUids.splice(idx, 1);
+                frontersModified = true;
+            }
+
         } else {
             console.error(`Cannot remove member from front! Member hash ${hash} was not cached!`);
+        }
+    }
+
+    if (frontersModified) {
+        console.log("Fronters modified... setting new frontable list to this: ", currentFronterUids);
+
+        const uid = cache.getSystemId();
+        if (uid) {
+            backend.endpoints.fetchSetCurrentFronters(uid, currentFronterUids)
+                .then((entries) => {
+                    if (entries) {
+                        messaging.sendCurrentFrontersToWatch(entries);
+                        cache.cacheCurrentFronts(entries);
+                    }
+                });
+        } else {
+            console.warn("WARNING: cannot set new fronters, system ID was not cached!");
         }
     }
 

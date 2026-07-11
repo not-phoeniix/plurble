@@ -13,10 +13,7 @@ const FETCH_TEMPLATE = Object.seal({
 
 interface MemberMessage {
     uuid: string;
-    name: string; auth: {
-        headerName: "Authorization",
-        token: ""
-    }
+    name: string;
     display_name: string;
     // FF00FF (no #)
     color: string;
@@ -72,6 +69,7 @@ async function fetchGetAllFrontables(uid: string) {
         color: `#${msg.color}`,
         pronouns: msg.pronouns,
         archived: false,
+        apiUid: msg.uuid,
         hash: utils.genHash(msg.uuid),
         isCustom: false
     }));
@@ -94,6 +92,7 @@ async function fetchGetCurrentFronters(uid: string) {
         }
 
         return {
+            frontableApiUid: member.uuid,
             frontableHash: utils.genHash(member.uuid),
             startTime: new Date(jsonData.timestamp).getTime(),
             // endTime: 0,
@@ -141,7 +140,27 @@ async function fetchGetGroups(uid: string) {
 
 // === POST STUFF =========================================
 
-async function fetchSetCurrentFronters(toAdd: Frontable[]) {
+async function fetchSetCurrentFronters(uid: string, toAddApiUids: string[]) {
+    const { jsonData } = await utils.fetch<SwitchMessage>({
+        ...FETCH_TEMPLATE,
+        url: FETCH_URL + `systems/${uid}/switches`,
+        method: "POST",
+        body: {
+            members: toAddApiUids,
+        }
+    });
+
+    if (!jsonData) {
+        return undefined;
+    }
+
+    const members = jsonData.members as MemberMessage[];
+
+    return members.map(m => ({
+        frontableApiUid: m.uuid,
+        frontableHash: utils.genHash(m.uuid),
+        startTime: new Date(jsonData.timestamp).getTime(),
+    }));
 }
 
 // === IMPL ASSEMBLING ====================================
