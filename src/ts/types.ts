@@ -85,6 +85,8 @@ export interface SocketImpl {
     onApiValid: (isValid: boolean) => void;
 }
 
+// TODO: figure out how to implement a cached switch queueing system 
+//   (to avoid rate limiting for fast switches and other data fetching)
 export interface APIImpl {
     name: string;
     setToken: (token: string) => void;
