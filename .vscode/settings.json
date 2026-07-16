@@ -1,0 +1,17 @@
+{
+    "files.associations": {
+        "*.h": "c",
+        "*.c": "c"
+    },
+    "todo-tree.tree.showBadges": true,
+    "clangd.fallbackFlags": [
+        "-I${userHome}/.pebble-sdk/SDKs/current/sdk-core/pebble/basalt/include",
+        "-I${userHome}/.pebble-sdk/SDKs/current/toolchain/arm-none-eabi/arm-none-eabi/include",
+        "-I${workspaceFolder}/",
+        "-I${workspaceFolder}/build/include",
+        "-I${workspaceFolder}/build/",
+        "-I${workspaceFolder}/build/basalt/",
+        "-D_TIME_H_",
+        "-Dtime_t=long",
+    ]
+}
