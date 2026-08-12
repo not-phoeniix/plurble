@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../frontables/frontable_list.h"
 #include "../frontables/frontable.h"
+#include "../frontables/frontable_list.h"
 #include "../frontables/group.h"
 #include "../frontables/group_collection.h"
 

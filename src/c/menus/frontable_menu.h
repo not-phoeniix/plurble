@@ -1,9 +1,9 @@
 #pragma once
 
-#include <pebble.h>
 #include "../data/config.h"
 #include "../frontables/frontable_list.h"
 #include "../frontables/group.h"
+#include <pebble.h>
 
 struct FrontableMenu;
 typedef struct FrontableMenu FrontableMenu;

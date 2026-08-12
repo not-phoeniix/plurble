@@ -1,9 +1,9 @@
 #include "settings_menu.h"
-#include <pebble.h>
 #include "../data/config.h"
-#include "../messaging/messaging.h"
 #include "../data/frontable_cache.h"
 #include "../menus/members_menu.h"
+#include "../messaging/messaging.h"
+#include <pebble.h>
 
 static Window* window = NULL;
 static SimpleMenuLayer* simple_menu_layer = NULL;

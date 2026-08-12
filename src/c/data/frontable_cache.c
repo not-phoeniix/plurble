@@ -89,6 +89,7 @@ Frontable* cache_get_frontable(uint32_t hash) {
     //! using just iteration to search isn't the best idea...
     //!   for the future, since we have hashes for each frontable:
     //!   make a hash map maybe !!!!
+    // TODO: implement a hash map for frontable lookup
 
     for (uint32_t i = 0; i < members.num_stored; i++) {
         Frontable* member = members.frontables[i];

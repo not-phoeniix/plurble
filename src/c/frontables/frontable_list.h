@@ -1,7 +1,7 @@
 #pragma once
 
-#include <pebble.h>
 #include "frontable.h"
+#include <pebble.h>
 
 /// @brief A struct representing a dynamic array of frontables
 typedef struct {

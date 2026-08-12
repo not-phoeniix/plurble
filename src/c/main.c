@@ -1,14 +1,14 @@
-#include <pebble.h>
 #include "data/config.h"
-#include "messaging/messaging.h"
 #include "data/frontable_cache.h"
+#include "menus/current_fronters_menu.h"
+#include "menus/custom_fronts_menu.h"
+#include "menus/error_menu.h"
 #include "menus/main_menu.h"
 #include "menus/members_menu.h"
-#include "menus/custom_fronts_menu.h"
-#include "menus/current_fronters_menu.h"
-#include "menus/setup_prompt_menu.h"
 #include "menus/settings_menu.h"
-#include "menus/error_menu.h"
+#include "menus/setup_prompt_menu.h"
+#include "messaging/messaging.h"
+#include <pebble.h>
 
 static void connection_handler(bool connected) {
     if (connected) {

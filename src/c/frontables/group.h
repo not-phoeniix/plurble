@@ -1,8 +1,8 @@
 #pragma once
 
-#include <pebble.h>
 #include "frontable.h"
 #include "frontable_list.h"
+#include <pebble.h>
 
 #define GROUP_NAME_LENGTH 33
 

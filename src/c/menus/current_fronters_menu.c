@@ -1,6 +1,6 @@
 #include "current_fronters_menu.h"
-#include "frontable_menu.h"
 #include "../data/frontable_cache.h"
+#include "frontable_menu.h"
 
 // static const bool DRAW_TIME = false;
 
@@ -75,7 +75,7 @@ static void draw_row(
     );
 }
 
-static void select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
+static void menu_select(MenuLayer* menu_layer, MenuIndex* cell_index, void* context) {
     frontable_menu_select(menu, cell_index);
 }
 
@@ -122,7 +122,7 @@ void current_fronters_menu_push() {
     if (menu == NULL) {
         MemberMenuCallbacks callbacks = {
             .draw_row = draw_row,
-            .select = select,
+            .select = menu_select,
             .window_load = window_load,
             .window_unload = window_unload
         };
@@ -165,8 +165,7 @@ void current_fronters_menu_update_is_empty() {
         return;
     }
 
-    Frontable* first_fronter = cache_get_first_fronter();
-    bool current_is_empty = first_fronter == NULL;
+    bool current_is_empty = cache_get_first_fronter() == NULL;
 
     // don't update any states if the empty flag is
     //   already the same as the desired state

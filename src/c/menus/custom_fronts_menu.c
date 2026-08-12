@@ -1,8 +1,8 @@
 #include "custom_fronts_menu.h"
-#include <pebble.h>
-#include "frontable_menu.h"
-#include "../data/frontable_cache.h"
 #include "../data/config.h"
+#include "../data/frontable_cache.h"
+#include "frontable_menu.h"
+#include <pebble.h>
 
 static FrontableMenu* menu = NULL;
 static Group group;

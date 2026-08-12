@@ -1,7 +1,7 @@
 #pragma once
 
-#include <pebble.h>
 #include "../frontables/frontable.h"
+#include <pebble.h>
 
 typedef struct {
     GColor accent_color;

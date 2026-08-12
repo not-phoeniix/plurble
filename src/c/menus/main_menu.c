@@ -2,11 +2,9 @@
 #include "../data/config.h"
 #include "../data/frontable_cache.h"
 #include "../frontables/frontable_list.h"
-#include "members_menu.h"
 #include "current_fronters_menu.h"
 #include "custom_fronts_menu.h"
-#include "../messaging/messaging.h"
-#include "../tools/string_tools.h"
+#include "members_menu.h"
 #include "settings_menu.h"
 
 static Window* window = NULL;

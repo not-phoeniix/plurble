@@ -1,7 +1,7 @@
 #include "error_menu.h"
 
-#include <pebble.h>
 #include "../data/config.h"
+#include <pebble.h>
 
 static Window* window = NULL;
 static Layer* layer;
