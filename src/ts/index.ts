@@ -1,19 +1,13 @@
-import config from "./config.json";
 import * as cache from "./cache";
 import * as messaging from "./messaging";
 import * as sorting from "./sorting";
-import * as backends from "./backends";
-import { Member, AppMessageDesc, Frontable, Group, APIImpl, FrontEntry } from "./types";
+import * as config from "./config";
+import { Member, AppMessageDesc, Frontable, Group, FrontEntry, APIImpl } from "./types";
 import { version } from "../../package.json";
 
-// TODO: make backends dynamic?
-let backend: APIImpl = backends.pluralKit;
+const clay = config.init();
 
-// i gotta use node CommonJS requires unfortunately, it's not a TS module
-const Clay = require("pebble-clay");
-const clay = new Clay(config);
-
-async function setupApi(token: string) {
+async function setupApi(backend: APIImpl, token: string) {
     console.log("setting up API and socket...");
 
     backend.setToken(token);
@@ -46,7 +40,7 @@ async function setupApi(token: string) {
 }
 
 // sends frontables to watch, depends on groups being fetched first!
-async function fetchFrontables(uid: string, useCache: boolean, groupPromise: Promise<any>): Promise<Frontable[]> {
+async function fetchFrontables(backend: APIImpl, uid: string, useCache: boolean, groupPromise: Promise<any>): Promise<Frontable[]> {
     // assemble cached fronters to send to watch, fetch if missing
     let frontables: Frontable[] | null = null;
     if (useCache) {
@@ -79,14 +73,14 @@ async function fetchFrontables(uid: string, useCache: boolean, groupPromise: Pro
     return frontables;
 }
 
-async function fetchAndSendCurrentFronts(uid: string): Promise<FrontEntry[]> {
+async function fetchAndSendCurrentFronts(backend: APIImpl, uid: string): Promise<FrontEntry[]> {
     let currentFronters = await backend.endpoints.fetchGetCurrentFronters(uid);
     currentFronters = sorting.sortCurrentFronts(currentFronters);
     cache.cacheCurrentFronts(currentFronters);
     return currentFronters;
 }
 
-async function fetchGroups(uid: string, useCache: boolean): Promise<Group[]> {
+async function fetchGroups(backend: APIImpl, uid: string, useCache: boolean): Promise<Group[]> {
     let groups: Group[] | null = null;
 
     if (useCache) {
@@ -123,8 +117,8 @@ async function fetchGroups(uid: string, useCache: boolean): Promise<Group[]> {
     return groups;
 }
 
-async function fetchAndSendAllData(uid: string, useCache: boolean) {
-    const groupPromise = fetchGroups(uid, useCache);
+async function fetchAndSendAllData(backend: APIImpl, uid: string, useCache: boolean) {
+    const groupPromise = fetchGroups(backend, uid, useCache);
 
     let frontables: Frontable[] = [];
     let currentFronters: FrontEntry[] = [];
@@ -134,12 +128,12 @@ async function fetchAndSendAllData(uid: string, useCache: boolean) {
         groupPromise.then(g => {
             groups = g;
         }),
-        fetchFrontables(uid, useCache, groupPromise).then(f => {
+        fetchFrontables(backend, uid, useCache, groupPromise).then(f => {
             frontables = f.filter(frontable => {
                 return !((frontable as Member).archived);
             });
         }),
-        fetchAndSendCurrentFronts(uid).then(c => {
+        fetchAndSendCurrentFronts(backend, uid).then(c => {
             currentFronters = c;
         }),
     ]);
@@ -147,7 +141,9 @@ async function fetchAndSendAllData(uid: string, useCache: boolean) {
     await messaging.sendDataBatchToWatch(frontables, currentFronters, groups);
 }
 
-Pebble.addEventListener("ready", async (e) => {
+// ~~~ init functions ~~~
+
+function initVersionWithCache() {
     // check app version, clear cache across versions!
     const cachedVersion = cache.getAppVersion();
     if (!cachedVersion || cachedVersion !== version) {
@@ -156,23 +152,20 @@ Pebble.addEventListener("ready", async (e) => {
         cache.cacheAppVersion(version);
         messaging.sendApiKeyIsValid(false);
     }
+}
 
+async function initApiWithCache(backend: APIImpl) {
     // try to get cached api token
     const token = cache.getApiToken();
     if (token) {
-        await setupApi(token);
+        await setupApi(backend, token);
     } else {
         console.warn("WARNING: API Token not cached! api can't be set up! running off cache...");
         messaging.sendApiKeyIsValid(false);
     }
+}
 
-    // try to get cached uid
-    const uid = cache.getSystemId();
-    if (!uid) {
-        console.error("UID not cached! Cannot run fetching operations...");
-        return;
-    }
-
+function initFetchIntervalCache() {
     let fetchInterval = cache.getFetchInterval();
     if (!fetchInterval) {
         // (24h in MS is a fallback)
@@ -189,12 +182,36 @@ Pebble.addEventListener("ready", async (e) => {
         cache.cachePrevFetchTime(timeNow);
     }
 
+    return useCache;
+}
+
+async function initSendInitialFetch(backend: APIImpl, uid: string, useCache: boolean) {
     try {
-        await fetchAndSendAllData(uid, useCache);
+        await fetchAndSendAllData(backend, uid, useCache);
     } catch (err) {
         console.error(`ERROR: fetchAndSendAllData failed from ready event! err: "${err}"`);
         await messaging.sendErrorMessage("Unknown fetch error!");
     }
+}
+
+// ~~~ pebble callback setup ~~~
+
+Pebble.addEventListener("ready", async (e) => {
+    initVersionWithCache();
+
+    const backend = config.getCurrentBackend();
+
+    await initApiWithCache(backend);
+
+    // try to get cached uid
+    const uid = cache.getSystemId();
+    if (!uid) {
+        console.error("UID not cached! Cannot run fetching operations...");
+        return;
+    }
+
+    const useCache = initFetchIntervalCache();
+    await initSendInitialFetch(backend, uid, useCache);
 
     console.log("hey! app finished fetching and sending things! :)");
 });
@@ -203,6 +220,7 @@ Pebble.addEventListener("appmessage", async (e) => {
     console.log("received app message !!! payload: " + JSON.stringify(e.payload));
 
     const msg: AppMessageDesc = e.payload;
+    const backend = config.getCurrentBackend();
 
     const convertHash = (msgHash: number) => msgHash + Math.floor(0xFFFFFFFF / 2);
 
@@ -292,7 +310,7 @@ Pebble.addEventListener("appmessage", async (e) => {
             cache.cachePrevFetchTime(Date.now());
             (async () => {
                 try {
-                    await fetchAndSendAllData(uid, false);
+                    await fetchAndSendAllData(backend, uid, false);
                 } catch {
                     console.error("ERROR: fetchAndSendAllData failed from appmessage event!");
                     await messaging.sendErrorMessage("Unknown fetch error!");
@@ -314,6 +332,8 @@ Pebble.addEventListener("appmessage", async (e) => {
 Pebble.addEventListener("webviewclosed", async (e: any) => {
     console.log("web view closed :]");
 
+    const backend = config.getCurrentBackend();
+
     // TODO: figure out more robust way to validate API keys
     messaging.sendApiKeyIsValid(true);
 
@@ -328,6 +348,12 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
             cache.cacheFetchInterval(intervalMs);
         }
 
+        // update backend cache
+        const grabbedBackend: string = settingsDict.Backend.value;
+        if (grabbedBackend) {
+            cache.cacheBackend(grabbedBackend);
+        }
+
         // update api key cache
         const grabbedToken: string = settingsDict.PluralApiKey.value;
         if (grabbedToken) {
@@ -337,13 +363,13 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
             cache.cacheApiToken(grabbedToken.trim());
 
             console.log("Setting up API and socket again after grabbing new token!");
-            await setupApi(grabbedToken);
+            await setupApi(backend, grabbedToken);
 
             const uid = cache.getSystemId();
             if (uid) {
                 cache.cachePrevFetchTime(Date.now());
                 try {
-                    await fetchAndSendAllData(uid, false);
+                    await fetchAndSendAllData(backend, uid, false);
                 } catch (err) {
                     console.error(`ERROR: fetchAndSendAllData failed from webviewclosed event! err: "${err}"`);
                     await messaging.sendErrorMessage("Unknown crash/error!");
@@ -352,6 +378,10 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
                 console.error("Error, cannot fetch new API data, UID is not cached!");
             }
         }
+
+        PebbleTS.sendAppMessage(settingsDict)
+            .then(() => console.log("sent config data to pebble!"))
+            .catch(err => console.error("ERROR: failed to send config data to pebble! err -->" + JSON.stringify(err)));
 
     } else {
         console.warn("WARNING: webview response doesn't exist!");

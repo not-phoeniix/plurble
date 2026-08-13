@@ -17,16 +17,7 @@
     "items": [
       {
         "type": "heading",
-        "defaultValue": "API Token"
-      },
-      {
-        "type": "input",
-        "messageKey": "PluralApiKey",
-        "label": "API Token - REQUIRED FOR APP TO WORK!",
-        "description": "Get/create your API token from Dashboard > Tokens in the SimplyPlural app :]<br><em style='font-weight: bold;'>Make sure your token has Read+Write permissions!</em>",
-        "attributes": {
-          "type": "password"
-        }
+        "defaultValue": "Backend config"
       }
     ]
   },

@@ -10,6 +10,7 @@ enum CacheKeys {
     AppVersion = "cachedAppVersion",
     PrevFetchTime = "cachedPrevFetchTime",
     FetchInterval = "cachedFetchInterval",
+    Backend = "cachedBackend",
 }
 
 export function cacheFrontables(frontables: Frontable[]) {
@@ -175,6 +176,14 @@ export function getFetchInterval(): number | null {
 
 export function cacheFetchInterval(interval: number) {
     localStorage.setItem(CacheKeys.FetchInterval, interval.toString());
+}
+
+export function getBackend(): string | null {
+    return localStorage.getItem(CacheKeys.Backend);
+}
+
+export function cacheBackend(backend: string) {
+    localStorage.setItem(CacheKeys.Backend, backend);
 }
 
 export function clearAllCache() {

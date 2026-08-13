@@ -1,8 +1,8 @@
-import { APIImpl, Frontable, Group } from "../types";
+import { APIImpl, ConfigLayout, Group } from "../types";
 import * as utils from "../utils";
 
 const FETCH_URL = "https://api.pluralkit.me/v2/";
-const FETCH_TEMPLATE = Object.seal({
+const FETCH_TEMPLATE = Object.freeze({
     auth: {
         headerName: "Authorization",
         token: ""
@@ -163,9 +163,18 @@ async function fetchSetCurrentFronters(uid: string, toAddApiUids: string[]) {
     }));
 }
 
+// === CONFIG STUFF =======================================
+
+const CONFIG_LAYOUT: ConfigLayout = Object.freeze({
+    tokenField: {
+        label: "PluralKit Token - REQUIRED FOR APP TO WORK!",
+        description: "Can be found with the [[ <em>pk;token</em> ]] command!"
+    },
+});
+
 // === IMPL ASSEMBLING ====================================
 
-const IMPL: APIImpl = {
+const IMPL: APIImpl = Object.freeze({
     name: "PluralKit",
     setToken: (token: string) => FETCH_TEMPLATE.auth.token = token,
     endpoints: {
@@ -175,6 +184,7 @@ const IMPL: APIImpl = {
         fetchGetGroups,
         fetchSetCurrentFronters,
     },
-};
+    configLayout: CONFIG_LAYOUT,
+});
 
 export default IMPL;
