@@ -16,6 +16,7 @@ static Layer* status_bar_layer = NULL;
 static bool members_loaded = false;
 static bool custom_fronts_loaded = false;
 static bool current_fronters_loaded = false;
+static bool custom_fronts_hidden = true;
 static char status_bar_text[64] = "Plurble";
 
 static void select(int index, void* context) {
@@ -25,18 +26,29 @@ static void select(int index, void* context) {
                 current_fronters_menu_push();
             }
             break;
+
         case 1:
             if (members_loaded) {
                 members_menu_push();
             }
             break;
+
         case 2:
-            if (custom_fronts_loaded) {
-                custom_fronts_menu_push();
+            // NOTE: this is somewhat hardcoded for menu order
+            //   (according to hidden status)
+            if (!custom_fronts_hidden) {
+                if (custom_fronts_loaded) {
+                    custom_fronts_menu_push();
+                }
+            } else {
+                settings_menu_push();
             }
             break;
+
         case 3:
-            settings_menu_push();
+            if (!custom_fronts_hidden) {
+                settings_menu_push();
+            }
             break;
     }
 }
@@ -51,27 +63,31 @@ static void window_load() {
 
     // ~~~ create menu items ~~~
 
-    items[0] = (SimpleMenuItem) {
+    uint32_t item_count = 0;
+
+    items[item_count++] = (SimpleMenuItem) {
         .title = "Fronters",
         .icon = NULL,
         .callback = select
     };
 
-    items[1] = (SimpleMenuItem) {
+    items[item_count++] = (SimpleMenuItem) {
         .title = "Members",
         .subtitle = members_loaded ? NULL : "loading members...",
         .icon = NULL,
         .callback = select
     };
 
-    items[2] = (SimpleMenuItem) {
-        .title = "Custom Fronts",
-        .subtitle = custom_fronts_loaded ? NULL : "loading custom fronts...",
-        .icon = NULL,
-        .callback = select
-    };
+    if (!custom_fronts_hidden) {
+        items[item_count++] = (SimpleMenuItem) {
+            .title = "Custom Fronts",
+            .subtitle = custom_fronts_loaded ? NULL : "loading custom fronts...",
+            .icon = NULL,
+            .callback = select
+        };
+    }
 
-    items[3] = (SimpleMenuItem) {
+    items[item_count++] = (SimpleMenuItem) {
         .title = "Settings",
         .subtitle = NULL,
         .icon = NULL,
@@ -80,7 +96,7 @@ static void window_load() {
 
     sections[0] = (SimpleMenuSection) {
         .items = items,
-        .num_items = 4,
+        .num_items = item_count,
     };
 
     GRect menu_bounds = layer_get_bounds(root_layer);
@@ -195,6 +211,17 @@ void main_menu_mark_fronters_loaded() {
     }
 
     current_fronters_loaded = true;
+
+    bool cf_hidden_now = cache_get_custom_fronts()->size == 0;
+    // rebuild main menu if custom front hidden status changes
+    if (cf_hidden_now != custom_fronts_hidden) {
+        custom_fronts_hidden = cf_hidden_now;
+
+        // NOTE: this may boot people back to the main menu
+        //   from other submenus after loading <//3
+        window_stack_pop_all(false);
+        main_menu_push();
+    }
 }
 
 void main_menu_update_fronters_subtitle() {
