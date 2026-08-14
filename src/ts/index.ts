@@ -225,7 +225,7 @@ Pebble.addEventListener("appmessage", async (e) => {
     const convertHash = (msgHash: number) => msgHash + Math.floor(0xFFFFFFFF / 2);
 
     let currentFronterUids = cache.getCurrentFronts()
-        ?.map(e => e.frontableApiUid) ?? [];
+        ?.map(e => e.frontableApiUid) || [];
     let frontersModified = false;
 
     // TODO: replace the three separate 
@@ -276,11 +276,10 @@ Pebble.addEventListener("appmessage", async (e) => {
         if (frontable) {
             console.log(`Removing frontable ${frontable.name} from front...`);
 
-            const idx = currentFronterUids.findIndex(uid => uid === frontable.apiUid);
-            if (idx >= 0) {
-                currentFronterUids.splice(idx, 1);
-                frontersModified = true;
-            }
+            // filter out all frontables that don't match the remove-requested UID
+            currentFronterUids = currentFronterUids
+                .filter(uid => uid !== frontable.apiUid);
+            frontersModified = true;
 
         } else {
             console.error(`Cannot remove member from front! Member hash ${hash} was not cached!`);
@@ -288,15 +287,17 @@ Pebble.addEventListener("appmessage", async (e) => {
     }
 
     if (frontersModified) {
-        console.log("Fronters modified... setting new frontable list to this: ", currentFronterUids);
+        console.log("Fronters modified... caching and setting new frontable list to this: ", currentFronterUids);
 
         const uid = cache.getSystemId();
         if (uid) {
             backend.endpoints.fetchSetCurrentFronters(uid, currentFronterUids)
                 .then((entries) => {
-                    if (entries) {
-                        messaging.sendCurrentFrontersToWatch(entries);
+                    if (entries !== undefined) {
                         cache.cacheCurrentFronts(entries);
+                        messaging.sendCurrentFrontersToWatch(entries);
+                    } else {
+                        console.warn("WARNING: backend set fronters replied with undefined!!");
                     }
                 });
         } else {
