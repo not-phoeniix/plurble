@@ -172,6 +172,8 @@ const CONFIG_LAYOUT: ConfigLayout = Object.freeze({
     },
 });
 
+// TODO: figure out PK webhooks? you can use them to get similar functionality to a socket
+
 // === IMPL ASSEMBLING ====================================
 
 const IMPL: APIImpl = Object.freeze({
