@@ -1,22 +1,22 @@
 # Plurble
 <img src="aseprite/banner.png" alt="Plurble" width="50%">
 
-A Simply Plural client for Pebble! Plurble is an app designed to help people who are plural/systems manage and keep track of members on the go!
+A plural management app for Pebble! Plurble is an app designed to help people who are plural/systems manage and keep track of members on the go!
 
 This was an app originally made for the Rebble Hackathon #002!
 
 ## Feature list
 ### Current Features
-- [x] Real-time syncing with the cloud using the Simply Plural API
+- [x] Real-time syncing with the cloud using a multitude of APIs
+  - [x] PluralKit
 - [x] Member + Custom Front lists
   - [x] Up to 200 combined members + custom fronts supported at a time
 - [x] Groups view
   - [x] Up to 32 groups supported
   - [x] Nested groups are supported! (Groups inside groups)
 - [x] Display/management of currently fronting members/custom fronts
-  - [x] Add to front
-  - [x] Set as front
-  - [x] Remove from front
+  - [x] Add/remove/set as front functions
+  - [x] Total elapsed fronting time display
 - [x] App customization
   - [x] Customizable colors
   - [x] Per-member accent colors
@@ -26,6 +26,9 @@ This was an app originally made for the Rebble Hackathon #002!
   - [x] 32 Groups
 
 ### Future features
+- [ ] More backends!
+  - [ ] PluralSpace
+  - [ ] Custom self-hosted database
 - [ ] Enhanced member info
   - [ ] Card info view with descriptions
   - [ ] Shown fronting durations
@@ -33,7 +36,6 @@ This was an app originally made for the Rebble Hackathon #002!
 - [ ] Basic front history viewing
 - [ ] Friend view
   - [ ] View friend fronting statuses
-- [ ] Chat features using dictation (far stretch goal)
 
 ## Screenshots
 ### Time & Time Steel
