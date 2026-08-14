@@ -380,9 +380,13 @@ Pebble.addEventListener("webviewclosed", async (e: any) => {
             }
         }
 
-        PebbleTS.sendAppMessage(settingsDict)
+        const msgDict = clay.getSettings(e.response, true);
+
+        console.log(JSON.stringify(msgDict));
+
+        PebbleTS.sendAppMessage(msgDict)
             .then(() => console.log("sent config data to pebble!"))
-            .catch(err => console.error("ERROR: failed to send config data to pebble! err -->" + JSON.stringify(err)));
+            .catch(err => console.error(`ERROR: failed to send config data to pebble! err --> ${err}`));
 
     } else {
         console.warn("WARNING: webview response doesn't exist!");
